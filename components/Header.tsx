@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  Search, Heart, Settings, Camera, LogOut, ChevronDown, X, Menu
+  Search, Heart, Settings, Camera, LogOut, ChevronDown, X, Menu, User
 } from "lucide-react";
 import { useWatchlist } from "@/app/context/watchlistContext";
 import { useAuth } from "@/app/context/AuthContext";
@@ -332,6 +332,15 @@ export default function Header() {
                     </div>
                     
                     <div className="space-y-1">
+                      <Link
+                        href="/profile"
+                        onClick={() => setShowProfileMenu(false)}
+                        className="w-full text-left text-xs text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-all flex items-center gap-2"
+                      >
+                        <User className="w-3.5 h-3.5 text-gray-400" />
+                        Thông tin tài khoản
+                      </Link>
+
                       <button
                         onClick={() => { setShowProfileUploader(true); setShowProfileMenu(false); }}
                         className="w-full text-left text-xs text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-all flex items-center gap-2 cursor-pointer"

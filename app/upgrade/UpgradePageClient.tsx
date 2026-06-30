@@ -1,21 +1,18 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Check, X, Award, History } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getUserPaymentHistory } from "@/app/admin/actions";
 
 interface UpgradePageClientProps {
   initialPlans: any[];
-  initialPayments: any[];
 }
 
-export default function UpgradePageClient({ initialPlans, initialPayments }: UpgradePageClientProps) {
+export default function UpgradePageClient({ initialPlans }: UpgradePageClientProps) {
   const { user, refreshUser } = useAuth();
   const [plans] = useState<any[]>(initialPlans);
-  const [payments, setPayments] = useState<any[]>(initialPayments);
   const [selectedPackages, setSelectedPackages] = useState<Record<number, number>>({});
   const [buyingPackageId, setBuyingPackageId] = useState<number | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -52,7 +49,6 @@ export default function UpgradePageClient({ initialPlans, initialPayments }: Upg
               showNotification("Thanh toán thành công! Quyền hạn tài khoản của bạn đã được nâng cấp.", "success");
               window.history.replaceState({}, document.title, window.location.pathname);
               refreshUser();
-              getUserPaymentHistory().then(history => setPayments(history));
               return true;
             }
           }
@@ -130,12 +126,6 @@ export default function UpgradePageClient({ initialPlans, initialPayments }: Upg
     }
   };
 
-  const isVip = user && user.level && user.level > 0;
-  const isExpired = user && user.expiredAt ? new Date(user.expiredAt) < new Date() : true;
-  const daysRemaining = user && user.expiredAt 
-    ? Math.max(0, Math.ceil((new Date(user.expiredAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
-    : 0;
-
   return (
     <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-12 space-y-10 animate-in fade-in duration-300">
       
@@ -162,134 +152,6 @@ export default function UpgradePageClient({ initialPlans, initialPayments }: Upg
           Mở khóa toàn bộ đặc quyền xem phim chất lượng cao HD/4K không chứa quảng cáo và truy cập kho bộ sưu tập ảnh AI độc quyền lớn nhất.
         </p>
       </div>
-
-      {user && (
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-300">
-          {/* VIP Status Card */}
-          <Card className="bg-[#131520] border-white/5 p-6 rounded-2xl md:col-span-1 flex flex-col justify-between relative overflow-hidden shadow-xl">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-500/10 to-transparent rounded-bl-full pointer-events-none" />
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
-                  <Award className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-black text-white uppercase tracking-wider">Thông Tin VIP</h2>
-                  <p className="text-[10px] text-gray-500">Tài khoản: {user.username}</p>
-                </div>
-              </div>
-
-              <div className="space-y-2.5 pt-2">
-                <div className="flex items-center justify-between border-b border-white/5 pb-2 text-xs">
-                  <span className="text-gray-400">Gói hiện tại:</span>
-                  <span className={`font-black uppercase ${isVip && !isExpired ? "text-amber-400" : "text-gray-400"}`}>
-                    {isVip && !isExpired ? plans.find(p => p.level === user.level)?.name || `VIP Cấp ${user.level}` : "Thành viên Thường"}
-                  </span>
-                </div>
-
-                {isVip && (
-                  <>
-                    <div className="flex items-center justify-between border-b border-white/5 pb-2 text-xs">
-                      <span className="text-gray-400">Trạng thái:</span>
-                      <span className={`font-bold ${isExpired ? "text-red-400" : "text-green-400"}`}>
-                        {isExpired ? "Đã hết hạn" : "Đang hoạt động"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between border-b border-white/5 pb-2 text-xs">
-                      <span className="text-gray-400">Ngày hết hạn:</span>
-                      <span className="font-bold text-gray-200 tabular-nums">
-                        {user.expiredAt ? new Date(user.expiredAt).toLocaleDateString("vi-VN") : "—"}
-                      </span>
-                    </div>
-                    {!isExpired && (
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-400">Thời gian còn lại:</span>
-                        <span className="font-black text-orange-400 tabular-nums">{daysRemaining} ngày</span>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-            {!isVip && (
-              <div className="text-[10px] text-gray-400 italic pt-4 leading-relaxed">
-                Tài khoản của bạn chưa đăng ký VIP. Hãy chọn một trong các gói cước bên dưới để mở khóa toàn bộ đặc quyền xem phim và bộ sưu tập ảnh AI.
-              </div>
-            )}
-          </Card>
-
-          {/* Subscription History Card */}
-          <Card className="bg-[#131520] border-white/5 p-6 rounded-2xl md:col-span-2 flex flex-col justify-between shadow-xl">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
-                  <History className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-black text-white uppercase tracking-wider">Lịch Sử Giao Dịch</h2>
-                  <p className="text-[10px] text-gray-500">Danh sách các gói cước bạn đã đăng ký</p>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                {payments && payments.length > 0 ? (
-                  <div className="overflow-x-auto max-h-[160px] custom-scrollbar pr-1">
-                    <table className="w-full text-left border-collapse text-[10px] sm:text-xs">
-                      <thead>
-                        <tr className="border-b border-white/5 text-gray-500 uppercase font-black tracking-wide">
-                          <th className="pb-2 font-bold">Mã</th>
-                          <th className="pb-2 font-bold">Gói cước</th>
-                          <th className="pb-2 font-bold">Thời hạn</th>
-                          <th className="pb-2 font-bold text-right">Số tiền</th>
-                          <th className="pb-2 font-bold text-center">Trạng thái</th>
-                          <th className="pb-2 font-bold text-right">Ngày mua</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/5 text-gray-300">
-                        {payments.map((p) => {
-                          const planName = p.package?.plan?.name || "VIP";
-                          const time = p.package?.time ? `${p.package.time} tháng` : "—";
-
-                          let statusLabel = "Đang xử lý";
-                          let statusClass = "text-yellow-400 bg-yellow-400/5 border-yellow-400/20";
-                          if (p.status === "paid") {
-                            statusLabel = "Thành công";
-                            statusClass = "text-green-400 bg-green-400/5 border-green-400/20";
-                          } else if (p.status === "cancelled") {
-                            statusLabel = "Đã hủy";
-                            statusClass = "text-red-400 bg-red-400/5 border-red-400/20";
-                          }
-
-                          return (
-                            <tr key={p.id} className="hover:bg-white/5">
-                              <td className="py-2.5 font-bold text-gray-500 tabular-nums">#{p.orderCode}</td>
-                              <td className="py-2.5 font-bold text-white">{planName}</td>
-                              <td className="py-2.5 font-medium">{time}</td>
-                              <td className="py-2.5 font-bold text-right tabular-nums">{Math.round(parseFloat(p.amount)).toLocaleString("vi-VN")}đ</td>
-                              <td className="py-2.5 text-center">
-                                <span className={`inline-block px-1.5 py-0.5 rounded border text-[8px] font-black uppercase tracking-wider ${statusClass}`}>
-                                  {statusLabel}
-                                </span>
-                              </td>
-                              <td className="py-2.5 text-right text-gray-400 tabular-nums">
-                                {new Date(p.createdAt).toLocaleDateString("vi-VN")}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center py-10 text-[11px] text-gray-500 italic">
-                    Bạn chưa thực hiện giao dịch đăng ký gói nào.
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
 
       <div className="flex flex-wrap justify-center gap-6 max-w-7xl mx-auto">
         {plans.map((plan: any) => {
