@@ -32,6 +32,15 @@ export default function ProfilePageClient({ initialPlans, initialPayments }: Pro
     ? Math.max(0, Math.ceil((new Date(user.expiredAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
     : 0;
 
+  console.log("ProfilePageClient DEBUG:", {
+    username: user.username,
+    level: user.level,
+    expiredAt: user.expiredAt,
+    isVip,
+    isExpired,
+    daysRemaining
+  });
+
   const currentPlan = isVip && !isExpired ? plans.find(p => p.level === user.level) : null;
 
   return (
@@ -75,6 +84,10 @@ export default function ProfilePageClient({ initialPlans, initialPayments }: Pro
               <Mail className="w-3.5 h-3.5 text-gray-500" />
               {user.email}
             </p>
+            
+            <div className="text-[9px] text-gray-600 mb-4 font-mono select-all">
+              Debug User: level={user.level}, expiredAt={user.expiredAt ? String(user.expiredAt) : "null"}
+            </div>
 
             <button
               onClick={() => setShowProfileUploader(true)}

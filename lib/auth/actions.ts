@@ -197,7 +197,10 @@ export async function getCurrentUser() {
       return null;
     }
 
-    return user;
+    return {
+      ...user,
+      expiredAt: user.expiredAt ? user.expiredAt.toISOString() : null,
+    };
   } catch (error) {
     console.error("Error fetching current user:", error);
     try {

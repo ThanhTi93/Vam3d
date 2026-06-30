@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 
 export default async function ProfilePage() {
   const user = await getCurrentUser();
+  console.log("Server side user in /profile:", user);
   if (!user) {
     redirect("/login?redirect=/profile");
   }
