@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { payments, accounts, packages } from "@/lib/db/schema";
 import { payOS } from "@/lib/payos";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function GET(request: Request) {
@@ -36,11 +36,16 @@ export async function GET(request: Request) {
 
         // If PayOS says it's PAID, trigger database update & user upgrade
         if (payosOrder && payosOrder.status === "PAID") {
-          // Update payment status in database
-          await db
+          // Update payment status in database conditionally to prevent race conditions
+          const updatedRows = await db
             .update(payments)
             .set({ status: "paid" })
-            .where(eq(payments.id, paymentRecord.id));
+            .where(and(eq(payments.id, paymentRecord.id), eq(payments.status, "pending")))
+            .returning({ id: payments.id });
+
+          if (updatedRows.length === 0) {
+            return NextResponse.json({ status: "paid" });
+          }
 
           // Upgrade the user level and expiration
           if (paymentRecord.idPackage && paymentRecord.idAccount) {

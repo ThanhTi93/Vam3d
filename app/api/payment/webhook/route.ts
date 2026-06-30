@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { payments, accounts, packages, plans } from "@/lib/db/schema";
 import { payOS } from "@/lib/payos";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function POST(request: Request) {
@@ -48,11 +48,16 @@ export async function POST(request: Request) {
     // 3. Process subscription upgrade if payment succeeded
     // Success code from PayOS webhook data is "00"
     if (body.success === true || body.code === "00" || webhookData.code === "00") {
-      // Update payment status to paid
-      await db
+      // Update payment status to paid conditionally to prevent race conditions
+      const updatedRows = await db
         .update(payments)
         .set({ status: "paid" })
-        .where(eq(payments.id, paymentRecord.id));
+        .where(and(eq(payments.id, paymentRecord.id), eq(payments.status, "pending")))
+        .returning({ id: payments.id });
+
+      if (updatedRows.length === 0) {
+        return NextResponse.json({ success: true, message: "Giao dịch đã được xử lý trước đó" });
+      }
 
       // Fetch package and plan details
       if (paymentRecord.idPackage && paymentRecord.idAccount) {
