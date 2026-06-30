@@ -153,7 +153,7 @@ export default function UpgradePageClient({ initialPlans }: UpgradePageClientPro
         </p>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-6 max-w-7xl mx-auto">
+      <div className="flex flex-wrap justify-center gap-6 max-w-7xl mx-auto items-stretch">
         {plans.map((plan: any) => {
           const isFree = plan.level === 0;
           const hasPackages = plan.packages && plan.packages.length > 0;
@@ -176,16 +176,35 @@ export default function UpgradePageClient({ initialPlans }: UpgradePageClientPro
             finalMonthCost = totalCost;
           }
 
+          // User package tier status check
+          const isUserLogged = !!user;
+          const userVipLevel = user?.level || 0;
+          const isUserVip = userVipLevel > 0;
+          const isUserExpired = user?.expiredAt ? new Date(user.expiredAt) < new Date() : true;
+
+          const isCurrentPlan = isUserLogged && isUserVip && !isUserExpired && userVipLevel === plan.level;
+          const isLowerPlan = isUserLogged && isUserVip && !isUserExpired && plan.level > 0 && plan.level < userVipLevel;
+
+          let cardClasses = `flex-1 min-w-[240px] max-w-[300px] bg-[#131520] border-2 rounded-2xl p-6 flex flex-col justify-between relative transition-all duration-300 overflow-visible`;
+          if (isFree) {
+            cardClasses += " border-white/5 opacity-80";
+          } else if (isCurrentPlan) {
+            cardClasses += " border-amber-500 bg-[#161a2c] shadow-2xl shadow-amber-500/10 md:scale-[1.03] z-10";
+          } else if (isLowerPlan) {
+            cardClasses += " border-white/5 opacity-40 hover:opacity-60";
+          } else {
+            cardClasses += " border-orange-500/20 hover:border-orange-500/40 shadow-xl shadow-orange-500/5";
+          }
+
           return (
-            <Card
-              key={plan.id}
-              className={`flex-1 min-w-[220px] max-w-[300px] bg-[#131520] border-2 rounded-2xl p-6 flex flex-col justify-between relative transition-all duration-300 overflow-visible ${
-                !isFree
-                  ? "border-orange-500/20 hover:border-orange-500/40 shadow-xl shadow-orange-500/5"
-                  : "border-white/5 opacity-80"
-              }`}
-            >
-              {plan.level > 1 && (
+            <Card key={plan.id} className={cardClasses}>
+              {isCurrentPlan && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-black font-black text-[9px] px-3.5 py-1 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1">
+                  <Check className="w-3 h-3 stroke-[3]" /> Gói hiện tại
+                </div>
+              )}
+
+              {plan.level > 1 && !isCurrentPlan && !isLowerPlan && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-[9px] px-3 py-1 rounded-full uppercase tracking-wider shadow">
                   Phổ Biến Nhất
                 </div>
@@ -213,19 +232,23 @@ export default function UpgradePageClient({ initialPlans }: UpgradePageClientPro
                         return (
                           <button
                             key={pkg.id}
-                            type="button"
+                            disabled={isLowerPlan}
                             onClick={() =>
                               setSelectedPackages((prev) => ({ ...prev, [plan.id]: pkg.id }))
                             }
                             className={`border px-2.5 py-2 rounded-xl text-left transition-all ${
-                              selectedPkgId === pkg.id
-                                ? "border-orange-500 bg-orange-500/10 text-white"
+                              isLowerPlan
+                                ? "border-white/5 bg-[#090a0f] text-gray-600 cursor-not-allowed"
+                                : selectedPkgId === pkg.id
+                                ? isCurrentPlan
+                                  ? "border-amber-500 bg-amber-500/10 text-white"
+                                  : "border-orange-500 bg-orange-500/10 text-white"
                                 : "border-white/5 bg-[#090a0f] text-gray-400 hover:text-white"
                             }`}
                           >
                             <div className="text-xs font-bold">{pkg.time} Tháng</div>
                             {pkgDiscount > 0 && (
-                              <div className="text-[9px] text-green-400 font-semibold mt-0.5">
+                              <div className={`text-[9px] font-semibold mt-0.5 ${isLowerPlan ? "text-gray-600" : "text-green-400"}`}>
                                 Giảm {pkgDiscount}%
                               </div>
                             )}
@@ -265,19 +288,34 @@ export default function UpgradePageClient({ initialPlans }: UpgradePageClientPro
                   >
                     Gói Mặc Định
                   </Button>
+                ) : isLowerPlan ? (
+                  <Button
+                    disabled
+                    className="w-full bg-white/5 border border-white/10 text-gray-500 cursor-not-allowed h-10 text-xs font-bold"
+                  >
+                    Đang dùng gói cao hơn
+                  </Button>
                 ) : (
                   <Button
                     onClick={() => handleCheckout(selectedPkgId)}
                     disabled={!selectedPkgId || buyingPackageId !== null}
-                    className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold h-10 text-xs shadow-lg shadow-orange-500/10 cursor-pointer flex items-center justify-center gap-2"
+                    className={`w-full font-bold h-10 text-xs shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 rounded-xl ${
+                      isCurrentPlan
+                        ? "bg-amber-500 hover:bg-amber-600 text-black shadow-amber-500/10"
+                        : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/10"
+                    }`}
                   >
                     {buyingPackageId === selectedPkgId && (
-                      <div className="w-3.5 h-3.5 rounded-full border border-t-white border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+                      <div className={`w-3.5 h-3.5 rounded-full border border-r-transparent border-b-transparent border-l-transparent animate-spin ${
+                        isCurrentPlan ? "border-black" : "border-white"
+                      }`} />
                     )}
-                    {hasDiscount ? (
-                      <div className="flex flex-col items-center">
-                        <span>Mua Ngay - {totalCost.toLocaleString("vi-VN")}đ</span>
-                      </div>
+                    {isCurrentPlan ? (
+                      `Gia Hạn Gói (${totalCost.toLocaleString("vi-VN")}đ)`
+                    ) : isUserVip && !isUserExpired ? (
+                      `Nâng Cấp Lên Gói Này (${totalCost.toLocaleString("vi-VN")}đ)`
+                    ) : hasDiscount ? (
+                      <span>Mua Ngay - {totalCost.toLocaleString("vi-VN")}đ</span>
                     ) : (
                       `Thanh Toán QR (${totalCost.toLocaleString("vi-VN")}đ)`
                     )}
