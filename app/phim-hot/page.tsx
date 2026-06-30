@@ -1,19 +1,20 @@
-import React from "react";
-import { getHotMovies, getAllMovies, getMostViewedEpisodes, getLatestEpisodes, getLatestGalleries } from "@/lib/db/queries";
-import HeroCarousel from "@/components/HeroCarousel";
-import HomeCatalog from "@/components/HomeCatalog";
+import type { Metadata } from "next";
+import { getAllMovies } from "@/lib/db/queries";
+import CategoryCatalog from "@/components/CategoryCatalog";
 
-export default async function Home() {
-  const [hotMovies, allMovies, galleries, mostViewedEpisodes, latestEpisodes] = await Promise.all([
-    getHotMovies(),
-    getAllMovies(),
-    getLatestGalleries(),
-    getMostViewedEpisodes(12),
-    getLatestEpisodes(12),
-  ]);
+export const metadata: Metadata = {
+  title: "Phim Hot Mới Nhất - Phim Hay Đề Cử",
+  description: "Danh sách phim hot, phim bộ phim lẻ hay được đề cử xem nhiều nhất tại RoPhim.",
+};
 
-  // Format to standard Client Movie model shape
-  const formattedHotMovies = hotMovies.map((m: any) => ({
+export default async function PhimHotPage() {
+  const allMovies = await getAllMovies();
+  
+  // Filter for hot movies
+  const hotMovies = allMovies.filter((m: any) => m.isHot);
+
+  // Format to expected Movie model shape
+  const formattedMovies = hotMovies.map((m: any) => ({
     id: m.id.toString(),
     title: m.name,
     originalTitle: m.originalTitle || "",
@@ -38,7 +39,6 @@ export default async function Home() {
     episodes: m.episodes?.map((ep: any) => ({
       name: ep.name || `Tập ${ep.id}`,
       url: ep.url || "",
-      banner: ep.banner || "",
       bunnyVideoId: ep.bunnyVideoId,
       bunnyStatus: ep.bunnyStatus,
       duration: ep.duration || 0,
@@ -70,7 +70,6 @@ export default async function Home() {
     episodes: m.episodes?.map((ep: any) => ({
       name: ep.name || `Tập ${ep.id}`,
       url: ep.url || "",
-      banner: ep.banner || "",
       bunnyVideoId: ep.bunnyVideoId,
       bunnyStatus: ep.bunnyStatus,
       duration: ep.duration || 0,
@@ -78,14 +77,10 @@ export default async function Home() {
   }));
 
   return (
-    <div className="flex-1 flex flex-col animate-in fade-in duration-300">
-      <HeroCarousel hotMovies={formattedHotMovies} />
-      <HomeCatalog 
-        movies={formattedAllMovies} 
-        galleries={galleries || []} 
-        mostViewedEpisodes={mostViewedEpisodes || []} 
-        latestEpisodes={latestEpisodes || []} 
-      />
-    </div>
+    <CategoryCatalog
+      categoryTitle="Phim Hot Đề Cử (New)"
+      movies={formattedAllMovies}
+      allMovies={formattedAllMovies}
+    />
   );
 }

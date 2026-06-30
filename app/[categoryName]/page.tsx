@@ -1,19 +1,57 @@
-import React from "react";
-import { getHotMovies, getAllMovies, getMostViewedEpisodes, getLatestEpisodes, getLatestGalleries } from "@/lib/db/queries";
-import HeroCarousel from "@/components/HeroCarousel";
-import HomeCatalog from "@/components/HomeCatalog";
+import type { Metadata } from "next";
+import { getMoviesByCategory, getAllMovies } from "@/lib/db/queries";
+import { getAdminCategories } from "@/app/admin/actions";
+import CategoryCatalog from "@/components/CategoryCatalog";
+import { notFound } from "next/navigation";
 
-export default async function Home() {
-  const [hotMovies, allMovies, galleries, mostViewedEpisodes, latestEpisodes] = await Promise.all([
-    getHotMovies(),
+interface PageProps {
+  params: Promise<{ categoryName: string }>;
+}
+
+const formatCategoryLabel = (name: string) => {
+  const decoded = decodeURIComponent(name);
+  if (decoded === "phim-le") return "Phim Lẻ";
+  if (decoded === "phim-bo") return "Phim Bộ";
+  if (decoded === "chieu-rap") return "Chiếu Rạp";
+  if (decoded === "hoat-hinh") return "Hoạt Hình";
+  
+  return decoded.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+};
+
+// Generate dynamic metadata
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { categoryName } = await params;
+  const titleName = formatCategoryLabel(categoryName);
+  return {
+    title: `${titleName} Mới Nhất - RoPhim`,
+    description: `Danh sách phim thuộc thể loại ${titleName} chất lượng cao Vietsub, thuyết minh cập nhật nhanh nhất tại RoPhim.`,
+  };
+}
+
+export default async function DynamicCategoryPage({ params }: PageProps) {
+  const { categoryName } = await params;
+  const decodedCategory = decodeURIComponent(categoryName);
+
+  // Check if this category exists in the database
+  const allDbCategories = await getAdminCategories();
+  const exists = allDbCategories.some(
+    (c) => c.name.toLowerCase() === decodedCategory.toLowerCase()
+  );
+
+  // If not found in database and is not one of the default standard ones
+  const isDefault = ["phim-le", "phim-bo", "chieu-rap", "hoat-hinh"].includes(decodedCategory.toLowerCase());
+
+  if (!exists && !isDefault) {
+    notFound();
+  }
+
+  const [movies, allMovies] = await Promise.all([
+    getMoviesByCategory(decodedCategory),
     getAllMovies(),
-    getLatestGalleries(),
-    getMostViewedEpisodes(12),
-    getLatestEpisodes(12),
   ]);
 
-  // Format to standard Client Movie model shape
-  const formattedHotMovies = hotMovies.map((m: any) => ({
+  // Format to expected Movie model shape
+  const formattedMovies = movies.map((m: any) => ({
     id: m.id.toString(),
     title: m.name,
     originalTitle: m.originalTitle || "",
@@ -36,6 +74,7 @@ export default async function Home() {
     views: m.viewCount || 0,
     isHot: m.isHot || false,
     episodes: m.episodes?.map((ep: any) => ({
+      id: ep.id,
       name: ep.name || `Tập ${ep.id}`,
       url: ep.url || "",
       banner: ep.banner || "",
@@ -68,6 +107,7 @@ export default async function Home() {
     views: m.viewCount || 0,
     isHot: m.isHot || false,
     episodes: m.episodes?.map((ep: any) => ({
+      id: ep.id,
       name: ep.name || `Tập ${ep.id}`,
       url: ep.url || "",
       banner: ep.banner || "",
@@ -77,15 +117,13 @@ export default async function Home() {
     })) || [],
   }));
 
+  const titleName = formatCategoryLabel(decodedCategory);
+
   return (
-    <div className="flex-1 flex flex-col animate-in fade-in duration-300">
-      <HeroCarousel hotMovies={formattedHotMovies} />
-      <HomeCatalog 
-        movies={formattedAllMovies} 
-        galleries={galleries || []} 
-        mostViewedEpisodes={mostViewedEpisodes || []} 
-        latestEpisodes={latestEpisodes || []} 
-      />
-    </div>
+    <CategoryCatalog
+      categoryTitle={`${titleName} Mới Nhất`}
+      movies={formattedMovies}
+      allMovies={formattedAllMovies}
+    />
   );
 }
