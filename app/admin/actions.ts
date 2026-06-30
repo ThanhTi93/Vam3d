@@ -1192,6 +1192,22 @@ export async function getSubscriptionPlans() {
   });
 }
 
+export async function getUserPaymentHistory() {
+  const user = await getCurrentUser();
+  if (!user || !db) return [];
+  return db.query.payments.findMany({
+    where: eq(schema.payments.idAccount, user.id),
+    orderBy: (p, { desc }) => [desc(p.createdAt)],
+    with: {
+      package: {
+        with: {
+          plan: true,
+        },
+      },
+    },
+  });
+}
+
 export async function incrementGalleryViews(id: number) {
   if (!db) return;
   try {

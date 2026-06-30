@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getSubscriptionPlans } from "@/app/admin/actions";
+import { getSubscriptionPlans, getUserPaymentHistory } from "@/app/admin/actions";
 import UpgradePageClient from "./UpgradePageClient";
 
 export const metadata: Metadata = {
@@ -8,7 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default async function UpgradePage() {
-  const plans = await getSubscriptionPlans();
+  const [plans, payments] = await Promise.all([
+    getSubscriptionPlans(),
+    getUserPaymentHistory()
+  ]);
   
-  return <UpgradePageClient initialPlans={plans || []} />;
+  return <UpgradePageClient initialPlans={plans || []} initialPayments={payments || []} />;
 }
