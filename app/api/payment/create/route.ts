@@ -62,7 +62,12 @@ export async function POST(request: Request) {
     });
 
     // 5. Create payment link in PayOS
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const host = request.headers.get("host") || "localhost:3000";
+    const protocol = request.headers.get("x-forwarded-proto") || "http";
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost")
+      ? process.env.NEXT_PUBLIC_SITE_URL
+      : `${protocol}://${host}`;
+
     const returnUrl = `${siteUrl}/upgrade?payment=success&orderCode=${orderCode}`;
     const cancelUrl = `${siteUrl}/upgrade?payment=cancel&orderCode=${orderCode}`;
 
