@@ -86,7 +86,7 @@ export default function ProfilePageClient({ initialPlans, initialPayments }: Pro
             </p>
             
             <div className="text-[9px] text-gray-600 mb-4 font-mono select-all">
-              Debug User: level={user.level}, expiredAt={user.expiredAt ? String(user.expiredAt) : "null"}
+              Debug User: level={user.level}, expiredAt={user.expiredAt ? String(user.expiredAt) : "null"}, debug={user.vipDebugInfo || "none"}
             </div>
 
             <button
@@ -193,6 +193,7 @@ export default function ProfilePageClient({ initialPlans, initialPayments }: Pro
                           <th className="pb-3 font-bold">Thời hạn</th>
                           <th className="pb-3 font-bold text-right">Số tiền</th>
                           <th className="pb-3 font-bold text-center">Trạng thái</th>
+                          <th className="pb-3 font-bold text-center">Hiệu lực</th>
                           <th className="pb-3 font-bold text-right">Ngày mua</th>
                         </tr>
                       </thead>
@@ -223,6 +224,29 @@ export default function ProfilePageClient({ initialPlans, initialPayments }: Pro
                                 <span className={`inline-block px-1.5 py-0.5 rounded border text-[8px] font-black uppercase tracking-wider ${statusClass}`}>
                                   {statusLabel}
                                 </span>
+                              </td>
+                              <td className="py-3 text-center">
+                                {p.status === "paid" ? (
+                                  (() => {
+                                    const purchaseDate = new Date(p.createdAt);
+                                    const timeMonths = p.package?.time || 0;
+                                    const expirationDate = new Date(purchaseDate);
+                                    expirationDate.setMonth(expirationDate.getMonth() + timeMonths);
+                                    const isExpired = new Date() >= expirationDate;
+
+                                    return (
+                                      <span className={`inline-block px-1.5 py-0.5 rounded border text-[8px] font-black uppercase tracking-wider ${
+                                        isExpired
+                                          ? "text-gray-500 bg-gray-500/5 border-gray-500/10"
+                                          : "text-amber-400 bg-amber-400/5 border-amber-400/20 animate-pulse"
+                                      }`}>
+                                        {isExpired ? "Hết hạn" : "Còn hạn"}
+                                      </span>
+                                    );
+                                  })()
+                                ) : (
+                                  <span className="text-gray-500">—</span>
+                                )}
                               </td>
                               <td className="py-3 text-right text-gray-400 tabular-nums">
                                 {new Date(p.createdAt).toLocaleDateString("vi-VN")}

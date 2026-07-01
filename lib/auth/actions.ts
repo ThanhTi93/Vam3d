@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { accounts } from "@/lib/db/schema";
+import { accounts, payments } from "@/lib/db/schema";
 import { registerSchema, loginSchema } from "@/lib/validations/schemas";
 import { hashPassword, comparePassword } from "./password";
 import { encryptSession, decryptSession } from "./session";
@@ -197,9 +197,98 @@ export async function getCurrentUser() {
       return null;
     }
 
+    // Dynamic VIP calculation and fallback
+    let activeLevel = user.level || 0;
+    let activeExpiredAt = user.expiredAt;
+    let vipDebugInfo = "";
+
+    try {
+      const userPayments = await db.query.payments.findMany({
+        where: eq(payments.idAccount, user.id),
+        with: {
+          package: {
+            with: {
+              plan: true
+            }
+          }
+        }
+      });
+
+      vipDebugInfo += `rawCount:${userPayments?.length || 0}; `;
+
+      if (userPayments && userPayments.length > 0) {
+        // Filter paid payments
+        const paidPayments = userPayments.filter((p: any) => p.status === "paid" && p.package?.plan);
+        vipDebugInfo += `paidCount:${paidPayments.length}; `;
+
+        const now = new Date();
+        const paymentsByLevel: { [key: number]: any[] } = {};
+        
+        for (const p of paidPayments) {
+          const lvl = p.package?.plan?.level || 0;
+          if (lvl > 0) {
+            if (!paymentsByLevel[lvl]) {
+              paymentsByLevel[lvl] = [];
+            }
+            paymentsByLevel[lvl].push(p);
+          }
+        }
+
+        const levels = Object.keys(paymentsByLevel).map(Number).sort((a, b) => b - a);
+        let calculatedVip: { level: number; expiredAt: Date | null } | null = null;
+
+        for (const lvl of levels) {
+          const list = paymentsByLevel[lvl];
+          list.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          
+          let expireDate: Date | null = null;
+          for (const p of list) {
+            const pDate = new Date(p.createdAt);
+            const months = p.package?.time || 0;
+            
+            if (!expireDate || pDate > expireDate) {
+              expireDate = new Date(pDate);
+              expireDate.setMonth(expireDate.getMonth() + months);
+            } else {
+              expireDate.setMonth(expireDate.getMonth() + months);
+            }
+          }
+
+          vipDebugInfo += `Lvl${lvl}Exp:${expireDate ? expireDate.toISOString().substring(0, 10) : "null"}; `;
+
+          if (expireDate && expireDate > now) {
+            calculatedVip = { level: lvl, expiredAt: expireDate };
+            break;
+          }
+        }
+
+        vipDebugInfo += `calcVipLvl:${calculatedVip ? calculatedVip.level : "none"}; `;
+
+        if (calculatedVip) {
+          const dbVipActive = activeLevel > 0 && activeExpiredAt && new Date(activeExpiredAt) > now;
+          if (!dbVipActive || calculatedVip.level >= activeLevel) {
+            activeLevel = calculatedVip.level;
+            activeExpiredAt = calculatedVip.expiredAt;
+          }
+        } else {
+          // If calculated VIP has expired but database value is also not active, ensure we drop back to level 0
+          const dbVipActive = activeLevel > 0 && activeExpiredAt && new Date(activeExpiredAt) > now;
+          if (!dbVipActive) {
+            activeLevel = 0;
+            activeExpiredAt = null;
+          }
+        }
+      }
+    } catch (e: any) {
+      console.error("Error calculating dynamic VIP:", e);
+      vipDebugInfo += `err:${e.message}; `;
+    }
+
     return {
       ...user,
-      expiredAt: user.expiredAt ? user.expiredAt.toISOString() : null,
+      level: activeLevel,
+      expiredAt: activeExpiredAt ? activeExpiredAt.toISOString() : null,
+      vipDebugInfo,
     };
   } catch (error) {
     console.error("Error fetching current user:", error);

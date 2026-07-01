@@ -13,6 +13,7 @@ interface UserType {
   phone?: string | null;
   level?: number | null;
   expiredAt?: Date | string | null;
+  vipDebugInfo?: string;
 }
 
 interface AuthContextType {

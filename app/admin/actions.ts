@@ -10,7 +10,6 @@ import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 
 function revalidateAdmin() {
   revalidateTag("admin-data", "default");
-  revalidateAdmin();
 }
 import { db, schema } from "@/lib/db";
 import { eq, and, ne, sql } from "drizzle-orm";
