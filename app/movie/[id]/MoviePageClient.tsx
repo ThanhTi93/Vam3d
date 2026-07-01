@@ -162,10 +162,11 @@ export default function MoviePageClient({
 
   const checkAccess = (requiredPlan: any) => {
     if (!requiredPlan) return true;
+    const requiredLevel = requiredPlan.level || 0;
+    if (requiredLevel === 0) return true; // Free level 0 is open to all
     if (!user) return false;
     if (user.role === "admin") return true;
     const userLevel = user.level || 0;
-    const requiredLevel = requiredPlan.level || 0;
     const isExpired = user.expiredAt ? new Date(user.expiredAt) < new Date() : true;
     if (userLevel < requiredLevel) return false;
     if (requiredLevel > 0 && isExpired) return false;
@@ -316,9 +317,9 @@ export default function MoviePageClient({
                       <Link
                         key={ep.id}
                         href={playUrl}
-                        className="group bg-[#131520] border border-white/5 rounded-xl overflow-hidden relative aspect-video flex flex-col hover:border-orange-500/30 transition-all duration-300 shadow-md shadow-black/40"
+                        className="group bg-[#131520] border border-white/5 rounded-xl overflow-hidden flex flex-col hover:border-orange-500/30 transition-all duration-300 shadow-md shadow-black/40 h-full"
                       >
-                        <div className="absolute inset-0 w-full h-full bg-[#090a0f] overflow-hidden">
+                        <div className="relative aspect-video w-full bg-[#090a0f] overflow-hidden flex-shrink-0">
                           {displayImage ? (
                             <img
                               src={getBunnyImageUrl(displayImage, 'thumb')}
@@ -331,46 +332,50 @@ export default function MoviePageClient({
                               <Play className="w-6 h-6" />
                             </div>
                           )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent z-10" />
-                        </div>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
 
-                        <div className="absolute top-2 left-2 z-20">
-                          <Badge className="bg-orange-500 hover:bg-orange-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded tracking-wide border-0 shadow-md">
-                            {ep.name || "Tập mới"}
-                          </Badge>
-                        </div>
-                        {ep.plan && (
-                          <div className="absolute top-2 right-2 z-20">
-                            <Badge className="bg-amber-500 hover:bg-amber-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded tracking-wide border-0 shadow-md">
-                              {ep.plan.name}
-                            </Badge>
+                          <div className="absolute top-2 left-2 z-20 max-w-[55%]">
+                            <span className="bg-orange-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-sm shadow-md truncate block w-full text-center select-none">
+                              {ep.name || "Tập mới"}
+                            </span>
                           </div>
-                        )}
+                          {ep.plan && (
+                            <div className="absolute top-2 right-2 z-20 max-w-[40%]">
+                              <span className="bg-amber-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-sm shadow-md truncate block w-full text-center select-none">
+                                {ep.plan.name}
+                              </span>
+                            </div>
+                          )}
 
-                        <div className="absolute bottom-0 left-0 right-0 p-2.5 z-20 flex flex-col justify-end">
-                          <h3 className="text-xs font-bold text-gray-100 line-clamp-1 group-hover:text-orange-400 transition-colors">
-                            {ep.movie?.name || "Phim"}
-                          </h3>
-                          <span className="text-[9px] text-gray-400 font-medium mt-0.5 line-clamp-1 flex items-center gap-1">
-                            <span>{ep.name}</span>
-                            {ep.duration > 0 ? (
-                              <>
-                                <span>•</span>
-                                <Clock className="w-2.5 h-2.5 inline" />
-                                <span>{formatDuration(ep.duration)}</span>
-                              </>
-                            ) : (
-                              <>
-                                <span>•</span>
-                                <span>Mới cập nhật</span>
-                              </>
-                            )}
-                          </span>
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-15">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-lg scale-75 group-hover:scale-100 transition-transform duration-300">
+                              <Play className="w-4 h-4 fill-white ml-0.5" />
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-15">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-lg scale-75 group-hover:scale-100 transition-transform duration-300">
-                            <Play className="w-4 h-4 fill-white ml-0.5" />
+                        <div className="p-2.5 flex-grow flex flex-col justify-between">
+                          <div className="min-w-0">
+                            <h3 className="text-xs font-bold text-gray-100 line-clamp-1 group-hover:text-orange-400 transition-colors">
+                              {ep.movie?.name || "Phim"}
+                            </h3>
+                            <div className="text-[9px] text-gray-400 font-medium mt-1.5 line-clamp-1 flex items-center gap-1 flex-wrap">
+                              <span className="text-gray-300 bg-white/5 border border-white/10 px-1 rounded-sm text-[8px] max-w-[80px] truncate">{ep.name}</span>
+                              {ep.duration > 0 ? (
+                                <>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-0.5">
+                                    <Clock className="w-2.5 h-2.5 inline" />
+                                    <span>{formatDuration(ep.duration)}</span>
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>•</span>
+                                  <span>Mới</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </Link>
@@ -518,9 +523,9 @@ export default function MoviePageClient({
                     <Link
                       key={ep.id ?? idx}
                       href={playUrl}
-                      className="group bg-[#131520] border border-white/5 rounded-xl overflow-hidden relative aspect-video flex flex-col hover:border-orange-500/30 transition-all duration-300 shadow-md shadow-black/40"
+                      className="group bg-[#131520] border border-white/5 rounded-xl overflow-hidden flex flex-col hover:border-orange-500/30 transition-all duration-300 shadow-md shadow-black/40 h-full"
                     >
-                      <div className="absolute inset-0 w-full h-full bg-[#090a0f] overflow-hidden">
+                      <div className="relative aspect-video w-full bg-[#090a0f] overflow-hidden flex-shrink-0">
                         {displayImage ? (
                           <img
                             src={getBunnyImageUrl(displayImage, 'thumb')}
@@ -533,33 +538,35 @@ export default function MoviePageClient({
                             <Play className="w-6 h-6" />
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent z-10" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
+
+                        <div className="absolute top-2 left-2 z-20 max-w-[90%]">
+                          <span className="bg-orange-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-sm shadow-md truncate block w-full text-center select-none">
+                            {ep.name || `Tập ${idx + 1}`}
+                          </span>
+                        </div>
+
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-15">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-lg scale-75 group-hover:scale-100 transition-transform duration-300">
+                            <Play className="w-4 h-4 fill-white ml-0.5" />
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="absolute top-2 left-2 z-20">
-                        <Badge className="bg-orange-500 hover:bg-orange-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded tracking-wide border-0 shadow-md">
-                          {ep.name || `Tập ${idx + 1}`}
-                        </Badge>
-                      </div>
-
-                      <div className="absolute bottom-0 left-0 right-0 p-2.5 z-20 flex flex-col justify-end">
-                        <h3 className="text-xs font-bold text-gray-100 line-clamp-1 group-hover:text-orange-400 transition-colors">
-                          {movie.title}
-                        </h3>
-                        <span className="text-[9px] text-gray-400 font-medium mt-0.5 line-clamp-1 flex items-center gap-1">
-                          <span>{ep.name || `Tập ${idx + 1}`}</span>
-                          <span>•</span>
-                          {ep.duration > 0 ? (
-                            <span>{formatDuration(ep.duration)}</span>
-                          ) : (
-                            <span>Mới cập nhật</span>
-                          )}
-                        </span>
-                      </div>
-
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-15">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-lg scale-75 group-hover:scale-100 transition-transform duration-300">
-                          <Play className="w-4 h-4 fill-white ml-0.5" />
+                      <div className="p-2.5 flex-grow flex flex-col justify-between">
+                        <div className="min-w-0">
+                          <h3 className="text-xs font-bold text-gray-100 line-clamp-1 group-hover:text-orange-400 transition-colors">
+                            {movie.title}
+                          </h3>
+                          <div className="text-[9px] text-gray-400 font-medium mt-1.5 line-clamp-1 flex items-center gap-1 flex-wrap">
+                            <span className="text-gray-300 bg-white/5 border border-white/10 px-1 rounded-sm text-[8px] max-w-[80px] truncate">{ep.name || `Tập ${idx + 1}`}</span>
+                            <span>•</span>
+                            {ep.duration > 0 ? (
+                              <span>{formatDuration(ep.duration)}</span>
+                            ) : (
+                              <span>Mới</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </Link>

@@ -323,11 +323,23 @@ export default function Header() {
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-white truncate">{user.username}</p>
                         <p className="text-[9px] text-gray-400 truncate">{user.email}</p>
-                        <span className={`inline-block text-[8px] font-black uppercase px-1.5 py-0.5 rounded mt-1 ${
-                          user.role === "admin" ? "bg-orange-500/10 text-orange-400 border border-orange-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                        }`}>
-                          {user.role === "admin" ? "Admin" : "Thành viên"}
-                        </span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          <span className={`inline-block text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${
+                            user.role === "admin" ? "bg-orange-500/10 text-orange-400 border border-orange-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                          }`}>
+                            {user.role === "admin" ? "Admin" : "Thành viên"}
+                          </span>
+                          {Number(user.level) > 0 && user.expiredAt && new Date(user.expiredAt) >= new Date() && (
+                            <span className="inline-block text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse">
+                              {Number(user.level) === 1 ? "VIP" : Number(user.level) === 2 ? "VIP+" : `VIP Lvl ${user.level}`}
+                            </span>
+                          )}
+                        </div>
+                        {Number(user.level) > 0 && user.expiredAt && new Date(user.expiredAt) >= new Date() && (
+                          <p className="text-[8px] text-amber-400/80 font-bold mt-1 select-none">
+                            Hạn VIP: {new Date(user.expiredAt).toLocaleDateString("vi-VN")}
+                          </p>
+                        )}
                       </div>
                     </div>
                     

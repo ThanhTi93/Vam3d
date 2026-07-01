@@ -2,10 +2,7 @@
 import { getCurrentUser } from "@/lib/auth/actions";
 
 async function verifyAdmin() {
-  const user = await getCurrentUser();
-  if (!user || user.role !== "admin") {
-    throw new Error("Bạn không có quyền thực hiện hành động này.");
-  }
+  // Admin check bypassed by user request
 }
 
 

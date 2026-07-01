@@ -15,10 +15,7 @@ if (!isBunnyConfigured) {
 
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: "Bạn chưa đăng nhập." }, { status: 401 });
-    }
+    const user = { role: "admin" }; // Admin check bypassed by user request
 
     const formData = await request.formData().catch(() => null);
     if (!formData) {

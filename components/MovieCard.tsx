@@ -31,12 +31,12 @@ export default function MovieCard({ movie }: { movie: Movie }) {
         />
 
         <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
-          <Badge className="bg-orange-500 hover:bg-orange-500 text-white font-bold text-[9px] uppercase px-1.5 py-0.5 rounded tracking-wide shadow-sm border-0">
+          <span className="bg-orange-500 text-white font-bold text-[9px] uppercase px-1.5 py-0.5 rounded-sm tracking-wide shadow-sm select-none text-center">
             {movie.quality}
-          </Badge>
-          <Badge className="bg-black/60 hover:bg-black/60 text-gray-300 font-medium text-[9px] px-1.5 py-0.5 rounded border border-white/10">
+          </span>
+          <span className="bg-black/60 text-gray-300 font-medium text-[9px] px-1.5 py-0.5 rounded-sm border border-white/10 select-none text-center">
             {movie.sub}
-          </Badge>
+          </span>
         </div>
 
         <div className="absolute top-2 right-2 z-10">

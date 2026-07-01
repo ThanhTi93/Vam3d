@@ -128,8 +128,8 @@ export function HomeGallerySection({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between border-b border-white/5 pb-3">
-        <h2 className="text-lg font-extrabold tracking-widest text-white uppercase flex items-center gap-2">
-          <Camera className="w-5 h-5 text-orange-500 fill-orange-500/20" /> {title}
+        <h2 className="text-sm md:text-lg font-extrabold tracking-widest text-white uppercase flex items-center gap-2">
+          <Camera className="w-4 h-4 md:w-5 md:h-5 text-orange-500 fill-orange-500/20" /> {title}
         </h2>
         {onViewAll && (
           <button onClick={onViewAll} className="text-xs font-bold text-orange-500 hover:text-orange-400 hover:underline cursor-pointer animate-in fade-in">
@@ -456,10 +456,11 @@ export function GalleryDetailModal({ gallery, onClose }: GalleryDetailModalProps
   // Check user subscription level access
   const checkAccess = (requiredPlan: any) => {
     if (!requiredPlan) return true;
+    const requiredLevel = requiredPlan.level || 0;
+    if (requiredLevel === 0) return true; // Free level 0 is open to all
     if (!user) return false;
     if (user.role === "admin") return true;
     const userLevel = user.level || 0;
-    const requiredLevel = requiredPlan.level || 0;
     const isExpired = user.expiredAt ? new Date(user.expiredAt) < new Date() : true;
     if (userLevel < requiredLevel) return false;
     if (requiredLevel > 0 && isExpired) return false;
@@ -474,13 +475,16 @@ export function GalleryDetailModal({ gallery, onClose }: GalleryDetailModalProps
 
     // Access check on gallery load
     if (gallery.plan) {
-      if (!user) {
-        setRestrictedError("Bạn cần đăng nhập để xem bộ sưu tập này.");
-        return;
-      }
-      if (!checkAccess(gallery.plan)) {
-        setRestrictedError(`Bộ sưu tập này yêu cầu gói cước từ ${gallery.plan.name} trở lên và gói phải còn hạn dùng.`);
-        return;
+      const requiredLevel = gallery.plan.level || 0;
+      if (requiredLevel > 0) {
+        if (!user) {
+          setRestrictedError("Bạn cần đăng nhập để xem bộ sưu tập này.");
+          return;
+        }
+        if (!checkAccess(gallery.plan)) {
+          setRestrictedError(`Bộ sưu tập này yêu cầu gói cước từ ${gallery.plan.name} trở lên và gói phải còn hạn dùng.`);
+          return;
+        }
       }
     }
     

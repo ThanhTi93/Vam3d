@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mail, Lock, ArrowRight, Loader2, ShieldAlert } from "lucide-react";
+import { Mail, Lock, ArrowRight, Loader2, ShieldAlert, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ function LoginForm() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -86,7 +87,6 @@ function LoginForm() {
             </div>
           </div>
 
-          {/* Password input field */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between px-1">
               <label className="text-xs font-semibold text-gray-400">Mật khẩu <span className="text-red-400">*</span></label>
@@ -96,14 +96,22 @@ function LoginForm() {
                 <Lock className="w-4 h-4" />
               </span>
               <Input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="pl-11 bg-[#090a0f] border-white/5 hover:border-white/10 focus:border-orange-500/50 text-sm h-11 w-full rounded-xl transition-all"
+                className="pl-11 pr-10 bg-[#090a0f] border-white/5 hover:border-white/10 focus:border-orange-500/50 text-sm h-11 w-full rounded-xl transition-all"
                 disabled={loading}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors cursor-pointer"
+                title={showPassword ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 

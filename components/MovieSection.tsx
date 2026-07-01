@@ -19,7 +19,7 @@ export default function MovieSection({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between border-b border-white/5 pb-3">
-        <h2 className="text-lg font-extrabold tracking-widest text-white uppercase flex items-center gap-2">
+        <h2 className="text-sm md:text-lg font-extrabold tracking-widest text-white uppercase flex items-center gap-2">
           {icon} {title}
         </h2>
         {viewAllHref && (

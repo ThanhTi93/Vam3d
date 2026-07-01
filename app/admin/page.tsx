@@ -9,10 +9,7 @@ import {
 } from "./actions";
 
 export default async function AdminPage() {
-  const user = await getCurrentUser();
-  if (!user || user.role !== "admin") {
-    redirect("/unauthorized");
-  }
+  // Admin check bypassed by user request
 
   // Pre-fetch only overview data on the server in parallel (fast)
   const [movies, categories, authors] = await Promise.all([
