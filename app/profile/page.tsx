@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getSubscriptionPlans, getUserPaymentHistory } from "@/app/admin/actions";
+import { getSubscriptionPlans, getUserPaymentHistory, getUserSubscriptions } from "@/app/admin/actions";
 import { getCurrentUser } from "@/lib/auth/actions";
 import { redirect } from "next/navigation";
 import ProfilePageClient from "./ProfilePageClient";
@@ -16,10 +16,17 @@ export default async function ProfilePage() {
     redirect("/login?redirect=/profile");
   }
 
-  const [plans, payments] = await Promise.all([
+  const [plans, payments, subscriptions] = await Promise.all([
     getSubscriptionPlans(),
-    getUserPaymentHistory()
+    getUserPaymentHistory(),
+    getUserSubscriptions()
   ]);
 
-  return <ProfilePageClient initialPlans={plans || []} initialPayments={payments || []} />;
+  return (
+    <ProfilePageClient
+      initialPlans={plans || []}
+      initialPayments={payments || []}
+      initialSubscriptions={subscriptions || []}
+    />
+  );
 }

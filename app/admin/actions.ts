@@ -1312,6 +1312,18 @@ export async function getUserPaymentHistory() {
   });
 }
 
+export async function getUserSubscriptions() {
+  const user = await getCurrentUser();
+  if (!user || !db) return [];
+  return db.query.userSubscriptions.findMany({
+    where: eq(schema.userSubscriptions.idAccount, user.id),
+    orderBy: (s, { desc }) => [desc(s.updatedAt)],
+    with: {
+      plan: true,
+    },
+  });
+}
+
 export async function incrementGalleryViews(id: number) {
   if (!db) return;
   try {

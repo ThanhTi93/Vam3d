@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { payments, accounts, packages } from "@/lib/db/schema";
+import { payments, accounts, packages, userSubscriptions } from "@/lib/db/schema";
 import { payOS } from "@/lib/payos";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -61,32 +61,77 @@ export async function GET(request: Request) {
 
               if (userAccount) {
                 const timeMonths = pkg.time;
-                let currentExpiredAt = userAccount.expiredAt;
                 let newExpiredAt = new Date();
 
-                // If user has existing level that is equal/higher and not expired, extend it
-                if (
-                  userAccount.level !== null &&
-                  userAccount.level >= pkg.plan.level &&
-                  currentExpiredAt &&
-                  new Date(currentExpiredAt) > new Date()
-                ) {
-                  newExpiredAt = new Date(currentExpiredAt);
-                  newExpiredAt.setMonth(newExpiredAt.getMonth() + timeMonths);
+                // Find existing subscription for this user and this plan
+                const existingSub = await db.query.userSubscriptions.findFirst({
+                  where: and(
+                    eq(userSubscriptions.idAccount, userAccount.id),
+                    eq(userSubscriptions.idPlan, pkg.plan.id)
+                  ),
+                });
+
+                if (existingSub) {
+                  const currentSubExpiredAt = existingSub.expiredAt;
+                  if (currentSubExpiredAt && new Date(currentSubExpiredAt) > new Date()) {
+                    // Extend existing active subscription
+                    newExpiredAt = new Date(currentSubExpiredAt);
+                    newExpiredAt.setMonth(newExpiredAt.getMonth() + timeMonths);
+                  } else {
+                    // Start fresh since it was expired
+                    newExpiredAt.setMonth(newExpiredAt.getMonth() + timeMonths);
+                  }
+
+                  await db
+                    .update(userSubscriptions)
+                    .set({
+                      expiredAt: newExpiredAt,
+                      updatedAt: new Date(),
+                    })
+                    .where(eq(userSubscriptions.id, existingSub.id));
                 } else {
+                  // Insert new subscription record
                   newExpiredAt.setMonth(newExpiredAt.getMonth() + timeMonths);
+                  await db
+                    .insert(userSubscriptions)
+                    .values({
+                      idAccount: userAccount.id,
+                      idPlan: pkg.plan.id,
+                      expiredAt: newExpiredAt,
+                    });
+                }
+
+                // Query all active subscriptions for the user to sync accounts table
+                const allUserSubs = await db.query.userSubscriptions.findMany({
+                  where: eq(userSubscriptions.idAccount, userAccount.id),
+                  with: { plan: true },
+                });
+                const now = new Date();
+                const activeSubsList = (allUserSubs || []).filter(sub => sub.plan && new Date(sub.expiredAt) > now);
+
+                let highestLevel = 0;
+                let highestExpiredAt: Date | null = null;
+                
+                if (activeSubsList.length > 0) {
+                  const highestSub = activeSubsList.reduce((max, current) => {
+                    const maxLevel = max.plan?.level || 0;
+                    const currentLevel = current.plan?.level || 0;
+                    return currentLevel > maxLevel ? current : max;
+                  }, activeSubsList[0]);
+                  highestLevel = highestSub.plan?.level || 0;
+                  highestExpiredAt = new Date(highestSub.expiredAt);
                 }
 
                 await db
                   .update(accounts)
                   .set({
-                    level: pkg.plan.level,
-                    expiredAt: newExpiredAt,
+                    level: highestLevel,
+                    expiredAt: highestExpiredAt,
                   })
                   .where(eq(accounts.id, userAccount.id));
 
                 console.log(
-                  `[Fail-safe API Check] User ID ${userAccount.id} upgraded to Level ${pkg.plan.level} until ${newExpiredAt.toISOString()}`
+                  `[Fail-safe API Check] User ID ${userAccount.id} subscriptions updated. Highest Active: Level ${highestLevel} until ${highestExpiredAt ? highestExpiredAt.toISOString() : "N/A"}`
                 );
 
                 revalidatePath("/");

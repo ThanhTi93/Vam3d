@@ -16,12 +16,14 @@ const AvatarUpload = React.lazy(() => import("@/app/components/AvatarUpload"));
 interface ProfilePageClientProps {
   initialPlans: any[];
   initialPayments: any[];
+  initialSubscriptions?: any[];
 }
 
-export default function ProfilePageClient({ initialPlans, initialPayments }: ProfilePageClientProps) {
+export default function ProfilePageClient({ initialPlans, initialPayments, initialSubscriptions = [] }: ProfilePageClientProps) {
   const { user, refreshUser } = useAuth();
   const [plans] = useState<any[]>(initialPlans);
   const [payments] = useState<any[]>(initialPayments);
+  const [subscriptions] = useState<any[]>(initialSubscriptions);
   const [showProfileUploader, setShowProfileUploader] = useState(false);
 
   if (!user) return null;
@@ -163,6 +165,33 @@ export default function ProfilePageClient({ initialPlans, initialPayments }: Pro
                     </Button>
                   </Link>
                 </div>
+
+                {subscriptions && subscriptions.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
+                    <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Chi tiết các gói đăng ký</p>
+                    <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                      {subscriptions.map((sub: any) => {
+                        const isSubExpired = new Date(sub.expiredAt) < new Date();
+                        return (
+                          <div key={sub.id} className="flex items-center justify-between text-[11px] bg-white/2 p-2 rounded-lg border border-white/2 hover:border-white/5 transition-all">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSubExpired ? "bg-red-500" : "bg-green-500 animate-pulse"}`} />
+                              <span className="font-bold text-white truncate">{sub.plan?.name || "VIP"}</span>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="text-[9px] text-gray-400 block">
+                                {isSubExpired ? "Hết hạn" : "Hạn dùng"}
+                              </span>
+                              <span className={`font-mono text-[9px] font-bold ${isSubExpired ? "text-gray-500" : "text-amber-400"}`}>
+                                {new Date(sub.expiredAt).toLocaleDateString("vi-VN")}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </Card>

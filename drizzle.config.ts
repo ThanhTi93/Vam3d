@@ -1,6 +1,7 @@
 import { defineConfig } from "drizzle-kit";
 import dotenv from "dotenv";
 
+delete process.env.DATABASE_URL;
 dotenv.config({ path: ".env.local" });
 
 export default defineConfig({

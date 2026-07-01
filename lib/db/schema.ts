@@ -414,3 +414,25 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
     references: [packages.id],
   }),
 }));
+
+// 23. User Subscriptions Table
+export const userSubscriptions = pgTable("user_subscriptions", {
+  id: serial("id").primaryKey(),
+  idAccount: integer("id_account").references(() => accounts.id, { onDelete: "cascade" }),
+  idPlan: integer("id_plan").references(() => plans.id, { onDelete: "cascade" }),
+  expiredAt: timestamp("expired_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User Subscriptions Relations
+export const userSubscriptionsRelations = relations(userSubscriptions, ({ one }) => ({
+  account: one(accounts, {
+    fields: [userSubscriptions.idAccount],
+    references: [accounts.id],
+  }),
+  plan: one(plans, {
+    fields: [userSubscriptions.idPlan],
+    references: [plans.id],
+  }),
+}));
