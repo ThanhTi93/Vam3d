@@ -228,14 +228,14 @@ export async function getCurrentUser() {
         activeLevel = highestSub.plan?.level || 0;
         activeExpiredAt = new Date(highestSub.expiredAt);
         vipDebugInfo += `activePlan:${highestSub.plan?.name}, level:${activeLevel}; `;
-      }
-
-      // Check if there is an admin-assigned direct active VIP in the DB
-      const dbVipActive = (user.level || 0) > 0 && user.expiredAt && new Date(user.expiredAt) > now;
-      if (dbVipActive && (user.level || 0) > activeLevel) {
-        activeLevel = user.level || 0;
-        activeExpiredAt = user.expiredAt;
-        vipDebugInfo += `adminVipLevel:${activeLevel}; `;
+      } else {
+        // Check if there is an admin-assigned direct active VIP in the DB
+        const dbVipActive = (user.level || 0) > 0 && user.expiredAt && new Date(user.expiredAt) > now;
+        if (dbVipActive) {
+          activeLevel = user.level || 0;
+          activeExpiredAt = user.expiredAt;
+          vipDebugInfo += `adminVipLevel:${activeLevel}; `;
+        }
       }
     } catch (e: any) {
       console.error("Error calculating dynamic VIP from userSubscriptions:", e);
