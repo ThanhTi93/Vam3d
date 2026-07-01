@@ -25,6 +25,7 @@ export default function ProfilePageClient({ initialPlans, initialPayments, initi
   const [payments] = useState<any[]>(initialPayments);
   const [subscriptions] = useState<any[]>(initialSubscriptions);
   const [showProfileUploader, setShowProfileUploader] = useState(false);
+  const [activeTab, setActiveTab] = useState<"subscriptions" | "history">("subscriptions");
 
   if (!user) return null;
 
@@ -165,169 +166,172 @@ export default function ProfilePageClient({ initialPlans, initialPayments, initi
                     </Button>
                   </Link>
                 </div>
-
-                {subscriptions && subscriptions.length > 0 && (() => {
-                  const now = new Date();
-                  const active = subscriptions.filter(sub => new Date(sub.expiredAt) > now);
-                  const expired = subscriptions.filter(sub => new Date(sub.expiredAt) <= now);
-
-                  return (
-                    <div className="mt-4 pt-4 border-t border-white/5 space-y-4">
-                      {/* Active Subscriptions */}
-                      {active.length > 0 && (
-                        <div className="space-y-2">
-                          <p className="text-[10px] font-black uppercase text-green-400 tracking-wider flex items-center gap-1.5 select-none">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                            Đang hoạt động ({active.length})
-                          </p>
-                          <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
-                            {active.map((sub: any) => (
-                              <div key={sub.id} className="flex items-center justify-between text-[11px] bg-green-500/5 border border-green-500/10 p-2 rounded-lg hover:bg-green-500/10 transition-all">
-                                <span className="font-bold text-white truncate">{sub.plan?.name || "VIP"}</span>
-                                <div className="text-right shrink-0">
-                                  <span className="text-[9px] text-gray-400 block">Hạn dùng</span>
-                                  <span className="font-mono text-[9px] font-bold text-amber-400">
-                                    {new Date(sub.expiredAt).toLocaleDateString("vi-VN")}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Expired Subscriptions */}
-                      {expired.length > 0 && (
-                        <div className="space-y-2">
-                          <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider flex items-center gap-1.5 select-none">
-                            <span className="w-1.5 h-1.5 rounded-full bg-gray-500" />
-                            Đã hết hạn ({expired.length})
-                          </p>
-                          <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
-                            {expired.map((sub: any) => (
-                              <div key={sub.id} className="flex items-center justify-between text-[11px] bg-white/2 border border-white/2 p-2 rounded-lg hover:border-white/5 transition-all opacity-60">
-                                <span className="font-medium text-gray-400 truncate">{sub.plan?.name || "VIP"}</span>
-                                <div className="text-right shrink-0">
-                                  <span className="text-[9px] text-gray-500 block">Hết hạn</span>
-                                  <span className="font-mono text-[9px] font-bold text-gray-500">
-                                    {new Date(sub.expiredAt).toLocaleDateString("vi-VN")}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
               </div>
             </div>
           </Card>
         </div>
 
-        {/* Right Column: Transaction History */}
+        {/* Right Column: Manage packages & transaction history */}
         <div className="md:col-span-2 space-y-6">
           <Card className="bg-[#131520] border-white/5 p-6 rounded-2xl shadow-xl min-h-[380px] flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
-                  <History className="w-5 h-5" />
+            <div className="space-y-6">
+              {/* Header with Switch Tabs */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
+                    {activeTab === "subscriptions" ? <Award className="w-5 h-5" /> : <History className="w-5 h-5" />}
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-black text-white uppercase tracking-wider">
+                      {activeTab === "subscriptions" ? "Gói đã đăng ký" : "Lịch sử đăng ký"}
+                    </h2>
+                    <p className="text-[10px] text-gray-500">
+                      {activeTab === "subscriptions" 
+                        ? "Thông tin các gói cước và thời hạn hiệu lực của tài khoản" 
+                        : "Danh sách các giao dịch thanh toán gói cước của tài khoản"}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-sm font-black text-white uppercase tracking-wider">Lịch sử đăng ký gói</h2>
-                  <p className="text-[10px] text-gray-500">Danh sách các giao dịch thanh toán gói cước của tài khoản</p>
+
+                {/* Tab Switcher */}
+                <div className="flex bg-[#090a0f] p-1 rounded-xl border border-white/5 shrink-0 select-none">
+                  <button
+                    onClick={() => setActiveTab("subscriptions")}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase transition-all cursor-pointer ${
+                      activeTab === "subscriptions"
+                        ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/10"
+                        : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    Gói đã đăng ký
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("history")}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase transition-all cursor-pointer ${
+                      activeTab === "history"
+                        ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/10"
+                        : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    Lịch sử đăng ký
+                  </button>
                 </div>
               </div>
 
+              {/* Tab Contents */}
               <div className="pt-2">
-                {payments && payments.length > 0 ? (
-                  <div className="overflow-x-auto custom-scrollbar">
-                    <table className="w-full text-left border-collapse text-xs">
-                      <thead>
-                        <tr className="border-b border-white/5 text-gray-500 uppercase font-black tracking-wide">
-                          <th className="pb-3 font-bold">Mã</th>
-                          <th className="pb-3 font-bold">Gói cước</th>
-                          <th className="pb-3 font-bold">Thời hạn</th>
-                          <th className="pb-3 font-bold text-right">Số tiền</th>
-                          <th className="pb-3 font-bold text-center">Trạng thái</th>
-                          <th className="pb-3 font-bold text-center">Hiệu lực</th>
-                          <th className="pb-3 font-bold text-right">Ngày mua</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/5 text-gray-300">
-                        {payments.map((p) => {
-                          const planName = p.package?.plan?.name || "VIP";
-                          const time = p.package?.time ? `${p.package.time} tháng` : "—";
+                {activeTab === "subscriptions" ? (
+                  subscriptions && subscriptions.length > 0 ? (
+                    <div className="overflow-x-auto custom-scrollbar">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-white/5 text-gray-500 uppercase font-black tracking-wide">
+                            <th className="pb-3 font-bold">Gói cước</th>
+                            <th className="pb-3 font-bold text-center">Thời hạn</th>
+                            <th className="pb-3 font-bold text-center">Hiệu lực</th>
+                            <th className="pb-3 font-bold text-right">Ngày mua</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5 text-gray-300">
+                          {subscriptions.map((sub) => {
+                            const planName = sub.plan?.name || "VIP";
+                            const isSubExpired = new Date(sub.expiredAt) < new Date();
+                            const subDaysRemaining = Math.max(
+                              0,
+                              Math.ceil((new Date(sub.expiredAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                            );
 
-                          let statusLabel = "Đang xử lý";
-                          let statusClass = "text-yellow-400 bg-yellow-400/5 border-yellow-400/20";
-                          if (p.status === "paid") {
-                            statusLabel = "Thành công";
-                            statusClass = "text-green-400 bg-green-400/5 border-green-400/20";
-                          } else if (p.status === "cancelled") {
-                            statusLabel = "Đã hủy";
-                            statusClass = "text-red-400 bg-red-400/5 border-red-400/20";
-                          }
-
-                          return (
-                            <tr key={p.id} className="hover:bg-white/5 transition-colors">
-                              <td className="py-3 font-bold text-gray-500 tabular-nums">#{p.orderCode}</td>
-                              <td className="py-3 font-bold text-white">{planName}</td>
-                              <td className="py-3 font-medium">{time}</td>
-                              <td className="py-3 font-bold text-right tabular-nums">
-                                {Math.round(parseFloat(p.amount)).toLocaleString("vi-VN")}đ
-                              </td>
-                              <td className="py-3 text-center">
-                                <span className={`inline-block px-1.5 py-0.5 rounded border text-[8px] font-black uppercase tracking-wider ${statusClass}`}>
-                                  {statusLabel}
-                                </span>
-                              </td>
-                              <td className="py-3 text-center">
-                                {p.status === "paid" ? (
-                                  (() => {
-                                    const purchaseDate = new Date(p.createdAt);
-                                    const timeMonths = p.package?.time || 0;
-                                    const expirationDate = new Date(purchaseDate);
-                                    expirationDate.setMonth(expirationDate.getMonth() + timeMonths);
-                                    const isExpired = new Date() >= expirationDate;
-
-                                    return (
-                                      <span className={`inline-block px-1.5 py-0.5 rounded border text-[8px] font-black uppercase tracking-wider ${
-                                        isExpired
-                                          ? "text-gray-500 bg-gray-500/5 border-gray-500/10"
-                                          : "text-amber-400 bg-amber-400/5 border-amber-400/20 animate-pulse"
-                                      }`}>
-                                        {isExpired ? "Hết hạn" : "Còn hạn"}
-                                      </span>
-                                    );
-                                  })()
-                                ) : (
-                                  <span className="text-gray-500">—</span>
-                                )}
-                              </td>
-                              <td className="py-3 text-right text-gray-400 tabular-nums">
-                                {new Date(p.createdAt).toLocaleDateString("vi-VN")}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                            return (
+                              <tr key={sub.id} className="hover:bg-white/5 transition-colors">
+                                <td className="py-3 font-bold text-white flex items-center gap-2">
+                                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSubExpired ? "bg-red-500" : "bg-green-500 animate-pulse"}`} />
+                                  {planName}
+                                </td>
+                                <td className="py-3 text-center font-bold font-mono text-amber-400 tabular-nums">
+                                  {isSubExpired ? "Hết hạn" : `${subDaysRemaining} ngày`}
+                                </td>
+                                <td className="py-3 text-center">
+                                  <span className={`inline-block px-1.5 py-0.5 rounded border text-[8px] font-black uppercase tracking-wider ${
+                                    isSubExpired
+                                      ? "text-gray-500 bg-gray-500/5 border-gray-500/10"
+                                      : "text-green-400 bg-green-400/5 border-green-400/20"
+                                  }`}>
+                                    {isSubExpired ? "Hết hạn" : "Còn hạn"}
+                                  </span>
+                                </td>
+                                <td className="py-3 text-right text-gray-400 tabular-nums">
+                                  {new Date(sub.createdAt || new Date()).toLocaleDateString("vi-VN")}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-16 text-xs text-gray-500 italic">
+                      Bạn chưa có bất kỳ gói cước đã đăng ký nào.
+                    </div>
+                  )
                 ) : (
-                  <div className="text-center py-16 text-xs text-gray-500 italic">
-                    Bạn chưa thực hiện bất kỳ giao dịch thanh toán nào.
-                  </div>
+                  payments && payments.length > 0 ? (
+                    <div className="overflow-x-auto custom-scrollbar">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-white/5 text-gray-500 uppercase font-black tracking-wide">
+                            <th className="pb-3 font-bold">Mã</th>
+                            <th className="pb-3 font-bold">Gói cước</th>
+                            <th className="pb-3 font-bold">Thời hạn</th>
+                            <th className="pb-3 font-bold text-center">Trạng thái</th>
+                            <th className="pb-3 font-bold text-right">Ngày mua</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5 text-gray-300">
+                          {payments.map((p) => {
+                            const planName = p.package?.plan?.name || "VIP";
+                            const time = p.package?.time ? `${p.package.time} tháng` : "—";
+
+                            let statusLabel = "Đang xử lý";
+                            let statusClass = "text-yellow-400 bg-yellow-400/5 border-yellow-400/20";
+                            if (p.status === "paid") {
+                              statusLabel = "Thành công";
+                              statusClass = "text-green-400 bg-green-400/5 border-green-400/20";
+                            } else if (p.status === "cancelled") {
+                              statusLabel = "Đã hủy";
+                              statusClass = "text-red-400 bg-red-400/5 border-red-400/20";
+                            }
+
+                            return (
+                              <tr key={p.id} className="hover:bg-white/5 transition-colors">
+                                <td className="py-3 font-bold text-gray-500 tabular-nums">#{p.orderCode}</td>
+                                <td className="py-3 font-bold text-white">{planName}</td>
+                                <td className="py-3 font-medium">{time}</td>
+                                <td className="py-3 text-center">
+                                  <span className={`inline-block px-1.5 py-0.5 rounded border text-[8px] font-black uppercase tracking-wider ${statusClass}`}>
+                                    {statusLabel}
+                                  </span>
+                                </td>
+                                <td className="py-3 text-right text-gray-400 tabular-nums">
+                                  {new Date(p.createdAt).toLocaleDateString("vi-VN")}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-16 text-xs text-gray-500 italic">
+                      Bạn chưa thực hiện bất kỳ giao dịch thanh toán nào.
+                    </div>
+                  )
                 )}
               </div>
             </div>
-            
-            {payments && payments.length > 0 && (
-              <div className="text-[10px] text-gray-500 flex items-center gap-1 mt-4 pt-3 border-t border-white/5">
-                <span>Nếu có bất kỳ sai sót nào trong giao dịch thanh toán của bạn, vui lòng liên hệ admin hỗ trợ.</span>
-              </div>
-            )}
+
+            <div className="text-[10px] text-gray-500 flex items-center gap-1 mt-4 pt-3 border-t border-white/5">
+              <span>Nếu có bất kỳ sai sót nào trong giao dịch thanh toán của bạn, vui lòng liên hệ admin hỗ trợ.</span>
+            </div>
           </Card>
         </div>
       </div>
