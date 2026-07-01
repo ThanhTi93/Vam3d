@@ -265,15 +265,14 @@ export async function getCurrentUser() {
         vipDebugInfo += `calcVipLvl:${calculatedVip ? calculatedVip.level : "none"}; `;
 
         if (calculatedVip) {
-          const dbVipActive = activeLevel > 0 && activeExpiredAt && new Date(activeExpiredAt) > now;
-          if (!dbVipActive || calculatedVip.level >= activeLevel) {
-            activeLevel = calculatedVip.level;
-            activeExpiredAt = calculatedVip.expiredAt;
-          }
+          activeLevel = calculatedVip.level;
+          activeExpiredAt = calculatedVip.expiredAt;
         } else {
-          // If calculated VIP has expired but database value is also not active, ensure we drop back to level 0
-          const dbVipActive = activeLevel > 0 && activeExpiredAt && new Date(activeExpiredAt) > now;
-          if (!dbVipActive) {
+          const dbVipActive = (user.level || 0) > 0 && user.expiredAt && new Date(user.expiredAt) > now;
+          if (dbVipActive) {
+            activeLevel = user.level || 0;
+            activeExpiredAt = user.expiredAt;
+          } else {
             activeLevel = 0;
             activeExpiredAt = null;
           }
