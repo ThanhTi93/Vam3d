@@ -36,7 +36,7 @@ async function run() {
     
     if (!userPayments || userPayments.length === 0) continue;
     
-    const paidPayments = userPayments.filter(p => p.status === "paid" && p.package?.plan);
+    const paidPayments = userPayments.filter(p => p.status === "paid" && p.package?.plan) as any[];
     if (paidPayments.length === 0) continue;
     
     // 3. Group payments by plan level

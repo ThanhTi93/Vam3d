@@ -166,32 +166,61 @@ export default function ProfilePageClient({ initialPlans, initialPayments, initi
                   </Link>
                 </div>
 
-                {subscriptions && subscriptions.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
-                    <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Chi tiết các gói đăng ký</p>
-                    <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
-                      {subscriptions.map((sub: any) => {
-                        const isSubExpired = new Date(sub.expiredAt) < new Date();
-                        return (
-                          <div key={sub.id} className="flex items-center justify-between text-[11px] bg-white/2 p-2 rounded-lg border border-white/2 hover:border-white/5 transition-all">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSubExpired ? "bg-red-500" : "bg-green-500 animate-pulse"}`} />
-                              <span className="font-bold text-white truncate">{sub.plan?.name || "VIP"}</span>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <span className="text-[9px] text-gray-400 block">
-                                {isSubExpired ? "Hết hạn" : "Hạn dùng"}
-                              </span>
-                              <span className={`font-mono text-[9px] font-bold ${isSubExpired ? "text-gray-500" : "text-amber-400"}`}>
-                                {new Date(sub.expiredAt).toLocaleDateString("vi-VN")}
-                              </span>
-                            </div>
+                {subscriptions && subscriptions.length > 0 && (() => {
+                  const now = new Date();
+                  const active = subscriptions.filter(sub => new Date(sub.expiredAt) > now);
+                  const expired = subscriptions.filter(sub => new Date(sub.expiredAt) <= now);
+
+                  return (
+                    <div className="mt-4 pt-4 border-t border-white/5 space-y-4">
+                      {/* Active Subscriptions */}
+                      {active.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-black uppercase text-green-400 tracking-wider flex items-center gap-1.5 select-none">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                            Đang hoạt động ({active.length})
+                          </p>
+                          <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
+                            {active.map((sub: any) => (
+                              <div key={sub.id} className="flex items-center justify-between text-[11px] bg-green-500/5 border border-green-500/10 p-2 rounded-lg hover:bg-green-500/10 transition-all">
+                                <span className="font-bold text-white truncate">{sub.plan?.name || "VIP"}</span>
+                                <div className="text-right shrink-0">
+                                  <span className="text-[9px] text-gray-400 block">Hạn dùng</span>
+                                  <span className="font-mono text-[9px] font-bold text-amber-400">
+                                    {new Date(sub.expiredAt).toLocaleDateString("vi-VN")}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        );
-                      })}
+                        </div>
+                      )}
+
+                      {/* Expired Subscriptions */}
+                      {expired.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider flex items-center gap-1.5 select-none">
+                            <span className="w-1.5 h-1.5 rounded-full bg-gray-500" />
+                            Đã hết hạn ({expired.length})
+                          </p>
+                          <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
+                            {expired.map((sub: any) => (
+                              <div key={sub.id} className="flex items-center justify-between text-[11px] bg-white/2 border border-white/2 p-2 rounded-lg hover:border-white/5 transition-all opacity-60">
+                                <span className="font-medium text-gray-400 truncate">{sub.plan?.name || "VIP"}</span>
+                                <div className="text-right shrink-0">
+                                  <span className="text-[9px] text-gray-500 block">Hết hạn</span>
+                                  <span className="font-mono text-[9px] font-bold text-gray-500">
+                                    {new Date(sub.expiredAt).toLocaleDateString("vi-VN")}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </div>
           </Card>
