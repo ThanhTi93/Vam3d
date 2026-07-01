@@ -9,7 +9,12 @@ async function verifyAdmin() {
 }
 
 
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+
+function revalidateAdmin() {
+  revalidateTag("admin-data", "default");
+  revalidateAdmin();
+}
 import { db, schema } from "@/lib/db";
 import { eq, and, ne, sql } from "drizzle-orm";
 import crypto from "crypto";
@@ -18,9 +23,9 @@ import crypto from "crypto";
 // MOVIES
 // ─────────────────────────────────────────────────────────────────
 
-export async function getAdminMovies() {
-  await verifyAdmin();
-  if (!db) return [];
+const getCached_getAdminMovies = unstable_cache(
+  async () => {
+    if (!db) return [];
   const result = await db.query.movies.findMany({
     orderBy: (m, { desc }) => [desc(m.id)],
     with: {
@@ -53,6 +58,14 @@ export async function getAdminMovies() {
       movieCharacters: Array.from(uniqueCharacters.values()).map(character => ({ character }))
     };
   });
+  },
+  ["admin-movies"],
+  { revalidate: 3600, tags: ["admin-data", "admin-movies", "movies"] }
+);
+
+export async function getAdminMovies() {
+  await verifyAdmin();
+  return getCached_getAdminMovies();
 }
 
 export async function createMovie(data: {
@@ -84,7 +97,7 @@ export async function createMovie(data: {
     );
   }
 
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 export async function updateMovie(
@@ -136,7 +149,7 @@ export async function updateMovie(
     await deleteBunnyAsset(oldImgUrl);
   }
 
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 export async function deleteMovie(id: number) {
@@ -154,16 +167,25 @@ export async function deleteMovie(id: number) {
     await deleteBunnyAsset(movie.imgUrl);
   }
 
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 // ─────────────────────────────────────────────────────────────────
 // CATEGORIES
 // ─────────────────────────────────────────────────────────────────
 
-export async function getAdminCategories() {
-  if (!db) return [];
+const getCached_getAdminCategories = unstable_cache(
+  async () => {
+    if (!db) return [];
   return db.query.categories.findMany({ orderBy: (c, { asc }) => [asc(c.id)] });
+  },
+  ["admin-categories"],
+  { revalidate: 3600, tags: ["admin-data", "admin-categories", "categories"] }
+);
+
+export async function getAdminCategories() {
+  await verifyAdmin();
+  return getCached_getAdminCategories();
 }
 
 export async function createCategory(data: {
@@ -173,7 +195,7 @@ export async function createCategory(data: {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
   await db.insert(schema.categories).values({ ...data, status: 1 });
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 export async function updateCategory(
@@ -183,14 +205,14 @@ export async function updateCategory(
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
   await db.update(schema.categories).set(data).where(eq(schema.categories.id, id));
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 export async function deleteCategory(id: number) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
   await db.delete(schema.categories).where(eq(schema.categories.id, id));
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -248,7 +270,7 @@ export async function syncProcessingEpisodes() {
     }
 
     if (updated) {
-      revalidatePath("/");
+      revalidateAdmin();
       revalidateTag("movies", "default");
     }
   } catch (err) {
@@ -256,31 +278,37 @@ export async function syncProcessingEpisodes() {
   }
 }
 
+const getCachedAdminEpisodes = unstable_cache(
+  async (movieId?: number) => {
+    if (!db) return [];
+    if (movieId) {
+      return db.query.episodes.findMany({
+        where: (ep, { eq }) => eq(ep.idMovie, movieId),
+        orderBy: (ep, { asc }) => [asc(ep.id)],
+        with: {
+          episodesActors: { columns: { idActor: true } },
+          episodesCharacters: { columns: { idCharacter: true } },
+        }
+      });
+    }
+    return db.query.episodes.findMany({
+      orderBy: (ep, { asc }) => [asc(ep.id)],
+      with: {
+        movie: { columns: { id: true, name: true } },
+        episodesActors: { columns: { idActor: true } },
+        episodesCharacters: { columns: { idCharacter: true } },
+      },
+    });
+  },
+  ["admin-episodes"],
+  { revalidate: 3600, tags: ["admin-data", "admin-episodes", "episodes"] }
+);
+
 export async function getAdminEpisodes(movieId?: number) {
   await verifyAdmin();
   if (!db) return [];
-  
-  // Auto-sync processing episodes
   await syncProcessingEpisodes();
-
-  if (movieId) {
-    return db.query.episodes.findMany({
-      where: (ep, { eq }) => eq(ep.idMovie, movieId),
-      orderBy: (ep, { asc }) => [asc(ep.id)],
-      with: {
-        episodesActors: { columns: { idActor: true } },
-        episodesCharacters: { columns: { idCharacter: true } },
-      }
-    });
-  }
-  return db.query.episodes.findMany({
-    orderBy: (ep, { asc }) => [asc(ep.id)],
-    with: {
-      movie: { columns: { id: true, name: true } },
-      episodesActors: { columns: { idActor: true } },
-      episodesCharacters: { columns: { idCharacter: true } },
-    },
-  });
+  return getCachedAdminEpisodes(movieId);
 }
 
 export async function createEpisode(data: {
@@ -320,7 +348,7 @@ export async function createEpisode(data: {
     );
   }
 
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 export async function updateEpisode(
@@ -379,7 +407,7 @@ export async function updateEpisode(
     }
   }
 
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 export async function deleteBunnyVideo(videoId: string) {
@@ -472,17 +500,25 @@ export async function deleteEpisode(id: number) {
   }
 
   await db.delete(schema.episodes).where(eq(schema.episodes.id, id));
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 // ─────────────────────────────────────────────────────────────────
 // ACTORS
 // ─────────────────────────────────────────────────────────────────
 
+const getCached_getAdminActors = unstable_cache(
+  async () => {
+    if (!db) return [];
+  return db.query.actors.findMany({ orderBy: (a, { asc }) => [asc(a.name)] });
+  },
+  ["admin-actors"],
+  { revalidate: 3600, tags: ["admin-data", "admin-actors", "actors"] }
+);
+
 export async function getAdminActors() {
   await verifyAdmin();
-  if (!db) return [];
-  return db.query.actors.findMany({ orderBy: (a, { asc }) => [asc(a.name)] });
+  return getCached_getAdminActors();
 }
 
 export async function createActor(data: {
@@ -538,10 +574,18 @@ export async function deleteActor(id: number) {
 // CHARACTERS
 // ─────────────────────────────────────────────────────────────────
 
+const getCached_getAdminCharacters = unstable_cache(
+  async () => {
+    if (!db) return [];
+  return db.query.characters.findMany({ orderBy: (c, { asc }) => [asc(c.name)] });
+  },
+  ["admin-characters"],
+  { revalidate: 3600, tags: ["admin-data", "admin-characters", "characters"] }
+);
+
 export async function getAdminCharacters() {
   await verifyAdmin();
-  if (!db) return [];
-  return db.query.characters.findMany({ orderBy: (c, { asc }) => [asc(c.name)] });
+  return getCached_getAdminCharacters();
 }
 
 export async function createCharacter(data: {
@@ -597,13 +641,21 @@ export async function deleteCharacter(id: number) {
 // PLANS
 // ─────────────────────────────────────────────────────────────────
 
-export async function getAdminPlans() {
-  await verifyAdmin();
-  if (!db) return [];
+const getCached_getAdminPlans = unstable_cache(
+  async () => {
+    if (!db) return [];
   return db.query.plans.findMany({
     with: { features: true },
     orderBy: (p, { asc }) => [asc(p.id)],
   });
+  },
+  ["admin-plans"],
+  { revalidate: 3600, tags: ["admin-data", "admin-plans", "plans"] }
+);
+
+export async function getAdminPlans() {
+  await verifyAdmin();
+  return getCached_getAdminPlans();
 }
 
 export async function createPlan(data: {
@@ -618,7 +670,7 @@ export async function createPlan(data: {
     priceMonth: data.priceMonth.toString(),
     status: 1,
   });
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 export async function updatePlan(
@@ -639,68 +691,84 @@ export async function updatePlan(
       }),
     })
     .where(eq(schema.plans.id, id));
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 export async function deletePlan(id: number) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
   await db.delete(schema.plans).where(eq(schema.plans.id, id));
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 // ─────────────────────────────────────────────────────────────────
 // FEATURES
 // ─────────────────────────────────────────────────────────────────
 
-export async function getAdminFeatures() {
-  await verifyAdmin();
-  if (!db) return [];
+const getCached_getAdminFeatures = unstable_cache(
+  async () => {
+    if (!db) return [];
   return db.query.features.findMany({
     with: { plan: { columns: { id: true, name: true } } },
     orderBy: (f, { asc }) => [asc(f.idPlan), asc(f.id)],
   });
+  },
+  ["admin-features"],
+  { revalidate: 3600, tags: ["admin-data", "admin-features", "features"] }
+);
+
+export async function getAdminFeatures() {
+  await verifyAdmin();
+  return getCached_getAdminFeatures();
 }
 
 export async function createFeature(data: { idPlan: number; name: string; available?: boolean }) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
   await db.insert(schema.features).values({ ...data, available: data.available ?? true });
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 export async function updateFeature(id: number, data: { idPlan?: number; name?: string; available?: boolean }) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
   await db.update(schema.features).set(data).where(eq(schema.features.id, id));
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 export async function deleteFeature(id: number) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
   await db.delete(schema.features).where(eq(schema.features.id, id));
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 // ─────────────────────────────────────────────────────────────────
 // PACKAGES
 // ─────────────────────────────────────────────────────────────────
 
-export async function getAdminPackages() {
-  await verifyAdmin();
-  if (!db) return [];
+const getCached_getAdminPackages = unstable_cache(
+  async () => {
+    if (!db) return [];
   return db.query.packages.findMany({
     with: { plan: { columns: { id: true, name: true } } },
     orderBy: (p, { asc }) => [asc(p.idPlan), asc(p.time)],
   });
+  },
+  ["admin-packages"],
+  { revalidate: 3600, tags: ["admin-data", "admin-packages", "packages"] }
+);
+
+export async function getAdminPackages() {
+  await verifyAdmin();
+  return getCached_getAdminPackages();
 }
 
 export async function createPackage(data: { idPlan: number; time: number; discount?: number }) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
   await db.insert(schema.packages).values({ ...data, discount: data.discount?.toString() ?? "0.00" });
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 export async function updatePackage(id: number, data: { idPlan?: number; time?: number; discount?: number }) {
@@ -711,24 +779,32 @@ export async function updatePackage(id: number, data: { idPlan?: number; time?: 
     ...pkgData,
     ...(discount !== undefined && { discount: discount.toString() })
   }).where(eq(schema.packages.id, id));
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 export async function deletePackage(id: number) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
   await db.delete(schema.packages).where(eq(schema.packages.id, id));
-  revalidatePath("/");
+  revalidateAdmin();
 }
 
 // ─────────────────────────────────────────────────────────────────
 // AUTHORS
 // ─────────────────────────────────────────────────────────────────
 
+const getCached_getAdminAuthors = unstable_cache(
+  async () => {
+    if (!db) return [];
+  return db.query.authors.findMany({ orderBy: (a, { asc }) => [asc(a.name)] });
+  },
+  ["admin-authors"],
+  { revalidate: 3600, tags: ["admin-data", "admin-authors", "authors"] }
+);
+
 export async function getAdminAuthors() {
   await verifyAdmin();
-  if (!db) return [];
-  return db.query.authors.findMany({ orderBy: (a, { asc }) => [asc(a.name)] });
+  return getCached_getAdminAuthors();
 }
 
 export async function createAuthor(data: {
@@ -759,13 +835,21 @@ export async function deleteAuthor(id: number) {
 // ACCOUNTS
 // ─────────────────────────────────────────────────────────────────
 
-export async function getAdminAccounts() {
-  await verifyAdmin();
-  if (!db) return [];
+const getCached_getAdminAccounts = unstable_cache(
+  async () => {
+    if (!db) return [];
   return db.query.accounts.findMany({
     orderBy: (a, { desc }) => [desc(a.id)],
     columns: { password: false },
   });
+  },
+  ["admin-accounts"],
+  { revalidate: 3600, tags: ["admin-data", "admin-accounts", "accounts"] }
+);
+
+export async function getAdminAccounts() {
+  await verifyAdmin();
+  return getCached_getAdminAccounts();
 }
 
 export async function updateAccountRole(id: number, role: string) {
@@ -786,7 +870,7 @@ export async function deleteAccount(id: number) {
 
 export async function revalidateAllCache() {
   await verifyAdmin();
-  revalidatePath("/");
+  revalidateAdmin();
   revalidateTag("movies", "default");
   revalidateTag("galleries", "default");
 }
@@ -795,9 +879,9 @@ export async function revalidateAllCache() {
 // AI GALLERIES
 // ─────────────────────────────────────────────────────────────────
 
-export async function getAdminGalleries() {
-  await verifyAdmin();
-  if (!db) return [];
+const getCached_getAdminGalleries = unstable_cache(
+  async () => {
+    if (!db) return [];
   return db.query.aiGalleries.findMany({
     orderBy: (g, { desc }) => [desc(g.createdAt)],
     with: {
@@ -814,6 +898,14 @@ export async function getAdminGalleries() {
       }
     }
   });
+  },
+  ["admin-galleries"],
+  { revalidate: 3600, tags: ["admin-data", "admin-galleries", "galleries"] }
+);
+
+export async function getAdminGalleries() {
+  await verifyAdmin();
+  return getCached_getAdminGalleries();
 }
 
 export async function createGallery(data: {
@@ -850,7 +942,7 @@ export async function createGallery(data: {
     );
   }
 
-  revalidatePath("/");
+  revalidateAdmin();
   revalidateTag("galleries", "default");
 }
 
@@ -895,7 +987,7 @@ export async function updateGallery(
     );
   }
 
-  revalidatePath("/");
+  revalidateAdmin();
   revalidateTag("galleries", "default");
 }
 
@@ -1082,7 +1174,7 @@ export async function deleteGallery(id: number) {
     }
   }
 
-  revalidatePath("/");
+  revalidateAdmin();
   revalidateTag("galleries", "default");
 }
 
@@ -1090,9 +1182,9 @@ export async function deleteGallery(id: number) {
 // COLLECTIONS (grouping of AI Images)
 // ─────────────────────────────────────────────────────────────────
 
-export async function getAdminCollections() {
-  await verifyAdmin();
-  if (!db) return [];
+const getCached_getAdminCollections = unstable_cache(
+  async () => {
+    if (!db) return [];
   return db.query.collections.findMany({
     orderBy: (c, { asc }) => [asc(c.name)],
     with: {
@@ -1103,6 +1195,14 @@ export async function getAdminCollections() {
       },
     },
   });
+  },
+  ["admin-collections"],
+  { revalidate: 3600, tags: ["admin-data", "admin-collections", "collections"] }
+);
+
+export async function getAdminCollections() {
+  await verifyAdmin();
+  return getCached_getAdminCollections();
 }
 
 export async function createCollection(name: string) {
@@ -1113,7 +1213,7 @@ export async function createCollection(name: string) {
     .values({ name })
     .returning({ id: schema.collections.id });
   if (!inserted) throw new Error("Failed to create collection");
-  revalidatePath("/admin");
+  revalidateAdmin();
   return inserted;
 }
 
@@ -1124,7 +1224,7 @@ export async function updateCollection(id: number, name: string) {
     .update(schema.collections)
     .set({ name })
     .where(eq(schema.collections.id, id));
-  revalidatePath("/admin");
+  revalidateAdmin();
 }
 
 export async function deleteCollection(id: number) {
@@ -1132,7 +1232,7 @@ export async function deleteCollection(id: number) {
   if (!db) throw new Error("Database not available");
   // cascade will delete collection_images rows automatically
   await db.delete(schema.collections).where(eq(schema.collections.id, id));
-  revalidatePath("/admin");
+  revalidateAdmin();
 }
 
 export async function addImageToCollection(idCollection: number, idAiImage: number) {
@@ -1147,7 +1247,7 @@ export async function addImageToCollection(idCollection: number, idAiImage: numb
   });
   if (existing) return; // already in collection
   await db.insert(schema.collectionImages).values({ idCollection, idAiImage });
-  revalidatePath("/admin");
+  revalidateAdmin();
 }
 
 export async function removeImageFromCollection(idCollection: number, idAiImage: number) {
@@ -1161,12 +1261,12 @@ export async function removeImageFromCollection(idCollection: number, idAiImage:
         eq(schema.collectionImages.idAiImage, idAiImage)
       )
     );
-  revalidatePath("/admin");
+  revalidateAdmin();
 }
 
-export async function getAdminAiImages() {
-  await verifyAdmin();
-  if (!db) return [];
+const getCached_getAdminAiImages = unstable_cache(
+  async () => {
+    if (!db) return [];
   return db.query.aiImages.findMany({
     orderBy: (img, { desc }) => [desc(img.createdAt)],
     with: {
@@ -1176,6 +1276,14 @@ export async function getAdminAiImages() {
       },
     },
   });
+  },
+  ["admin-ai-images"],
+  { revalidate: 3600, tags: ["admin-data", "admin-ai-images", "ai-images"] }
+);
+
+export async function getAdminAiImages() {
+  await verifyAdmin();
+  return getCached_getAdminAiImages();
 }
 
 export async function getSubscriptionPlans() {

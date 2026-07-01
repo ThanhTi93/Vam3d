@@ -387,9 +387,9 @@ function HomeGalleryLightbox({
       </div>
 
       <div className="absolute inset-0 bottom-[88px] px-4 lg:px-6 pt-4" onClick={(e) => e.stopPropagation()}>
-        <div className={`w-full h-full ${images.length >= 3 ? "grid grid-cols-3 gap-4" : "flex items-center justify-center"}`}>
+        <div className={`w-full h-full ${images.length >= 3 ? "grid grid-cols-1 md:grid-cols-3 gap-4" : "flex items-center justify-center"}`}>
           {images.length >= 3 && (
-            <div onClick={onPrev} className="relative rounded-xl bg-[#090a0f]/40 border border-white/5 cursor-pointer opacity-40 hover:opacity-85 transition-all duration-300 group/side overflow-hidden">
+            <div onClick={onPrev} className="hidden md:block relative rounded-xl bg-[#090a0f]/40 border border-white/5 cursor-pointer opacity-40 hover:opacity-85 transition-all duration-300 group/side overflow-hidden">
               <img src={getBunnyImageUrl(images[(activeIndex - 1 + images.length) % images.length].imgUrl, 'display')} alt="Prev" className="absolute inset-0 w-full h-full object-contain p-3" draggable={false} />
               <div className="absolute inset-0 bg-black/20 opacity-100 group-hover/side:opacity-0 transition-opacity flex items-center justify-center"><ChevronLeft className="w-8 h-8 text-white/40" /></div>
             </div>
@@ -427,7 +427,7 @@ function HomeGalleryLightbox({
             {zoom > 1 && <div className="absolute bottom-3 right-3 text-[10px] text-gray-400 bg-black/60 px-2 py-1 rounded-full border border-white/10 pointer-events-none backdrop-blur-md">Giữ và kéo để di chuyển</div>}
           </div>
           {images.length >= 3 && (
-            <div onClick={onNext} className="relative rounded-xl bg-[#090a0f]/40 border border-white/5 cursor-pointer opacity-40 hover:opacity-85 transition-all duration-300 group/side overflow-hidden">
+            <div onClick={onNext} className="hidden md:block relative rounded-xl bg-[#090a0f]/40 border border-white/5 cursor-pointer opacity-40 hover:opacity-85 transition-all duration-300 group/side overflow-hidden">
               <img src={getBunnyImageUrl(images[(activeIndex + 1) % images.length].imgUrl, 'display')} alt="Next" className="absolute inset-0 w-full h-full object-contain p-3" draggable={false} />
               <div className="absolute inset-0 bg-black/20 opacity-100 group-hover/side:opacity-0 transition-opacity flex items-center justify-center"><ChevronRight className="w-8 h-8 text-white/40" /></div>
             </div>
