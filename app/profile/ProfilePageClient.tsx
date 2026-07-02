@@ -6,7 +6,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { updateUserAvatar } from "@/lib/auth/actions";
 import { getBunnyImageUrl } from "@/lib/utils";
 import Image from "next/image";
@@ -339,9 +339,12 @@ export default function ProfilePageClient({ initialPlans, initialPayments, initi
       {/* Avatar Uploader Dialog */}
       {showProfileUploader && (
         <Dialog open={showProfileUploader} onOpenChange={setShowProfileUploader}>
-          <DialogContent className="bg-[#131520] border border-white/10 rounded-2xl p-6 shadow-2xl max-w-sm">
+          <DialogContent showCloseButton={false} className="bg-[#131520] border border-white/10 rounded-2xl p-6 shadow-2xl max-w-sm">
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-white/5">
               <h3 className="text-sm font-bold text-white">Thay đổi ảnh đại diện</h3>
+              <DialogClose className="text-gray-400 hover:text-white transition-colors cursor-pointer text-sm font-bold select-none">
+                ✕
+              </DialogClose>
             </div>
             <Suspense fallback={<div className="w-24 h-24 rounded-full bg-[#1c1f2f] animate-pulse mx-auto" />}>
               <AvatarUpload
