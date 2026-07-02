@@ -339,7 +339,7 @@ export default function ProfilePageClient({ initialPlans, initialPayments, initi
       {/* Avatar Uploader Dialog */}
       {showProfileUploader && (
         <Dialog open={showProfileUploader} onOpenChange={setShowProfileUploader}>
-          <DialogContent showCloseButton={false} className="bg-[#131520] border border-white/10 rounded-2xl p-6 shadow-2xl max-w-sm">
+          <DialogContent showCloseButton={false} className="bg-[#131520] border border-white/10 rounded-2xl p-6 shadow-2xl max-w-sm [&_[data-slot=dialog-close].absolute]:hidden">
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-white/5">
               <h3 className="text-sm font-bold text-white">Thay đổi ảnh đại diện</h3>
               <DialogClose className="text-gray-400 hover:text-white transition-colors cursor-pointer text-sm font-bold select-none">
