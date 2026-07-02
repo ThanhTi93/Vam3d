@@ -342,12 +342,6 @@ export default function ProfilePageClient({ initialPlans, initialPayments, initi
           <DialogContent className="bg-[#131520] border border-white/10 rounded-2xl p-6 shadow-2xl max-w-sm">
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-white/5">
               <h3 className="text-sm font-bold text-white">Thay đổi ảnh đại diện</h3>
-              <button 
-                onClick={() => setShowProfileUploader(false)} 
-                className="text-gray-400 hover:text-white transition-colors cursor-pointer"
-              >
-                ✕
-              </button>
             </div>
             <Suspense fallback={<div className="w-24 h-24 rounded-full bg-[#1c1f2f] animate-pulse mx-auto" />}>
               <AvatarUpload
