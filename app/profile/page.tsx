@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { getSubscriptionPlans, getUserPaymentHistory, getUserSubscriptions } from "@/app/admin/actions";
+import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth/actions";
 import { redirect } from "next/navigation";
-import ProfilePageClient from "./ProfilePageClient";
+import ProfileContentWrapper from "./ProfileContentWrapper";
+import ProfileSkeleton from "./ProfileSkeleton";
 
 export const metadata: Metadata = {
   title: "Thông Tin Tài Khoản & Lịch Sử VIP",
@@ -16,17 +17,9 @@ export default async function ProfilePage() {
     redirect("/login?redirect=/profile");
   }
 
-  const [plans, payments, subscriptions] = await Promise.all([
-    getSubscriptionPlans(),
-    getUserPaymentHistory(),
-    getUserSubscriptions()
-  ]);
-
   return (
-    <ProfilePageClient
-      initialPlans={plans || []}
-      initialPayments={payments || []}
-      initialSubscriptions={subscriptions || []}
-    />
+    <Suspense fallback={<ProfileSkeleton />}>
+      <ProfileContentWrapper currentUser={user} />
+    </Suspense>
   );
 }

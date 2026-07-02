@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accounts, payments, userSubscriptions } from "@/lib/db/schema";
@@ -164,7 +165,7 @@ export async function logoutUser() {
 /**
  * Retrieves the current logged-in user profile by decrypting the session cookie.
  */
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   if (!db) return null;
 
   try {
@@ -256,7 +257,7 @@ export async function getCurrentUser() {
     } catch (_) {}
     return null;
   }
-}
+});
 
 /**
  * Updates the current logged-in user's avatar image URL.

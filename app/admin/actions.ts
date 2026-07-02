@@ -94,6 +94,8 @@ export async function createMovie(data: {
   }
 
   revalidateAdmin();
+  revalidateTag("movies:all", "default");
+  revalidateTag("movies:hot", "default");
 }
 
 export async function updateMovie(
@@ -146,6 +148,12 @@ export async function updateMovie(
   }
 
   revalidateAdmin();
+  revalidateTag("movies:all", "default");
+  revalidateTag("movies:hot", "default");
+  revalidateTag(`movie:detail-${id}`, "default");
+  revalidateTag("movies:top", "default");
+  revalidateTag("episodes:latest", "default");
+  revalidateTag("episodes:most-viewed", "default");
 }
 
 export async function deleteMovie(id: number) {
@@ -164,6 +172,12 @@ export async function deleteMovie(id: number) {
   }
 
   revalidateAdmin();
+  revalidateTag("movies:all", "default");
+  revalidateTag("movies:hot", "default");
+  revalidateTag(`movie:detail-${id}`, "default");
+  revalidateTag("movies:top", "default");
+  revalidateTag("episodes:latest", "default");
+  revalidateTag("episodes:most-viewed", "default");
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -192,6 +206,8 @@ export async function createCategory(data: {
   if (!db) throw new Error("Database not available");
   await db.insert(schema.categories).values({ ...data, status: 1 });
   revalidateAdmin();
+  revalidateTag("categories:all", "default");
+  revalidateTag("movies:category", "default");
 }
 
 export async function updateCategory(
@@ -202,6 +218,8 @@ export async function updateCategory(
   if (!db) throw new Error("Database not available");
   await db.update(schema.categories).set(data).where(eq(schema.categories.id, id));
   revalidateAdmin();
+  revalidateTag("categories:all", "default");
+  revalidateTag("movies:category", "default");
 }
 
 export async function deleteCategory(id: number) {
@@ -209,6 +227,8 @@ export async function deleteCategory(id: number) {
   if (!db) throw new Error("Database not available");
   await db.delete(schema.categories).where(eq(schema.categories.id, id));
   revalidateAdmin();
+  revalidateTag("categories:all", "default");
+  revalidateTag("movies:category", "default");
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -260,6 +280,7 @@ export async function syncProcessingEpisodes() {
           await db.update(schema.episodes)
             .set({ bunnyStatus: newStatus })
             .where(eq(schema.episodes.id, ep.id));
+          revalidateTag(`movie:detail-${ep.idMovie}`, "default");
           updated = true;
         }
       }
@@ -267,7 +288,10 @@ export async function syncProcessingEpisodes() {
 
     if (updated) {
       revalidateAdmin();
-      revalidateTag("movies", "default");
+      revalidateTag("movies:all", "default");
+      revalidateTag("movies:hot", "default");
+      revalidateTag("episodes:latest", "default");
+      revalidateTag("episodes:most-viewed", "default");
     }
   } catch (err) {
     console.error("Error syncing processing episodes:", err);
@@ -345,6 +369,11 @@ export async function createEpisode(data: {
   }
 
   revalidateAdmin();
+  revalidateTag("episodes:latest", "default");
+  revalidateTag("episodes:most-viewed", "default");
+  revalidateTag(`movie:detail-${data.idMovie}`, "default");
+  revalidateTag("movies:all", "default");
+  revalidateTag("movies:hot", "default");
 }
 
 export async function updateEpisode(
@@ -383,27 +412,20 @@ export async function updateEpisode(
     }
   }
 
-  await db.update(schema.episodes).set(episodeData).where(eq(schema.episodes.id, id));
-
-  if (actorIds !== undefined) {
-    await db.delete(schema.episodesActor).where(eq(schema.episodesActor.idEpisodes, id));
-    if (actorIds.length > 0) {
-      await db.insert(schema.episodesActor).values(
-        actorIds.map((aid) => ({ idActor: aid, idEpisodes: id }))
-      );
-    }
-  }
-
-  if (characterIds !== undefined) {
-    await db.delete(schema.episodesCharacter).where(eq(schema.episodesCharacter.idEpisodes, id));
-    if (characterIds.length > 0) {
-      await db.insert(schema.episodesCharacter).values(
-        characterIds.map((cid) => ({ idCharacter: cid, idEpisodes: id }))
-      );
-    }
-  }
+  const existingEpisode = await db.query.episodes.findFirst({
+    where: eq(schema.episodes.id, id),
+    columns: { idMovie: true }
+  });
+  const idMovie = existingEpisode?.idMovie;
 
   revalidateAdmin();
+  if (idMovie) {
+    revalidateTag(`movie:detail-${idMovie}`, "default");
+  }
+  revalidateTag("episodes:latest", "default");
+  revalidateTag("episodes:most-viewed", "default");
+  revalidateTag("movies:all", "default");
+  revalidateTag("movies:hot", "default");
 }
 
 export async function deleteBunnyVideo(videoId: string) {
@@ -481,15 +503,19 @@ export async function deleteEpisode(id: number) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
 
+  let idMovie: number | null = null;
   try {
     const existing = await db.query.episodes.findFirst({
       where: (ep, { eq }) => eq(ep.id, id),
-      columns: { bunnyVideoId: true }
+      columns: { bunnyVideoId: true, idMovie: true }
     });
-    if (existing && existing.bunnyVideoId) {
-      deleteBunnyVideo(existing.bunnyVideoId).catch(err => {
-        console.error("Failed to delete Bunny video on episode deletion:", err);
-      });
+    if (existing) {
+      idMovie = existing.idMovie;
+      if (existing.bunnyVideoId) {
+        deleteBunnyVideo(existing.bunnyVideoId).catch(err => {
+          console.error("Failed to delete Bunny video on episode deletion:", err);
+        });
+      }
     }
   } catch (err) {
     console.error("Failed to query episode before deletion:", err);
@@ -497,6 +523,13 @@ export async function deleteEpisode(id: number) {
 
   await db.delete(schema.episodes).where(eq(schema.episodes.id, id));
   revalidateAdmin();
+  if (idMovie) {
+    revalidateTag(`movie:detail-${idMovie}`, "default");
+  }
+  revalidateTag("episodes:latest", "default");
+  revalidateTag("episodes:most-viewed", "default");
+  revalidateTag("movies:all", "default");
+  revalidateTag("movies:hot", "default");
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -667,6 +700,7 @@ export async function createPlan(data: {
     status: 1,
   });
   revalidateAdmin();
+  revalidateTag("plans:all", "default");
 }
 
 export async function updatePlan(
@@ -688,6 +722,7 @@ export async function updatePlan(
     })
     .where(eq(schema.plans.id, id));
   revalidateAdmin();
+  revalidateTag("plans:all", "default");
 }
 
 export async function deletePlan(id: number) {
@@ -695,6 +730,7 @@ export async function deletePlan(id: number) {
   if (!db) throw new Error("Database not available");
   await db.delete(schema.plans).where(eq(schema.plans.id, id));
   revalidateAdmin();
+  revalidateTag("plans:all", "default");
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -723,6 +759,7 @@ export async function createFeature(data: { idPlan: number; name: string; availa
   if (!db) throw new Error("Database not available");
   await db.insert(schema.features).values({ ...data, available: data.available ?? true });
   revalidateAdmin();
+  revalidateTag("plans:all", "default");
 }
 
 export async function updateFeature(id: number, data: { idPlan?: number; name?: string; available?: boolean }) {
@@ -730,6 +767,7 @@ export async function updateFeature(id: number, data: { idPlan?: number; name?: 
   if (!db) throw new Error("Database not available");
   await db.update(schema.features).set(data).where(eq(schema.features.id, id));
   revalidateAdmin();
+  revalidateTag("plans:all", "default");
 }
 
 export async function deleteFeature(id: number) {
@@ -737,6 +775,7 @@ export async function deleteFeature(id: number) {
   if (!db) throw new Error("Database not available");
   await db.delete(schema.features).where(eq(schema.features.id, id));
   revalidateAdmin();
+  revalidateTag("plans:all", "default");
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -765,6 +804,7 @@ export async function createPackage(data: { idPlan: number; time: number; discou
   if (!db) throw new Error("Database not available");
   await db.insert(schema.packages).values({ ...data, discount: data.discount?.toString() ?? "0.00" });
   revalidateAdmin();
+  revalidateTag("plans:all", "default");
 }
 
 export async function updatePackage(id: number, data: { idPlan?: number; time?: number; discount?: number }) {
@@ -776,6 +816,7 @@ export async function updatePackage(id: number, data: { idPlan?: number; time?: 
     ...(discount !== undefined && { discount: discount.toString() })
   }).where(eq(schema.packages.id, id));
   revalidateAdmin();
+  revalidateTag("plans:all", "default");
 }
 
 export async function deletePackage(id: number) {
@@ -783,6 +824,7 @@ export async function deletePackage(id: number) {
   if (!db) throw new Error("Database not available");
   await db.delete(schema.packages).where(eq(schema.packages.id, id));
   revalidateAdmin();
+  revalidateTag("plans:all", "default");
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -867,8 +909,15 @@ export async function deleteAccount(id: number) {
 export async function revalidateAllCache() {
   await verifyAdmin();
   revalidateAdmin();
-  revalidateTag("movies", "default");
-  revalidateTag("galleries", "default");
+  revalidateTag("movies:all", "default");
+  revalidateTag("movies:hot", "default");
+  revalidateTag("movies:top", "default");
+  revalidateTag("movies:category", "default");
+  revalidateTag("categories:all", "default");
+  revalidateTag("plans:all", "default");
+  revalidateTag("episodes:latest", "default");
+  revalidateTag("episodes:most-viewed", "default");
+  revalidateTag("galleries:latest", "default");
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -939,7 +988,7 @@ export async function createGallery(data: {
   }
 
   revalidateAdmin();
-  revalidateTag("galleries", "default");
+  revalidateTag("galleries:latest", "default");
 }
 
 export async function updateGallery(
@@ -984,7 +1033,7 @@ export async function updateGallery(
   }
 
   revalidateAdmin();
-  revalidateTag("galleries", "default");
+  revalidateTag("galleries:latest", "default");
 }
 
 function cleanFolderName(name: string): string {
@@ -1171,7 +1220,7 @@ export async function deleteGallery(id: number) {
   }
 
   revalidateAdmin();
-  revalidateTag("galleries", "default");
+  revalidateTag("galleries:latest", "default");
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -1282,46 +1331,78 @@ export async function getAdminAiImages() {
   return getCached_getAdminAiImages();
 }
 
-export async function getSubscriptionPlans() {
-  if (!db) return [];
-  return db.query.plans.findMany({
-    where: eq(schema.plans.status, 1),
-    orderBy: (plans, { asc }) => [asc(plans.level)],
-    with: {
-      features: true,
-      packages: {
-        orderBy: (p, { asc }) => [asc(p.time)],
+const getCached_getSubscriptionPlans = unstable_cache(
+  async () => {
+    if (!db) return [];
+    return db.query.plans.findMany({
+      where: eq(schema.plans.status, 1),
+      orderBy: (plans, { asc }) => [asc(plans.level)],
+      with: {
+        features: true,
+        packages: {
+          orderBy: (p, { asc }) => [asc(p.time)],
+        },
       },
-    },
-  });
+    });
+  },
+  ["subscription-plans"],
+  { revalidate: 600, tags: ["plans:all"] }
+);
+
+export async function getSubscriptionPlans() {
+  return getCached_getSubscriptionPlans();
 }
 
-export async function getUserPaymentHistory() {
-  const user = await getCurrentUser();
-  if (!user || !db) return [];
-  return db.query.payments.findMany({
-    where: eq(schema.payments.idAccount, user.id),
-    orderBy: (p, { desc }) => [desc(p.createdAt)],
-    with: {
-      package: {
+export async function getUserPaymentHistory(userId?: number) {
+  let targetUserId = userId;
+  if (!targetUserId) {
+    const user = await getCurrentUser();
+    if (!user) return [];
+    targetUserId = user.id;
+  }
+  if (!db) return [];
+  
+  return unstable_cache(
+    async () => {
+      return db!.query.payments.findMany({
+        where: eq(schema.payments.idAccount, targetUserId!),
+        orderBy: (p, { desc }) => [desc(p.createdAt)],
+        with: {
+          package: {
+            with: {
+              plan: true,
+            },
+          },
+        },
+      });
+    },
+    ["user-payment-history", targetUserId.toString()],
+    { revalidate: 300, tags: [`user:payments-${targetUserId}`] }
+  )();
+}
+
+export async function getUserSubscriptions(userId?: number) {
+  let targetUserId = userId;
+  if (!targetUserId) {
+    const user = await getCurrentUser();
+    if (!user) return [];
+    targetUserId = user.id;
+  }
+  if (!db) return [];
+  
+  return unstable_cache(
+    async () => {
+      return db!.query.userSubscriptions.findMany({
+        where: eq(schema.userSubscriptions.idAccount, targetUserId!),
+        orderBy: (s, { desc }) => [desc(s.updatedAt)],
         with: {
           plan: true,
         },
-      },
+      });
     },
-  });
-}
-
-export async function getUserSubscriptions() {
-  const user = await getCurrentUser();
-  if (!user || !db) return [];
-  return db.query.userSubscriptions.findMany({
-    where: eq(schema.userSubscriptions.idAccount, user.id),
-    orderBy: (s, { desc }) => [desc(s.updatedAt)],
-    with: {
-      plan: true,
-    },
-  });
+    ["user-subscriptions", targetUserId.toString()],
+    { revalidate: 300, tags: [`user:subscriptions-${targetUserId}`] }
+  )();
 }
 
 export async function incrementGalleryViews(id: number) {

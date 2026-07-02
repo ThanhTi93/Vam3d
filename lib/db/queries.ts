@@ -40,7 +40,7 @@ export const getAllMovies = unstable_cache(
     }
   },
   ["all-movies"],
-  { revalidate: 60, tags: ["movies"] }
+  { revalidate: 60, tags: ["movies:all"] }
 );
 
 // ─── Get Hot Movies ──────────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ export const getHotMovies = unstable_cache(
     }
   },
   ["hot-movies"],
-  { revalidate: 60, tags: ["movies"] }
+  { revalidate: 60, tags: ["movies:hot"] }
 );
 
 // ─── Get Movies by Category slug ────────────────────────────────────────────
@@ -95,7 +95,7 @@ export const getMoviesByCategory = (categoryName: string) => unstable_cache(
     }
   },
   ["movies-by-category", categoryName],
-  { revalidate: 120, tags: ["movies"] }
+  { revalidate: 120, tags: ["movies:category", `movies:category-${categoryName}`] }
 )();
 
 // ─── Get Single Movie by ID ──────────────────────────────────────────────────
@@ -164,7 +164,7 @@ export const getMovieById = (id: string) => unstable_cache(
     }
   },
   ["movie-by-id", id],
-  { revalidate: 300, tags: ["movies"] }
+  { revalidate: 300, tags: ["movie:detail", `movie:detail-${id}`] }
 )();
 
 // ─── Get Top Ranked Movies ───────────────────────────────────────────────────
@@ -186,7 +186,7 @@ export const getTopMovies = (limit = 6) => unstable_cache(
     }
   },
   ["top-movies", limit.toString()],
-  { revalidate: 60, tags: ["movies"] }
+  { revalidate: 60, tags: ["movies:top"] }
 )();
 
 // ─── Get All Categories ──────────────────────────────────────────────────────
@@ -203,7 +203,7 @@ export const getAllCategories = unstable_cache(
     }
   },
   ["all-categories"],
-  { revalidate: 300, tags: ["categories"] }
+  { revalidate: 300, tags: ["categories:all"] }
 );
 
 // ─── Get All Plans (Subscription tiers) ─────────────────────────────────────
@@ -221,7 +221,7 @@ export const getAllPlans = unstable_cache(
     }
   },
   ["all-plans"],
-  { revalidate: 600, tags: ["plans"] }
+  { revalidate: 600, tags: ["plans:all"] }
 );
 
 // ─── Get Latest Episodes ─────────────────────────────────────────────────────
@@ -253,7 +253,7 @@ export const getLatestEpisodes = (limit = 12) => unstable_cache(
     }
   },
   ["latest-episodes", limit.toString()],
-  { revalidate: 60, tags: ["episodes", "movies"] }
+  { revalidate: 60, tags: ["episodes:latest"] }
 )();
 
 // ─── Get Most Viewed Episodes ─────────────────────────────────────────────────
@@ -285,7 +285,7 @@ export const getMostViewedEpisodes = (limit = 12) => unstable_cache(
     }
   },
   ["most-viewed-episodes", limit.toString()],
-  { revalidate: 60, tags: ["episodes", "movies"] }
+  { revalidate: 60, tags: ["episodes:most-viewed"] }
 )();
 
 // ─── Get Recommended Episodes (Same Movie or Same Character) ─────────────────
@@ -410,7 +410,7 @@ export const getRecommendedEpisodes = (currentEpisodeId: number, currentMovieId:
     }
   },
   ["recommended-episodes", currentEpisodeId.toString(), currentMovieId.toString(), limit.toString()],
-  { revalidate: 60, tags: ["episodes", "movies"] }
+  { revalidate: 60, tags: ["episodes:recommended", `episodes:recommended-${currentMovieId}`] }
 )();
 
 // ─── Get AI Galleries ────────────────────────────────────────────────────────
@@ -440,5 +440,5 @@ export const getLatestGalleries = unstable_cache(
     }
   },
   ["latest-galleries"],
-  { revalidate: 120, tags: ["galleries"] }
+  { revalidate: 120, tags: ["galleries:latest"] }
 );

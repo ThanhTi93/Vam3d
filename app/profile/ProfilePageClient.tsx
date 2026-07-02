@@ -14,13 +14,15 @@ import Image from "next/image";
 const AvatarUpload = React.lazy(() => import("@/app/components/AvatarUpload"));
 
 interface ProfilePageClientProps {
+  currentUser: any;
   initialPlans: any[];
   initialPayments: any[];
   initialSubscriptions?: any[];
 }
 
-export default function ProfilePageClient({ initialPlans, initialPayments, initialSubscriptions = [] }: ProfilePageClientProps) {
-  const { user, refreshUser } = useAuth();
+export default function ProfilePageClient({ currentUser, initialPlans, initialPayments, initialSubscriptions = [] }: ProfilePageClientProps) {
+  const { user: authUser, refreshUser } = useAuth();
+  const user = currentUser || authUser;
   const [plans] = useState<any[]>(initialPlans);
   const [payments] = useState<any[]>(initialPayments);
   const [subscriptions] = useState<any[]>(initialSubscriptions);
@@ -31,7 +33,7 @@ export default function ProfilePageClient({ initialPlans, initialPayments, initi
 
   const isVip = user.level && user.level > 0;
   const isExpired = user.expiredAt ? new Date(user.expiredAt) < new Date() : true;
-  const daysRemaining = user.expiredAt 
+  const daysRemaining = user.expiredAt
     ? Math.max(0, Math.ceil((new Date(user.expiredAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
     : 0;
 
@@ -48,11 +50,11 @@ export default function ProfilePageClient({ initialPlans, initialPayments, initi
 
   return (
     <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-12 space-y-8 animate-in fade-in duration-300">
-      
+
       {/* Header Navigation */}
       <div className="flex items-center justify-between pb-4 border-b border-white/5">
-        <Link 
-          href="/" 
+        <Link
+          href="/"
           className="text-xs text-gray-400 hover:text-white flex items-center gap-2 group transition-colors"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -64,20 +66,20 @@ export default function ProfilePageClient({ initialPlans, initialPayments, initi
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-        
+
         {/* Left Column: User Profile & VIP Status */}
         <div className="space-y-6 md:col-span-1">
           {/* User Profile Card */}
           <Card className="bg-[#131520] border-white/5 p-6 rounded-2xl flex flex-col items-center text-center relative overflow-hidden shadow-xl">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-500/5 to-transparent rounded-bl-full pointer-events-none" />
-            
+
             {/* User Avatar */}
             <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-orange-500/20 group shadow-lg mb-4 bg-[#1a1d2e]">
-              <Image 
-                src={getBunnyImageUrl(user.imgUrl, 'thumb') || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200"} 
-                alt={user.username} 
-                fill 
-                className="object-cover" 
+              <Image
+                src={getBunnyImageUrl(user.imgUrl, 'thumb') || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200"}
+                alt={user.username}
+                fill
+                className="object-cover"
                 sizes="96px"
               />
             </div>
@@ -87,11 +89,6 @@ export default function ProfilePageClient({ initialPlans, initialPayments, initi
               <Mail className="w-3.5 h-3.5 text-gray-500" />
               {user.email}
             </p>
-            
-            <div className="text-[9px] text-gray-600 mb-4 font-mono select-all">
-              Debug User: level={user.level}, expiredAt={user.expiredAt ? String(user.expiredAt) : "null"}, debug={user.vipDebugInfo || "none"}
-            </div>
-
             <button
               onClick={() => setShowProfileUploader(true)}
               className="text-xs font-bold text-orange-500 hover:text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 px-4 py-2 rounded-xl transition-all cursor-pointer w-full"
@@ -103,7 +100,7 @@ export default function ProfilePageClient({ initialPlans, initialPayments, initi
           {/* VIP Information Card */}
           <Card className="bg-[#131520] border-white/5 p-6 rounded-2xl relative overflow-hidden shadow-xl">
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent rounded-bl-full pointer-events-none" />
-            
+
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
@@ -186,8 +183,8 @@ export default function ProfilePageClient({ initialPlans, initialPayments, initi
                       {activeTab === "subscriptions" ? "Gói đã đăng ký" : "Lịch sử đăng ký"}
                     </h2>
                     <p className="text-[10px] text-gray-500">
-                      {activeTab === "subscriptions" 
-                        ? "Thông tin các gói cước và thời hạn hiệu lực của tài khoản" 
+                      {activeTab === "subscriptions"
+                        ? "Thông tin các gói cước và thời hạn hiệu lực của tài khoản"
                         : "Danh sách các giao dịch thanh toán gói cước của tài khoản"}
                     </p>
                   </div>
@@ -197,21 +194,19 @@ export default function ProfilePageClient({ initialPlans, initialPayments, initi
                 <div className="flex bg-[#090a0f] p-1 rounded-xl border border-white/5 shrink-0 select-none">
                   <button
                     onClick={() => setActiveTab("subscriptions")}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase transition-all cursor-pointer ${
-                      activeTab === "subscriptions"
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase transition-all cursor-pointer ${activeTab === "subscriptions"
                         ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/10"
                         : "text-gray-400 hover:text-white"
-                    }`}
+                      }`}
                   >
                     Gói đã đăng ký
                   </button>
                   <button
                     onClick={() => setActiveTab("history")}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase transition-all cursor-pointer ${
-                      activeTab === "history"
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase transition-all cursor-pointer ${activeTab === "history"
                         ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/10"
                         : "text-gray-400 hover:text-white"
-                    }`}
+                      }`}
                   >
                     Lịch sử đăng ký
                   </button>
@@ -251,11 +246,10 @@ export default function ProfilePageClient({ initialPlans, initialPayments, initi
                                   {isSubExpired ? "Hết hạn" : `${subDaysRemaining} ngày`}
                                 </td>
                                 <td className="py-3 text-center">
-                                  <span className={`inline-block px-1.5 py-0.5 rounded border text-[8px] font-black uppercase tracking-wider ${
-                                    isSubExpired
+                                  <span className={`inline-block px-1.5 py-0.5 rounded border text-[8px] font-black uppercase tracking-wider ${isSubExpired
                                       ? "text-gray-500 bg-gray-500/5 border-gray-500/10"
                                       : "text-green-400 bg-green-400/5 border-green-400/20"
-                                  }`}>
+                                    }`}>
                                     {isSubExpired ? "Hết hạn" : "Còn hạn"}
                                   </span>
                                 </td>

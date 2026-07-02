@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { WatchlistProvider } from "./context/watchlistContext";
@@ -116,6 +117,18 @@ export default function RootLayout({
       <head>
         <JsonLd data={websiteJsonLd} />
         <JsonLd data={organizationJsonLd} />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-FND8B4GNWE"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-FND8B4GNWE');
+          `}
+        </Script>
       </head>
       <body className="min-h-full flex flex-col bg-[#090a0f] text-gray-100 selection:bg-orange-500 selection:text-white">
         <AuthProvider>

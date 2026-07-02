@@ -70,13 +70,14 @@ function SearchInput() {
 }
 
 export default function Header() {
+  const router = useRouter();
   const pathname = usePathname();
   if (pathname?.startsWith("/admin")) {
     return null;
   }
   const { watchlist } = useWatchlist();
   const { user, loading: authLoading, logout, refreshUser } = useAuth();
-  
+
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showProfileUploader, setShowProfileUploader] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -114,13 +115,12 @@ export default function Header() {
   }, []);
 
   return (
-    <header className={`sticky top-0 z-40 transition-all duration-300 ${
-      isScrolled 
-        ? "bg-[#090a0f]/80 backdrop-blur-lg border-b border-white/10 shadow-lg" 
+    <header className={`sticky top-0 z-40 transition-all duration-300 ${isScrolled
+        ? "bg-[#090a0f]/80 backdrop-blur-lg border-b border-white/10 shadow-lg"
         : "bg-transparent border-b border-transparent"
-    } py-4 px-4 sm:px-8`}>
+      } py-4 px-4 sm:px-8`}>
       <div className="max-w-[1600px] w-full mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        
+
         {/* Logo + Desktop Nav */}
         <div className="flex items-center justify-between md:justify-start gap-8">
           <Link href="/" className="flex items-center gap-2 group">
@@ -135,9 +135,8 @@ export default function Header() {
           <nav className="hidden lg:flex items-center gap-6">
             <Link
               href="/"
-              className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative group ${
-                pathname === "/" ? "text-orange-500" : "text-gray-400 hover:text-white"
-              }`}
+              className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative group ${pathname === "/" ? "text-orange-500" : "text-gray-400 hover:text-white"
+                }`}
             >
               Trang Chủ
               {pathname === "/" && (
@@ -147,9 +146,8 @@ export default function Header() {
 
             <Link
               href="/phim-hot"
-              className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative flex items-center gap-1 group ${
-                pathname.startsWith("/phim-hot") ? "text-orange-500" : "text-gray-400 hover:text-white"
-              }`}
+              className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative flex items-center gap-1 group ${pathname.startsWith("/phim-hot") ? "text-orange-500" : "text-gray-400 hover:text-white"
+                }`}
             >
               Phim Hot
               <span className="bg-red-600 text-white text-[8px] px-1 py-0.5 rounded-sm font-black tracking-wider uppercase leading-none scale-90 origin-left">New</span>
@@ -159,23 +157,22 @@ export default function Header() {
             </Link>
 
             {/* Thể loại Dropdown */}
-            <div 
+            <div
               className="relative"
               onMouseEnter={() => setIsCategoryOpen(true)}
               onMouseLeave={() => setIsCategoryOpen(false)}
             >
               <button
                 suppressHydrationWarning
-                className={`text-sm font-semibold tracking-wide transition-colors duration-200 flex items-center gap-1 cursor-pointer h-full py-2 ${
-                  categories.some(cat => pathname.startsWith(`/${cat.name}`))
+                className={`text-sm font-semibold tracking-wide transition-colors duration-200 flex items-center gap-1 cursor-pointer h-full py-2 ${categories.some(cat => pathname.startsWith(`/${cat.name}`))
                     ? "text-orange-500"
                     : "text-gray-400 hover:text-white"
-                }`}
+                  }`}
               >
                 Thể loại <ChevronDown className="w-4 h-4" />
               </button>
 
-               {isCategoryOpen && (
+              {isCategoryOpen && (
                 <div className="absolute top-full left-0 pt-2 w-44 z-50">
                   <div className="rounded-xl bg-[#090a0f]/95 border border-white/10 backdrop-blur-xl py-2 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
                     {categories.map((cat) => (
@@ -183,9 +180,8 @@ export default function Header() {
                         key={cat.id}
                         href={`/${cat.name}`}
                         onClick={() => setIsCategoryOpen(false)}
-                        className={`block px-4 py-2 text-xs font-bold hover:bg-orange-500/10 hover:text-orange-500 transition-colors ${
-                          pathname === `/${cat.name}` ? "text-orange-500 bg-orange-500/5" : "text-gray-300"
-                        }`}
+                        className={`block px-4 py-2 text-xs font-bold hover:bg-orange-500/10 hover:text-orange-500 transition-colors ${pathname === `/${cat.name}` ? "text-orange-500 bg-orange-500/5" : "text-gray-300"
+                          }`}
                       >
                         {formatCategoryLabel(cat.name)}
                       </Link>
@@ -197,9 +193,8 @@ export default function Header() {
 
             <Link
               href="/nhan-vat"
-              className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative group ${
-                pathname.startsWith("/nhan-vat") ? "text-orange-500" : "text-gray-400 hover:text-white"
-              }`}
+              className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative group ${pathname.startsWith("/nhan-vat") ? "text-orange-500" : "text-gray-400 hover:text-white"
+                }`}
             >
               Nhân Vật
               {pathname.startsWith("/nhan-vat") && (
@@ -209,9 +204,8 @@ export default function Header() {
 
             <Link
               href="/dien-vien"
-              className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative group ${
-                pathname.startsWith("/dien-vien") ? "text-orange-500" : "text-gray-400 hover:text-white"
-              }`}
+              className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative group ${pathname.startsWith("/dien-vien") ? "text-orange-500" : "text-gray-400 hover:text-white"
+                }`}
             >
               Diễn Viên
               {pathname.startsWith("/dien-vien") && (
@@ -221,9 +215,8 @@ export default function Header() {
 
             <Link
               href="/gallery"
-              className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative group ${
-                pathname.startsWith("/gallery") ? "text-orange-500" : "text-gray-400 hover:text-white"
-              }`}
+              className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative group ${pathname.startsWith("/gallery") ? "text-orange-500" : "text-gray-400 hover:text-white"
+                }`}
             >
               Bộ Sưu Tập AI
               {pathname.startsWith("/gallery") && (
@@ -233,11 +226,10 @@ export default function Header() {
 
             <Link
               href="/upgrade"
-              className={`relative px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all duration-300 border border-yellow-500/50 overflow-hidden group flex items-center justify-center gap-1 ${
-                pathname === "/upgrade"
+              className={`relative px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all duration-300 border border-yellow-500/50 overflow-hidden group flex items-center justify-center gap-1 ${pathname === "/upgrade"
                   ? "bg-gradient-to-r from-yellow-500 via-orange-500 to-red-600 border-transparent text-white shadow-lg shadow-orange-500/40"
                   : "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 hover:from-yellow-500/20 hover:to-orange-500/20 border-yellow-500/30 text-yellow-400 hover:text-white shadow-sm hover:shadow-yellow-500/20"
-              }`}
+                }`}
             >
               {/* Pulse effect border */}
               <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
@@ -247,7 +239,7 @@ export default function Header() {
           </nav>
 
           {/* Mobile hamburger menu button */}
-          <button 
+          <button
             onClick={() => setShowMobileMenu(!showMobileMenu)}
             className="lg:hidden text-gray-400 hover:text-white p-1"
           >
@@ -263,9 +255,8 @@ export default function Header() {
 
           <Link
             href="/watchlist"
-            className={`relative p-2.5 rounded-full bg-[#161925] hover:bg-orange-500/10 border border-white/5 transition-colors group ${
-              pathname === "/watchlist" ? "text-orange-500 border-orange-500/30" : "text-gray-400"
-            }`}
+            className={`relative p-2.5 rounded-full bg-[#161925] hover:bg-orange-500/10 border border-white/5 transition-colors group ${pathname === "/watchlist" ? "text-orange-500 border-orange-500/30" : "text-gray-400"
+              }`}
             title="Tủ phim yêu thích"
           >
             <Heart className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -313,7 +304,7 @@ export default function Header() {
                   <span className="text-xs font-semibold text-gray-300 max-w-[100px] truncate hidden sm:inline">{user.username}</span>
                   <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
                 </button>
-                
+
                 {showProfileMenu && (
                   <div className="absolute right-0 top-12 z-50 bg-[#131520] border border-white/10 rounded-2xl p-4 shadow-2xl shadow-black/80 w-56 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="flex items-center gap-3 pb-3 border-b border-white/5 mb-3">
@@ -324,9 +315,8 @@ export default function Header() {
                         <p className="text-xs font-bold text-white truncate">{user.username}</p>
                         <p className="text-[9px] text-gray-400 truncate">{user.email}</p>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          <span className={`inline-block text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${
-                            user.role === "admin" ? "bg-orange-500/10 text-orange-400 border border-orange-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                          }`}>
+                          <span className={`inline-block text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${user.role === "admin" ? "bg-orange-500/10 text-orange-400 border border-orange-500/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                            }`}>
                             {user.role === "admin" ? "Admin" : "Thành viên"}
                           </span>
                           {Number(user.level) > 0 && user.expiredAt && new Date(user.expiredAt) >= new Date() && (
@@ -342,7 +332,7 @@ export default function Header() {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="space-y-1">
                       <Link
                         href="/profile"
@@ -360,7 +350,7 @@ export default function Header() {
                         <Camera className="w-3.5 h-3.5 text-gray-400" />
                         Đổi ảnh đại diện
                       </button>
-                      
+
                       {user.role === "admin" && (
                         <Link
                           href="/admin"
@@ -371,12 +361,13 @@ export default function Header() {
                           Trang quản trị
                         </Link>
                       )}
-                      
+
                       <button
                         onClick={async () => {
                           await logout();
                           setShowProfileMenu(false);
-                          window.location.reload();
+                          router.push("/login");
+                          router.refresh();
                         }}
                         className="w-full text-left text-xs text-red-400 hover:text-red-300 px-2.5 py-1.5 rounded-lg hover:bg-red-500/10 transition-all flex items-center gap-2 cursor-pointer"
                       >
@@ -394,9 +385,7 @@ export default function Header() {
                   <DialogContent className="bg-[#131520] border border-white/10 rounded-2xl p-6 shadow-2xl max-w-sm">
                     <div className="flex justify-between items-center mb-4 pb-2 border-b border-white/5">
                       <h3 className="text-sm font-bold text-white">Đổi ảnh đại diện</h3>
-                      <button onClick={() => setShowProfileUploader(false)} className="text-gray-400 hover:text-white transition-colors cursor-pointer">
-                        <X className="w-4 h-4" />
-                      </button>
+
                     </div>
                     <Suspense fallback={<div className="w-24 h-24 rounded-full bg-[#1c1f2f] animate-pulse mx-auto" />}>
                       <AvatarUpload
@@ -427,22 +416,20 @@ export default function Header() {
           <Link
             href="/"
             onClick={() => setShowMobileMenu(false)}
-            className={`text-sm font-bold py-1 ${
-              pathname === "/" ? "text-orange-500" : "text-gray-400"
-            }`}
+            className={`text-sm font-bold py-1 ${pathname === "/" ? "text-orange-500" : "text-gray-400"
+              }`}
           >
             Trang Chủ
           </Link>
           <Link
             href="/phim-hot"
             onClick={() => setShowMobileMenu(false)}
-            className={`text-sm font-bold py-1 flex items-center gap-1.5 ${
-              pathname === "/phim-hot" ? "text-orange-500" : "text-gray-400"
-            }`}
+            className={`text-sm font-bold py-1 flex items-center gap-1.5 ${pathname === "/phim-hot" ? "text-orange-500" : "text-gray-400"
+              }`}
           >
             Phim Hot <span className="bg-red-600 text-white text-[9px] px-1 py-0.5 rounded font-black tracking-wide uppercase leading-none">New</span>
           </Link>
-          
+
           {/* Thể loại mobile */}
           <div className="flex flex-col gap-1.5 pl-2 border-l border-white/5">
             <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Thể loại</span>
@@ -451,9 +438,8 @@ export default function Header() {
                 key={cat.id}
                 href={`/${cat.name}`}
                 onClick={() => setShowMobileMenu(false)}
-                className={`text-xs font-bold py-0.5 ${
-                  pathname === `/${cat.name}` ? "text-orange-500" : "text-gray-400"
-                }`}
+                className={`text-xs font-bold py-0.5 ${pathname === `/${cat.name}` ? "text-orange-500" : "text-gray-400"
+                  }`}
               >
                 {formatCategoryLabel(cat.name)}
               </Link>
@@ -463,27 +449,24 @@ export default function Header() {
           <Link
             href="/nhan-vat"
             onClick={() => setShowMobileMenu(false)}
-            className={`text-sm font-bold py-1 ${
-              pathname === "/nhan-vat" ? "text-orange-500" : "text-gray-400"
-            }`}
+            className={`text-sm font-bold py-1 ${pathname === "/nhan-vat" ? "text-orange-500" : "text-gray-400"
+              }`}
           >
             Nhân Vật
           </Link>
           <Link
             href="/dien-vien"
             onClick={() => setShowMobileMenu(false)}
-            className={`text-sm font-bold py-1 ${
-              pathname === "/dien-vien" ? "text-orange-500" : "text-gray-400"
-            }`}
+            className={`text-sm font-bold py-1 ${pathname === "/dien-vien" ? "text-orange-500" : "text-gray-400"
+              }`}
           >
             Diễn Viên
           </Link>
           <Link
             href="/gallery"
             onClick={() => setShowMobileMenu(false)}
-            className={`text-sm font-bold py-1 ${
-              pathname === "/gallery" ? "text-orange-500" : "text-gray-400"
-            }`}
+            className={`text-sm font-bold py-1 ${pathname === "/gallery" ? "text-orange-500" : "text-gray-400"
+              }`}
           >
             Bộ Sưu Tập AI
           </Link>

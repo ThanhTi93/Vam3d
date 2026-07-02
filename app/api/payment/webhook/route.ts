@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { payments, accounts, packages, plans, userSubscriptions } from "@/lib/db/schema";
 import { payOS } from "@/lib/payos";
 import { eq, and } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 export async function POST(request: Request) {
   try {
@@ -149,6 +149,8 @@ export async function POST(request: Request) {
             // Revalidate paths to update VIP access state globally
             revalidatePath("/");
             revalidatePath("/admin");
+            revalidateTag(`user:payments-${userAccount.id}`, "default");
+            revalidateTag(`user:subscriptions-${userAccount.id}`, "default");
           }
         }
       }

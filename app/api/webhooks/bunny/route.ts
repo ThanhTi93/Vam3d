@@ -39,13 +39,22 @@ export async function POST(req: Request) {
       .update(episodes)
       .set({ bunnyStatus: finalStatus })
       .where(eq(episodes.bunnyVideoId, videoId))
-      .returning({ id: episodes.id });
+      .returning({ id: episodes.id, idMovie: episodes.idMovie });
 
     console.log(`Updated episodes status for videoId ${videoId}:`, result);
     
     revalidatePath("/");
     revalidatePath("/admin");
-    revalidateTag("movies", "default");
+    revalidateTag("episodes:latest", "default");
+    revalidateTag("episodes:most-viewed", "default");
+    revalidateTag("movies:all", "default");
+    revalidateTag("movies:hot", "default");
+    
+    for (const row of result) {
+      if (row.idMovie) {
+        revalidateTag(`movie:detail-${row.idMovie}`, "default");
+      }
+    }
 
     return NextResponse.json({ success: true, updatedCount: result.length, status: finalStatus });
   } catch (err: any) {
