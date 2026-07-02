@@ -154,28 +154,161 @@ export function HomeGalleryGrid({
   onSelectGallery: (g: any) => void;
   totalCount?: number;
 }) {
+  const [selectedPlan, setSelectedPlan] = useState("all");
+  const [selectedMovie, setSelectedMovie] = useState("all");
+  const [selectedCharacter, setSelectedCharacter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+
+  // Extract unique movies present in galleries
+  const uniqueMovies = Array.from(
+    new Map(
+      galleries
+        .filter((g) => g.movie && g.movie.id && g.movie.name)
+        .map((g) => [g.movie.id, { id: g.movie.id, name: g.movie.name }])
+    ).values()
+  ).sort((a: any, b: any) => a.name.localeCompare(b.name, "vi"));
+
+  // Extract unique characters present in galleries
+  const uniqueCharacters = Array.from(
+    new Map(
+      galleries
+        .flatMap((g) => g.galleryCharacters || [])
+        .filter((gc) => gc.character && gc.character.id && gc.character.name)
+        .map((gc) => [gc.character.id, { id: gc.character.id, name: gc.character.name }])
+    ).values()
+  ).sort((a: any, b: any) => a.name.localeCompare(b.name, "vi"));
+
+  // Filter & Sort
+  let displayGalleries = [...galleries];
+
+  // Plan filter
+  if (selectedPlan !== "all") {
+    displayGalleries = displayGalleries.filter((g) => {
+      if (selectedPlan === "free") return !g.plan;
+      const planNameLower = g.plan?.name?.toLowerCase() || "";
+      if (selectedPlan === "vip") return planNameLower.includes("vip") && !planNameLower.includes("premium") && !planNameLower.includes("standard");
+      if (selectedPlan === "standard") return planNameLower.includes("standard") || planNameLower === "vip+";
+      if (selectedPlan === "premium") return planNameLower.includes("premium");
+      return true;
+    });
+  }
+
+  // Movie filter
+  if (selectedMovie !== "all") {
+    displayGalleries = displayGalleries.filter((g) => g.movie && String(g.movie.id) === String(selectedMovie));
+  }
+
+  // Character filter
+  if (selectedCharacter !== "all") {
+    displayGalleries = displayGalleries.filter((g) =>
+      g.galleryCharacters &&
+      g.galleryCharacters.some((gc: any) => gc.character && String(gc.character.id) === String(selectedCharacter))
+    );
+  }
+
+  // Sorting
+  if (sortBy === "newest") {
+    displayGalleries.sort((a, b) => b.id - a.id);
+  } else if (sortBy === "views") {
+    displayGalleries.sort((a, b) => (b.views || 0) - (a.views || 0));
+  } else if (sortBy === "images") {
+    displayGalleries.sort((a, b) => (b.images?.length || 0) - (a.images?.length || 0));
+  }
+
   return (
     <div className="space-y-6">
+      {/* Title Header */}
       <div className="flex items-center justify-between border-b border-white/5 pb-3">
         <h1 className="text-xl font-bold flex items-center gap-2 text-white uppercase tracking-wider animate-in slide-in-from-left duration-200">
           <Camera className="w-5 h-5 text-orange-500" />
           BỘ SƯU TẬP AI
         </h1>
         <span className="text-gray-400 text-xs font-semibold bg-[#131520] border border-white/5 px-2.5 py-1 rounded">
-          {totalCount ?? galleries.length} bộ sưu tập
+          {displayGalleries.length} bộ sưu tập
         </span>
       </div>
-      {galleries.length > 0 ? (
+
+      {/* Filter and Sort Bar */}
+      <div className="bg-[#131520] border border-white/5 p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Plan filter */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider select-none">Gói cước</span>
+            <select
+              value={selectedPlan}
+              onChange={(e) => setSelectedPlan(e.target.value)}
+              className="bg-[#090a0f] border border-white/5 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-orange-500 transition-colors min-w-[140px] cursor-pointer"
+            >
+              <option value="all">Tất cả gói</option>
+              <option value="free">Miễn phí (VIP 0)</option>
+              <option value="vip">VAM VIP</option>
+              <option value="standard">VAM STANDARD</option>
+              <option value="premium">VAM PREMIUM</option>
+            </select>
+          </div>
+
+          {/* Movie filter */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider select-none">Phim</span>
+            <select
+              value={selectedMovie}
+              onChange={(e) => setSelectedMovie(e.target.value)}
+              className="bg-[#090a0f] border border-white/5 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-orange-500 transition-colors min-w-[160px] max-w-[200px] cursor-pointer"
+            >
+              <option value="all">Tất cả phim</option>
+              {uniqueMovies.map((m: any) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Character filter */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider select-none">Nhân vật</span>
+            <select
+              value={selectedCharacter}
+              onChange={(e) => setSelectedCharacter(e.target.value)}
+              className="bg-[#090a0f] border border-white/5 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-orange-500 transition-colors min-w-[140px] max-w-[180px] cursor-pointer"
+            >
+              <option value="all">Tất cả nhân vật</option>
+              {uniqueCharacters.map((c: any) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Sort option */}
+        <div className="flex flex-col gap-1.5 shrink-0">
+          <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider select-none">Sắp xếp</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="bg-[#090a0f] border border-white/5 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-orange-500 transition-colors min-w-[140px] cursor-pointer"
+          >
+            <option value="newest">Mới nhất</option>
+            <option value="views">Xem nhiều nhất</option>
+            <option value="images">Nhiều ảnh nhất</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Grid of Galleries */}
+      {displayGalleries.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 animate-in fade-in duration-300">
-          {galleries.map((g) => (
+          {displayGalleries.map((g) => (
             <HomeGalleryCard key={g.id} g={g} onSelect={onSelectGallery} />
           ))}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-16 bg-[#131520]/50 rounded-xl border border-white/5 text-center px-4">
-          <Camera className="w-16 h-16 text-gray-600 mb-4 stroke-1" />
-          <h3 className="text-lg font-bold text-gray-300 mb-1">Chưa có bộ sưu tập nào</h3>
-          <p className="text-gray-500 text-xs">Vui lòng quay lại sau.</p>
+          <Camera className="w-16 h-16 text-gray-600 mb-4 stroke-1 animate-pulse" />
+          <h3 className="text-lg font-bold text-gray-300 mb-1">Không tìm thấy kết quả</h3>
+          <p className="text-gray-500 text-xs">Không có bộ sưu tập nào khớp với bộ lọc của bạn.</p>
         </div>
       )}
     </div>
