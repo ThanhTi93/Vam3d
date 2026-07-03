@@ -1,0 +1,19 @@
+# RoPhim - Xem Phim Online Thuyết Minh Vietsub HD
+
+> Mạng xã hội xem phim trực tuyến miễn phí lớn nhất Việt Nam. Phim lẻ, phim bộ, chiếu rạp, hoạt hình HD – Vietsub, Thuyết Minh, Lồng Tiếng cập nhật nhanh nhất.
+
+## Danh sách trang chính
+
+- [Trang Chủ](https://rophim.vn/): Trang chủ chính của RoPhim, cập nhật các đề cử phim hot nhất, tập phim mới nhất và bộ sưu tập AI.
+- [Phim Hot](https://rophim.vn/phim-hot): Danh sách các bộ phim đề cử hot nhất, nhiều lượt xem nhất.
+- [Bộ Sưu Tập AI](https://rophim.vn/gallery): Nơi chia sẻ các bộ sưu tập ảnh nhân vật AI chất lượng cao từ các bộ phim truyền hình, anime và điện ảnh.
+- [Nhân Vật](https://rophim.vn/nhan-vat): Khám phá các nhân vật nổi bật trong phim.
+- [Diễn Viên](https://rophim.vn/dien-vien): Thông tin các diễn viên nổi tiếng trong các bộ phim.
+- [Nâng Cấp VIP](https://rophim.vn/upgrade): Đăng ký các gói cước VIP như VAM VIP, VAM STANDARD, VAM PREMIUM để xem toàn bộ nội dung chất lượng cao.
+
+## Thể loại phim
+
+- [Phim Lẻ](https://rophim.vn/phim-le): Các bộ phim lẻ chiếu rạp, phim lẻ vietsub, thuyết minh.
+- [Phim Bộ](https://rophim.vn/phim-bo): Các bộ phim truyền hình dài tập từ nhiều quốc gia.
+- [Chiếu Rạp](https://rophim.vn/chieu-rap): Phim chiếu rạp bom tấn mới nhất.
+- [Hoạt Hình](https://rophim.vn/hoat-hinh): Các loạt phim hoạt hình, anime Nhật Bản cập nhật nhanh nhất.
