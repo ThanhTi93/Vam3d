@@ -16,15 +16,16 @@ import { Separator } from "@/components/ui/separator";
 // ─── Sub-component: Home Gallery Card ────────────────────────────────────────
 export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) => void }) {
   const [currentIdx, setCurrentIdx] = useState(0);
+  const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
-    if (!g.images || g.images.length <= 1) return;
+    if (!hovered || !g.images || g.images.length <= 1) return;
     const maxSlides = Math.min(g.images.length, 5);
     const interval = setInterval(() => {
       setCurrentIdx((prev) => (prev + 1) % maxSlides);
     }, 4000);
     return () => clearInterval(interval);
-  }, [g.images]);
+  }, [g.images, hovered]);
 
   const activeImage = g.images && g.images.length > 0 ? g.images[currentIdx] : null;
   const [displaySrc, setDisplaySrc] = useState(activeImage?.imgUrl || "");
@@ -38,6 +39,8 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) =>
   return (
     <Card
       onClick={() => onSelect(g)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       className="bg-[#131520] border border-white/5 rounded-2xl overflow-hidden group flex flex-col relative aspect-[2/3] shadow-xl hover:border-orange-500/50 hover:shadow-orange-500/5 transition-all duration-300 cursor-pointer p-0 gap-0"
     >
       <div className="absolute inset-0 w-full h-full bg-[#090a0f] overflow-hidden">

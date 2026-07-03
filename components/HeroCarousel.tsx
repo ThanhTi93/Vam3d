@@ -171,21 +171,26 @@ export default function HeroCarousel({ hotMovies }: HeroCarouselProps) {
             pointerEvents: idx === heroIndex ? "auto" : "none",
           }}
         >
-          <Image
-            src={getBunnyImageUrl(movie.banner, "display")}
-            alt={movie.title}
-            fill
-            priority={idx === 0}
-            className="object-cover object-center scale-105 brightness-40"
-            sizes="100vw"
-          />
+          {/* Only render image for current, next, and previous slides to save mobile bandwidth */}
+          {(idx === heroIndex ||
+            idx === (heroIndex + 1) % hotMovies.length ||
+            idx === (heroIndex - 1 + hotMovies.length) % hotMovies.length) && (
+            <Image
+              src={getBunnyImageUrl(movie.banner, 'display')}
+              alt={movie.title}
+              fill
+              priority={idx === 0}
+              className="object-cover object-center scale-105 brightness-40"
+              sizes="100vw"
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-[#090a0f] via-[#090a0f]/30 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#090a0f]/80 via-transparent to-transparent" />
         </div>
       ))}
 
       {/* ── CSS Particle Decoration (right side) ── */}
-      <div className="absolute right-0 top-0 w-1/2 h-full z-20 pointer-events-none opacity-90">
+      <div className="hidden lg:block absolute right-0 top-0 w-1/2 h-full z-20 pointer-events-none opacity-90">
         <ParticleEffect />
       </div>
 
