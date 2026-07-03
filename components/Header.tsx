@@ -59,6 +59,7 @@ function SearchInput() {
         type="text"
         id="movie-search"
         placeholder="Tìm phim, đạo diễn, diễn viên..."
+        aria-label="Tìm kiếm phim, đạo diễn, diễn viên"
         value={searchQuery}
         onChange={(e) => handleSearchChange(e.target.value)}
         className="w-full bg-[#161925] border border-white/5 rounded-full py-2 pl-4 pr-10 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors"
@@ -242,6 +243,7 @@ export default function Header() {
           <button
             onClick={() => setShowMobileMenu(!showMobileMenu)}
             className="lg:hidden text-gray-400 hover:text-white p-1"
+            aria-label="Mở menu di động"
           >
             <Menu className="w-6 h-6" />
           </button>
@@ -258,6 +260,7 @@ export default function Header() {
             className={`relative p-2.5 rounded-full bg-[#161925] hover:bg-orange-500/10 border border-white/5 transition-colors group ${pathname === "/watchlist" ? "text-orange-500 border-orange-500/30" : "text-gray-400"
               }`}
             title="Tủ phim yêu thích"
+            aria-label="Tủ phim yêu thích"
           >
             <Heart className="w-5 h-5 group-hover:scale-110 transition-transform" />
             {watchlist.length > 0 && (

@@ -254,6 +254,7 @@ export default function HeroCarousel({ hotMovies }: HeroCarouselProps) {
           size="icon"
           onClick={() => setHeroIndex((p) => (p - 1 + hotMovies.length) % hotMovies.length)}
           className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-2.5 rounded-full bg-black/40 hover:bg-orange-500 text-white border border-white/5 opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
+          aria-label="Slide trước"
         >
           <ChevronLeft className="w-6 h-6" />
         </Button>
@@ -262,6 +263,7 @@ export default function HeroCarousel({ hotMovies }: HeroCarouselProps) {
           size="icon"
           onClick={() => setHeroIndex((p) => (p + 1) % hotMovies.length)}
           className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-2.5 rounded-full bg-black/40 hover:bg-orange-500 text-white border border-white/5 opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
+          aria-label="Slide sau"
         >
           <ChevronRight className="w-6 h-6" />
         </Button>
@@ -272,6 +274,7 @@ export default function HeroCarousel({ hotMovies }: HeroCarouselProps) {
           <button
             key={idx}
             onClick={() => setHeroIndex(idx)}
+            aria-label={`Chuyển đến slide ${idx + 1}`}
             className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
               idx === heroIndex ? "bg-orange-500 w-6" : "bg-gray-500 w-2"
             }`}

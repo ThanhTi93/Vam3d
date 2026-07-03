@@ -47,6 +47,7 @@ export default function MovieCard({ movie }: { movie: Movie }) {
               e.preventDefault();
               toggleWatchlist(movie.id);
             }}
+            aria-label={isInWatchlist(movie.id) ? "Xóa khỏi tủ phim" : "Thêm vào tủ phim"}
             className={`p-1.5 rounded-full backdrop-blur-md border transition-all cursor-pointer ${
               isInWatchlist(movie.id)
                 ? "bg-red-500 border-transparent text-white scale-110"

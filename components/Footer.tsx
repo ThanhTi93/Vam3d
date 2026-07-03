@@ -33,10 +33,10 @@ export default function Footer() {
         <div>
           <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Thông Tin</h3>
           <ul className="space-y-2 text-xs">
-            <li><a href="#" className="hover:text-orange-500 transition-colors">Giới thiệu</a></li>
-            <li><a href="#" className="hover:text-orange-500 transition-colors">Điều khoản sử dụng</a></li>
-            <li><a href="#" className="hover:text-orange-500 transition-colors">Chính sách bảo mật</a></li>
-            <li><a href="#" className="hover:text-orange-500 transition-colors">Khiếu nại bản quyền</a></li>
+            <li><Link href="/" className="hover:text-orange-500 transition-colors">Giới thiệu</Link></li>
+            <li><Link href="/" className="hover:text-orange-500 transition-colors">Điều khoản sử dụng</Link></li>
+            <li><Link href="/" className="hover:text-orange-500 transition-colors">Chính sách bảo mật</Link></li>
+            <li><Link href="/" className="hover:text-orange-500 transition-colors">Khiếu nại bản quyền</Link></li>
           </ul>
         </div>
         <div>

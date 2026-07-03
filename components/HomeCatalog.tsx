@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
+import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Flame, Award, Film, Tv, TrendingUp, Camera, Play, Clock } from "lucide-react";
 import MovieCard from "@/components/MovieCard";
@@ -236,11 +237,12 @@ function LatestEpisodesSection({
             >
               <div className="relative aspect-video w-full bg-[#090a0f] overflow-hidden flex-shrink-0">
                 {displayImage ? (
-                  <img
+                  <Image
                     src={getBunnyImageUrl(displayImage, 'thumb')}
                     alt={`${ep.movie?.name} - ${ep.name}`}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-700">
@@ -308,13 +310,39 @@ function LatestEpisodesSection({
   );
 }
 
+function HomeCatalogSkeleton() {
+  return (
+    <div className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {/* Left column skeletons */}
+        <div className="lg:col-span-3 space-y-10">
+          {[1, 2, 3].map((sectionIdx) => (
+            <div key={sectionIdx} className="space-y-6">
+              <div className="h-6 w-48 bg-white/5 rounded animate-pulse" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map((cardIdx) => (
+                  <div key={cardIdx} className="bg-[#131520] border border-white/5 rounded-xl overflow-hidden aspect-video animate-pulse flex flex-col justify-end p-3">
+                    <div className="h-4 w-3/4 bg-white/10 rounded mb-2" />
+                    <div className="h-3 w-1/2 bg-white/5 rounded" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Right column sidebar skeleton */}
+        <div className="space-y-6">
+          <div className="bg-[#131520] border border-white/5 p-5 rounded-2xl h-80 animate-pulse" />
+          <div className="bg-[#131520] border border-white/5 p-5 rounded-2xl h-40 animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HomeCatalog(props: HomeCatalogProps) {
   return (
-    <Suspense fallback={
-      <div className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-20 flex items-center justify-center">
-        <div className="w-10 h-10 rounded-full border-2 border-t-orange-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
-      </div>
-    }>
+    <Suspense fallback={<HomeCatalogSkeleton />}>
       <HomeCatalogContent {...props} />
     </Suspense>
   );
