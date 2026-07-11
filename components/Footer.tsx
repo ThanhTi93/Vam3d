@@ -21,6 +21,7 @@ export default function Footer() {
               width={140}
               height={40}
               className="object-contain h-10 w-auto"
+              style={{ aspectRatio: "140 / 40" }}
             />
           </div>
           <p className="text-xs leading-relaxed text-gray-500">

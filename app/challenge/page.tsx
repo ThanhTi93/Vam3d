@@ -161,6 +161,7 @@ function ChallengeContent() {
             width={110}
             height={32}
             className="object-contain h-8 w-auto"
+            style={{ aspectRatio: "110 / 32" }}
           />
           <span className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">SECURITY</span>
         </div>

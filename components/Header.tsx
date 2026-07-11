@@ -131,6 +131,7 @@ export default function Header() {
               width={140}
               height={40}
               className="object-contain transition-transform group-hover:scale-105 h-10 w-auto"
+              style={{ aspectRatio: "140 / 40" }}
             />
           </Link>
 

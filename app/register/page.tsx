@@ -73,6 +73,7 @@ function RegisterForm() {
               width={160}
               height={46}
               className="object-contain transition-all group-hover:scale-105 h-11 w-auto"
+              style={{ aspectRatio: "160 / 46" }}
             />
           </Link>
           <h2 className="text-xl font-bold text-white mt-4">Tạo tài khoản mới</h2>

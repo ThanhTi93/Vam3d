@@ -264,17 +264,40 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
           {isSidebarCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
         </button>
 
-        <div className="p-5 border-b border-white/5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 overflow-hidden">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-orange-600 to-amber-400 flex items-center justify-center font-black text-white text-sm shrink-0">R</div>
-              <div className={`transition-all duration-300 ${isSidebarCollapsed ? "lg:opacity-0 lg:w-0 lg:hidden" : "opacity-100"}`}>
-                <span className="text-sm font-extrabold text-white whitespace-nowrap">RoPhim</span>
-                <span className="block text-[10px] text-orange-400 font-bold uppercase tracking-widest whitespace-nowrap">Admin Panel</span>
-              </div>
+        <div className="px-3.5 py-4 border-b border-white/5">
+          <div className="flex items-center justify-between gap-1 w-full">
+            <div className="flex items-center gap-1.5 overflow-hidden w-full">
+              {isSidebarCollapsed ? (
+                <div className="flex items-center justify-center w-full select-none">
+                  <Image
+                    src="/logo.png"
+                    alt="RoPhim Logo"
+                    width={48}
+                    height={18}
+                    className="object-contain max-h-[24px] w-auto shrink-0"
+                    style={{ aspectRatio: "48 / 18" }}
+                    priority
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2 select-none w-full">
+                  <Image
+                    src="/logo.png"
+                    alt="RoPhim Logo"
+                    width={130}
+                    height={38}
+                    className="object-contain max-h-[38px] w-auto shrink-0"
+                    style={{ aspectRatio: "130 / 38" }}
+                    priority
+                  />
+                  <span className="text-[8px] text-orange-400 font-extrabold uppercase tracking-wider bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                    Admin Panel
+                  </span>
+                </div>
+              )}
             </div>
             <button
-              className="lg:hidden p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+              className="lg:hidden p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors shrink-0"
               onClick={() => setIsSidebarOpen(false)}
               aria-label="Đóng menu"
             >
