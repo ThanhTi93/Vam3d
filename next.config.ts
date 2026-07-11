@@ -10,6 +10,7 @@ export default (phase: string) => {
       instantNavigationDevToolsToggle: true,
     },
     images: {
+      unoptimized: true,
       remotePatterns: [
         {
           protocol: "https",

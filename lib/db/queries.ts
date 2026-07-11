@@ -1,5 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { db } from "./index";
+import * as schema from "./schema";
+import { eq, and, or, ilike, inArray, count, isNull } from "drizzle-orm";
 
 
 // ─── Get All Movies ─────────────────────────────────────────────────────────
@@ -414,13 +416,14 @@ export const getRecommendedEpisodes = (currentEpisodeId: number, currentMovieId:
 )();
 
 // ─── Get AI Galleries ────────────────────────────────────────────────────────
-export const getLatestGalleries = unstable_cache(
+export const getLatestGalleries = (limit = 24) => unstable_cache(
   async () => {
     try {
       if (!db) throw new Error("No DB");
 
       return await db.query.aiGalleries.findMany({
         orderBy: (g, { desc }) => [desc(g.id)],
+        limit,
         with: {
           movie: { columns: { id: true, name: true } },
           plan: { columns: { id: true, name: true, level: true } },
@@ -439,6 +442,153 @@ export const getLatestGalleries = unstable_cache(
       return [];
     }
   },
-  ["latest-galleries"],
+  ["latest-galleries", limit.toString()],
   { revalidate: 120, tags: ["galleries:latest"] }
+)();
+
+// ─── Get AI Galleries Paginated (Public Client View) ─────────────────────────
+export const getGalleriesPublicPaginated = (params: {
+  page?: number;
+  limit?: number;
+  plan?: string;
+  movieId?: string;
+  characterId?: string;
+  sortBy?: string;
+}) => {
+  const page = params.page || 1;
+  const limit = params.limit || 12;
+  const plan = params.plan || "all";
+  const movieId = params.movieId || "all";
+  const characterId = params.characterId || "all";
+  const sortBy = params.sortBy || "newest";
+
+  return unstable_cache(
+    async () => {
+      try {
+        if (!db) throw new Error("No DB");
+
+        const offset = (page - 1) * limit;
+
+        // Build where clause
+        const conditions = [eq(schema.aiGalleries.status, 1)];
+
+        if (plan !== "all") {
+          if (plan === "free") {
+            conditions.push(isNull(schema.aiGalleries.idPlan));
+          } else {
+            const planSub = db
+              .select({ id: schema.plans.id })
+              .from(schema.plans)
+              .where(ilike(schema.plans.name, `%${plan}%`));
+            conditions.push(inArray(schema.aiGalleries.idPlan, planSub));
+          }
+        }
+
+        if (movieId !== "all") {
+          conditions.push(eq(schema.aiGalleries.idMovie, parseInt(movieId, 10)));
+        }
+
+        if (characterId !== "all") {
+          const charSub = db
+            .select({ idGallery: schema.galleryCharacter.idGallery })
+            .from(schema.galleryCharacter)
+            .where(eq(schema.galleryCharacter.idCharacter, parseInt(characterId, 10)));
+          conditions.push(inArray(schema.aiGalleries.id, charSub));
+        }
+
+        const whereClause = and(...conditions);
+
+        // Sorting
+        let orderByClause: any = (g: any, { desc }: any) => [desc(g.id)];
+        if (sortBy === "views") {
+          orderByClause = (g: any, { desc }: any) => [desc(g.views)];
+        }
+
+        const items = await db.query.aiGalleries.findMany({
+          where: whereClause,
+          orderBy: orderByClause,
+          limit,
+          offset,
+          with: {
+            movie: { columns: { id: true, name: true } },
+            plan: { columns: { id: true, name: true, level: true } },
+            galleryCharacters: {
+              with: { character: { columns: { id: true, name: true } } }
+            },
+            images: {
+              columns: { id: true, imgUrl: true },
+              with: {
+                collectionImages: true
+              }
+            }
+          }
+        });
+
+        // Count total matching
+        const countResult = await db
+          .select({ count: count() })
+          .from(schema.aiGalleries)
+          .where(whereClause);
+
+        const totalCount = Number(countResult[0]?.count || 0);
+
+        return {
+          galleries: items,
+          totalCount
+        };
+      } catch (err) {
+        console.error("Error in getGalleriesPublicPaginated query:", err);
+        return { galleries: [], totalCount: 0 };
+      }
+    },
+    [
+      "galleries-public-paginated",
+      page.toString(),
+      limit.toString(),
+      plan,
+      movieId,
+      characterId,
+      sortBy
+    ],
+    { revalidate: 120, tags: ["galleries:latest"] }
+  )();
+};
+
+// ─── Get Gallery Filter Options (Active Movies & Characters) ──────────────────
+export const getGalleryFilterOptions = unstable_cache(
+  async () => {
+    try {
+      if (!db) throw new Error("No DB");
+
+      const moviesList = await db
+        .selectDistinct({
+          id: schema.movies.id,
+          name: schema.movies.name,
+        })
+        .from(schema.aiGalleries)
+        .innerJoin(schema.movies, eq(schema.aiGalleries.idMovie, schema.movies.id))
+        .where(eq(schema.aiGalleries.status, 1));
+
+      const charactersList = await db
+        .selectDistinct({
+          id: schema.characters.id,
+          name: schema.characters.name,
+        })
+        .from(schema.galleryCharacter)
+        .innerJoin(schema.characters, eq(schema.galleryCharacter.idCharacter, schema.characters.id))
+        .innerJoin(schema.aiGalleries, eq(schema.galleryCharacter.idGallery, schema.aiGalleries.id))
+        .where(eq(schema.aiGalleries.status, 1));
+
+      return {
+        movies: moviesList.sort((a, b) => a.name.localeCompare(b.name, "vi")),
+        characters: charactersList.sort((a, b) => a.name.localeCompare(b.name, "vi")),
+      };
+    } catch (err) {
+      console.error("Error in getGalleryFilterOptions:", err);
+      return { movies: [], characters: [] };
+    }
+  },
+  ["gallery-filter-options"],
+  { revalidate: 300, tags: ["galleries:latest"] }
 );
+

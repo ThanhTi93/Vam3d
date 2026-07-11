@@ -28,7 +28,7 @@ import {
   getAdminPackages, createPackage, updatePackage, deletePackage,
   revalidateAllCache,
   prepareBunnyUpload,
-  getAdminGalleries, createGallery, updateGallery, deleteGallery,
+  getAdminGalleries, getAdminGalleriesPaginated, createGallery, updateGallery, deleteGallery,
   getAdminCollections, createCollection, updateCollection, deleteCollection,
   addImageToCollection, removeImageFromCollection, getAdminAiImages,
 } from "./actions";
@@ -100,7 +100,7 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
   const [authors, setAuthors] = useState<any[]>(initialData.authors);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [characters, setCharacters] = useState<any[]>([]);
-  const [galleries, setGalleries] = useState<any[]>([]);
+  const [galleriesCount, setGalleriesCount] = useState<number>(0);
   const [collections, setCollections] = useState<any[]>([]);
   const [aiImages, setAiImages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -140,11 +140,11 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
       if (t === "accounts") setAccounts(await getAdminAccounts());
       if (t === "characters") setCharacters(await getAdminCharacters());
       if (t === "galleries") {
-        const [g, m, p, c, cols] = await Promise.all([
-          getAdminGalleries(), getAdminMovies(), getAdminPlans(),
+        const [gData, m, p, c, cols] = await Promise.all([
+          getAdminGalleriesPaginated(1, 1), getAdminMovies(), getAdminPlans(),
           getAdminCharacters(), getAdminCollections()
         ]);
-        setGalleries(g); setMovies(m); setPlans(p); setCharacters(c); setCollections(cols);
+        setGalleriesCount(gData.totalCount); setMovies(m); setPlans(p); setCharacters(c); setCollections(cols);
       }
       if (t === "collections") {
         const [cols, ai] = await Promise.all([getAdminCollections(), getAdminAiImages()]);
@@ -225,7 +225,7 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
         { id: "characters", label: "Nhân Vật", count: characters.length },
       ],
     },
-    { id: "galleries", label: "Bộ Sưu Tập AI", icon: <Camera className="w-4 h-4" />, count: galleries.length },
+    { id: "galleries", label: "Bộ Sưu Tập AI", icon: <Camera className="w-4 h-4" />, count: galleriesCount },
     { id: "collections", label: "Thư Mục Ảnh", icon: <FolderOpen className="w-4 h-4" />, count: collections.length },
     {
       label: "Gói Cước",
@@ -505,12 +505,12 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
           {/* ═══ GALLERIES ══════════════════════════════════════════════════ */}
           {tab === "galleries" && (
             <GalleriesTab
-              galleries={galleries} movies={movies} characters={characters} plans={plans}
+              movies={movies} characters={characters} plans={plans}
               collections={collections}
-              search={search} setSearch={setSearch}
               isPending={isPending} startTransition={startTransition}
               onRefresh={() => loadData("galleries", true)} show={show}
               confirmThenDelete={confirmThenDelete}
+              onCountChange={setGalleriesCount}
             />
           )}
 
@@ -3063,7 +3063,17 @@ function GalleryCard({ g, onSelect, onEdit, onDelete }: any) {
   );
 }
 
-function GalleriesTab({ galleries, movies, characters, plans, collections = [], search, setSearch, isPending, startTransition, onRefresh, show, confirmThenDelete }: any) {
+function GalleriesTab({ movies, characters, plans, collections = [], isPending, startTransition, onRefresh, show, confirmThenDelete, onCountChange }: any) {
+  const [galleries, setGalleries] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const [search, setSearch] = useState("");
+  const [searchChar, setSearchChar] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const [form, setForm] = useState({ name: "", idMovie: 0, idPlan: 0, characterIds: [] as number[] });
   const [editing, setEditing] = useState<number | null>(null);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
@@ -3074,10 +3084,47 @@ function GalleriesTab({ galleries, movies, characters, plans, collections = [], 
   const [activePreviewIndex, setActivePreviewIndex] = useState<number | null>(null);
   // Separate state for lightbox: stores gallery data even after Dialog is closed
   const [lightboxGallery, setLightboxGallery] = useState<any | null>(null);
-  const [searchChar, setSearchChar] = useState("");
   const [characterSearch, setCharacterSearch] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(24);
+
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1); // Reset to page 1 on search change
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  // Fetch galleries from database when page, debouncedSearch, or searchChar changes
+  const loadGalleries = async () => {
+    setLoading(true);
+    try {
+      const limit = 24;
+      const res = await getAdminGalleriesPaginated(page, limit, debouncedSearch, searchChar);
+      setGalleries(res.galleries || []);
+      setTotalCount(res.totalCount || 0);
+      setTotalPages(Math.ceil((res.totalCount || 0) / limit));
+      if (onCountChange) {
+        onCountChange(res.totalCount || 0);
+      }
+    } catch (err) {
+      console.error("Error loading admin galleries:", err);
+      show("Lỗi khi tải bộ sưu tập", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadGalleries();
+  }, [page, debouncedSearch, searchChar]);
+
+  // Custom refresh function to call local loadGalleries and parent onRefresh
+  const handleLocalRefresh = async () => {
+    await Promise.all([loadGalleries(), onRefresh()]);
+  };
 
   useEffect(() => {
     if (selectedGalleryForView) {
@@ -3102,18 +3149,7 @@ function GalleriesTab({ galleries, movies, characters, plans, collections = [], 
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activePreviewIndex, lightboxGallery]);
 
-  const filtered = galleries.filter((g: any) => {
-    const matchesName = !search || 
-      g.name?.toLowerCase().includes(search.toLowerCase()) ||
-      g.movie?.name?.toLowerCase().includes(search.toLowerCase());
-
-    const matchesChar = !searchChar ||
-      g.galleryCharacters?.some((gc: any) =>
-        gc.character?.name === searchChar
-      );
-
-    return matchesName && matchesChar;
-  });
+  const filtered = galleries;
 
   const filteredCharacters = characters.filter((c: any) =>
     c.name?.toLowerCase().includes(characterSearch.toLowerCase())
@@ -3213,7 +3249,7 @@ function GalleriesTab({ galleries, movies, characters, plans, collections = [], 
               imageUrls: urls
             });
           }
-          await onRefresh();
+          await handleLocalRefresh();
           setForm({ name: "", idMovie: 0, idPlan: 0, characterIds: [] });
           setCharacterSearch("");
           setUploadFiles([]);
@@ -3273,22 +3309,72 @@ function GalleriesTab({ galleries, movies, characters, plans, collections = [], 
 
       {/* Grid of gallery cards */}
       <div className="space-y-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {filtered.map((g: any) => (
-            <GalleryCard
-              key={g.id}
-              g={g}
-              onSelect={setSelectedGalleryForView}
-              onEdit={handleEdit}
-              onDelete={(targetG: any) => confirmThenDelete(`Xoá bộ sưu tập "${targetG.name}"?`, () => deleteGallery(targetG.id))}
-            />
-          ))}
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="text-center py-12 text-sm text-gray-500 bg-[#131520] border border-white/5 rounded-2xl">
-            Chưa có bộ sưu tập nào
+        {loading ? (
+          <div className="flex justify-center items-center py-24">
+            <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {filtered.map((g: any) => (
+                <GalleryCard
+                  key={g.id}
+                  g={g}
+                  onSelect={setSelectedGalleryForView}
+                  onEdit={handleEdit}
+                  onDelete={(targetG: any) =>
+                    confirmThenDelete(
+                      `Xoá bộ sưu tập "${targetG.name}"?`,
+                      async () => {
+                        await deleteGallery(targetG.id);
+                        await loadGalleries();
+                      }
+                    )
+                  }
+                />
+              ))}
+            </div>
+
+            {filtered.length === 0 && (
+              <div className="text-center py-12 text-sm text-gray-500 bg-[#131520] border border-white/5 rounded-2xl">
+                Chưa có bộ sưu tập nào
+              </div>
+            )}
+
+            {/* Pagination UI */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#131520] border border-white/5 rounded-2xl p-4 mt-6">
+                <span className="text-xs text-gray-400">
+                  Hiển thị {(page - 1) * 24 + 1} - {Math.min(page * 24, totalCount)} trong tổng số {totalCount} bộ sưu tập
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                    disabled={page === 1 || loading}
+                    className="h-8 border-white/5 text-gray-300 hover:bg-white/5 disabled:opacity-50 cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    Trang trước
+                  </Button>
+                  <span className="text-xs text-gray-300 px-3 select-none">
+                    Trang {page} / {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                    disabled={page === totalPages || loading}
+                    className="h-8 border-white/5 text-gray-300 hover:bg-white/5 disabled:opacity-50 cursor-pointer"
+                  >
+                    Trang sau
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

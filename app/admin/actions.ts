@@ -12,7 +12,7 @@ function revalidateAdmin() {
   revalidateTag("admin-data", "default");
 }
 import { db, schema } from "@/lib/db";
-import { eq, and, ne, sql } from "drizzle-orm";
+import { eq, and, ne, sql, ilike, or, inArray, count } from "drizzle-orm";
 import crypto from "crypto";
 
 // ─────────────────────────────────────────────────────────────────
@@ -952,6 +952,80 @@ export async function getAdminGalleries() {
   await verifyAdmin();
   return getCached_getAdminGalleries();
 }
+
+export async function getAdminGalleriesPaginated(
+  page = 1,
+  limit = 24,
+  search?: string,
+  searchChar?: string
+) {
+  await verifyAdmin();
+  if (!db) return { galleries: [], totalCount: 0 };
+
+  const offset = (page - 1) * limit;
+
+  // Build filters
+  const conditions = [];
+
+  if (search) {
+    const movieSub = db
+      .select({ id: schema.movies.id })
+      .from(schema.movies)
+      .where(ilike(schema.movies.name, `%${search}%`));
+
+    conditions.push(
+      or(
+        ilike(schema.aiGalleries.name, `%${search}%`),
+        inArray(schema.aiGalleries.idMovie, movieSub)
+      )
+    );
+  }
+
+  if (searchChar) {
+    const charSub = db
+      .select({ idGallery: schema.galleryCharacter.idGallery })
+      .from(schema.galleryCharacter)
+      .innerJoin(schema.characters, eq(schema.galleryCharacter.idCharacter, schema.characters.id))
+      .where(eq(schema.characters.name, searchChar));
+
+    conditions.push(inArray(schema.aiGalleries.id, charSub));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const items = await db.query.aiGalleries.findMany({
+    where: whereClause,
+    orderBy: (g, { desc }) => [desc(g.id)],
+    limit,
+    offset,
+    with: {
+      movie: { columns: { id: true, name: true } },
+      plan: { columns: { id: true, name: true, level: true } },
+      galleryCharacters: {
+        with: { character: { columns: { id: true, name: true } } }
+      },
+      images: {
+        columns: { id: true, imgUrl: true },
+        with: {
+          collectionImages: true
+        }
+      }
+    }
+  });
+
+  const countResult = await db
+    .select({ count: count() })
+    .from(schema.aiGalleries)
+    .where(whereClause);
+
+  const totalCount = Number(countResult[0]?.count || 0);
+
+  return {
+    galleries: items,
+    totalCount
+  };
+}
+
 
 export async function createGallery(data: {
   name: string;

@@ -2,6 +2,7 @@
 
 import React, { useState, Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, Lock, User, Phone, ArrowRight, Loader2, ShieldAlert, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
@@ -66,12 +67,13 @@ function RegisterForm() {
         {/* Brand logo header */}
         <div className="text-center mb-6">
           <Link href="/" className="inline-flex items-center gap-2.5 group">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-400 flex items-center justify-center font-black text-white text-2xl shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-all">
-              R
-            </div>
-            <span className="text-2xl font-black tracking-wider bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
-              ROPHIM
-            </span>
+            <Image
+              src="/logo.png"
+              alt="RoPhim Logo"
+              width={160}
+              height={46}
+              className="object-contain transition-all group-hover:scale-105 h-11 w-auto"
+            />
           </Link>
           <h2 className="text-xl font-bold text-white mt-4">Tạo tài khoản mới</h2>
           <p className="text-xs text-gray-400 mt-1">Đăng ký để lưu phim yêu thích và xem bộ sưu tập AI</p>

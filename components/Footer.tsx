@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 export default function Footer() {
@@ -14,8 +15,13 @@ export default function Footer() {
       <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-orange-600 to-amber-400 flex items-center justify-center font-black text-white text-md">R</div>
-            <span className="text-xl font-black tracking-wider text-white">ROPHIM</span>
+            <Image
+              src="/logo.png"
+              alt="vam3d Logo"
+              width={140}
+              height={40}
+              className="object-contain h-10 w-auto"
+            />
           </div>
           <p className="text-xs leading-relaxed text-gray-500">
             Mạng xã hội xem phim trực tuyến miễn phí lớn nhất Việt Nam. Phim HD Vietsub, Thuyết Minh đầy đủ.
@@ -33,10 +39,10 @@ export default function Footer() {
         <div>
           <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Thông Tin</h3>
           <ul className="space-y-2 text-xs">
-            <li><Link href="/" className="hover:text-orange-500 transition-colors">Giới thiệu</Link></li>
-            <li><Link href="/" className="hover:text-orange-500 transition-colors">Điều khoản sử dụng</Link></li>
-            <li><Link href="/" className="hover:text-orange-500 transition-colors">Chính sách bảo mật</Link></li>
-            <li><Link href="/" className="hover:text-orange-500 transition-colors">Khiếu nại bản quyền</Link></li>
+            <li><Link href="/gioi-thieu" className="hover:text-orange-500 transition-colors">Giới thiệu</Link></li>
+            <li><Link href="/dieu-khoan-su-dung" className="hover:text-orange-500 transition-colors">Điều khoản sử dụng</Link></li>
+            <li><Link href="/chinh-sach-bao-mat" className="hover:text-orange-500 transition-colors">Chính sách bảo mật</Link></li>
+            <li><Link href="/khieu-nai-ban-quyen" className="hover:text-orange-500 transition-colors">Khiếu nại bản quyền</Link></li>
           </ul>
         </div>
         <div>

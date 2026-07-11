@@ -125,12 +125,13 @@ export default function Header() {
         {/* Logo + Desktop Nav */}
         <div className="flex items-center justify-between md:justify-start gap-8">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-orange-600 to-amber-400 flex items-center justify-center font-black text-white text-xl shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform">
-              R
-            </div>
-            <span className="text-2xl font-extrabold tracking-wider bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
-              ROPHIM
-            </span>
+            <Image
+              src="/logo.png"
+              alt="RoPhim Logo"
+              width={140}
+              height={40}
+              className="object-contain transition-transform group-hover:scale-105 h-10 w-auto"
+            />
           </Link>
 
           <nav className="hidden lg:flex items-center gap-6">
