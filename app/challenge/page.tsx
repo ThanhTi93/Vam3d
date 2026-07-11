@@ -133,8 +133,7 @@ function ChallengeContent() {
         setStatus("success");
         // Redirect back to nextUrl or home
         setTimeout(() => {
-          router.push(nextUrl);
-          router.refresh();
+          window.location.href = nextUrl;
         }, 1000);
       } else {
         setStatus("error");
