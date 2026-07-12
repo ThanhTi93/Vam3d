@@ -12,7 +12,7 @@ export default (phase: string) => {
     images: {
       unoptimized: true,
       remotePatterns: (() => {
-        const patterns = [
+        const patterns: any[] = [
           {
             protocol: "https",
             hostname: "images.unsplash.com",
