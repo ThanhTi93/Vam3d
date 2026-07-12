@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useTransition } from "react";
+import React, { useState, useEffect, useTransition, useRef } from "react";
 import Image from "next/image";
 import {
   Film, List, Users, User, Package, LayoutDashboard,
@@ -2959,15 +2959,16 @@ function GalleryLightbox({ images, activeIndex, galleryName, onClose, onPrev, on
 // ═══════════════════════════════════════════════════════════════════════
 function GalleryCard({ g, onSelect, onEdit, onDelete }: any) {
   const [currentIdx, setCurrentIdx] = useState(0);
+  const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
-    if (!g.images || g.images.length <= 1) return;
+    if (!hovered || !g.images || g.images.length <= 1) return;
     const maxSlides = Math.min(g.images.length, 5); // Limit slideshow to top 5 images to save bandwidth
     const interval = setInterval(() => {
       setCurrentIdx((prev) => (prev + 1) % maxSlides);
-    }, 4800);
+    }, 4000);
     return () => clearInterval(interval);
-  }, [g.images]);
+  }, [g.images, hovered]);
 
   const activeImage = g.images && g.images.length > 0 ? g.images[currentIdx] : null;
   const [displaySrc, setDisplaySrc] = useState(activeImage?.imgUrl || "");
@@ -2978,10 +2979,14 @@ function GalleryCard({ g, onSelect, onEdit, onDelete }: any) {
       setDisplaySrc(activeImage.imgUrl);
       setCurrentIdx(0);
     }
-  }, [g.id]);
+  }, [g.id, activeImage]);
 
   return (
-    <div className="bg-[#131520] border border-white/5 rounded-2xl overflow-hidden group flex flex-col relative aspect-[2/3] shadow-xl">
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="bg-[#131520] border border-white/5 rounded-2xl overflow-hidden group flex flex-col relative aspect-[2/3] shadow-xl hover:border-orange-500/50 hover:shadow-orange-500/5 transition-all duration-300 cursor-pointer p-0 gap-0"
+    >
       <div
         onClick={() => onSelect(g)}
         className="absolute inset-0 w-full h-full bg-[#090a0f] overflow-hidden cursor-pointer"
@@ -3002,9 +3007,8 @@ function GalleryCard({ g, onSelect, onEdit, onDelete }: any) {
             src={getBunnyImageUrl(displaySrc, 'thumb')}
             alt={g.name}
             fill
-            className="object-cover group-hover:scale-105 transition-opacity duration-500 absolute inset-0 animate-in fade-in"
+            className="object-cover group-hover:scale-105 transition-all duration-500 absolute inset-0 animate-in fade-in"
             sizes="(max-width: 768px) 50vw, 25vw"
-            priority={currentIdx === 0}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -3012,7 +3016,7 @@ function GalleryCard({ g, onSelect, onEdit, onDelete }: any) {
           </div>
         )}
 
-        <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+        <div className="absolute top-2 left-2 z-10">
           {g.plan ? (
             <Badge className="bg-orange-500 hover:bg-orange-500 text-white font-bold text-[9px] uppercase px-1.5 py-0.5 rounded tracking-wide shadow-md border-0">
               {g.plan.name}
@@ -3030,27 +3034,30 @@ function GalleryCard({ g, onSelect, onEdit, onDelete }: any) {
           </span>
         </div>
 
-        {activeImage && (
-          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-10">
-            <span className="text-[10px] font-bold text-white bg-black/60 px-2.5 py-1 rounded-full border border-white/10 backdrop-blur-md shadow-lg">
-              Xem ảnh 🔍 
-            </span>
-          </div>
-        )}
+        <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300 z-10">
+          <span className="text-[10px] font-bold text-white bg-black/60 px-3 py-1.5 rounded-full border border-white/10 backdrop-blur-md shadow-lg scale-90 group-hover:scale-100 transition-transform duration-300">
+            Xem Bộ Sưu Tập 🔍
+          </span>
+        </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-3 bg-black/25 backdrop-blur-[3px] border-t border-white/5 z-10 flex flex-col justify-between min-h-[85px]">
+      <div className="absolute bottom-0 left-0 right-0 p-3 bg-black/40 backdrop-blur-[3px] border-t border-white/5 z-10 flex flex-col justify-between min-h-[85px] group-hover:bg-black/60 transition-colors pointer-events-none">
         <div>
-          <h4 className="text-xs font-bold text-gray-100 line-clamp-1">{g.name}</h4>
-          {g.movie?.name && (
-            <p className="text-[9px] text-orange-400 font-medium line-clamp-1 mt-0.5">
-              🎬 {g.movie.name}
-            </p>
-          )}
+          <h4 className="text-xs font-bold text-gray-100 line-clamp-1 group-hover:text-orange-400 transition-colors">{g.name}</h4>
+          <div className="flex items-center justify-between gap-1 mt-0.5">
+            {g.movie?.name ? (
+              <p className="text-[9px] text-orange-400 font-medium line-clamp-1">
+                🎬 {g.movie.name}
+              </p>
+            ) : <div />}
+            <span className="text-[8px] text-gray-400 shrink-0">
+              👁️ {g.views || 0} lượt xem
+            </span>
+          </div>
           <div className="flex flex-wrap gap-1 mt-1.5">
             {g.galleryCharacters && g.galleryCharacters.length > 0 ? (
               g.galleryCharacters.slice(0, 2).map((gc: any) => (
-                <span key={gc.character.id} className="text-[8px] bg-white/5 text-gray-300 px-1.5 py-0.5 rounded-full">
+                <span key={gc.character.id} className="text-[8px] bg-white/5 text-gray-300 px-1.5 py-0.5 rounded-full border border-white/5">
                   {gc.character.name}
                 </span>
               ))
@@ -3058,7 +3065,7 @@ function GalleryCard({ g, onSelect, onEdit, onDelete }: any) {
               <span className="text-[8px] text-gray-600">—</span>
             )}
             {g.galleryCharacters && g.galleryCharacters.length > 2 && (
-              <span className="text-[8px] bg-white/5 text-gray-400 px-1 py-0.5 rounded-full">
+              <span className="text-[8px] bg-white/5 text-gray-400 px-1 py-0.5 rounded-full border border-white/5">
                 +{g.galleryCharacters.length - 2}
               </span>
             )}
@@ -3066,6 +3073,7 @@ function GalleryCard({ g, onSelect, onEdit, onDelete }: any) {
         </div>
       </div>
 
+      {/* Admin Action Overlay */}
       <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10 shadow-lg z-20">
         <button
           onClick={(e) => { e.stopPropagation(); onEdit(g); }}
@@ -3090,12 +3098,15 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
   const [galleries, setGalleries] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const [search, setSearch] = useState("");
   const [searchChar, setSearchChar] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  const [filterPlan, setFilterPlan] = useState("all");
+  const [filterMovie, setFilterMovie] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
 
   const [form, setForm] = useState({ name: "", idMovie: 0, idPlan: 0, characterIds: [] as number[] });
   const [editing, setEditing] = useState<number | null>(null);
@@ -3115,20 +3126,27 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search);
-      setPage(1); // Reset to page 1 on search change
     }, 300);
     return () => clearTimeout(handler);
   }, [search]);
 
-  // Fetch galleries from database when page, debouncedSearch, or searchChar changes
-  const loadGalleries = async () => {
+  // Fetch galleries from database when filters change (resets the list to page 1)
+  const loadInitialGalleries = async (searchVal = debouncedSearch, charVal = searchChar, planVal = filterPlan, movieVal = filterMovie, sortVal = sortBy) => {
     setLoading(true);
     try {
       const limit = 24;
-      const res = await getAdminGalleriesPaginated(page, limit, debouncedSearch, searchChar);
+      const res = await getAdminGalleriesPaginated(
+        1,
+        limit,
+        searchVal,
+        charVal,
+        planVal,
+        movieVal,
+        sortVal
+      );
       setGalleries(res.galleries || []);
       setTotalCount(res.totalCount || 0);
-      setTotalPages(Math.ceil((res.totalCount || 0) / limit));
+      setPage(1);
       if (onCountChange) {
         onCountChange(res.totalCount || 0);
       }
@@ -3140,13 +3158,73 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
     }
   };
 
+  // Load next page of galleries (appends to list)
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const loadMoreGalleries = async () => {
+    if (loading || loadingMore || galleries.length >= totalCount) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const limit = 24;
+      const res = await getAdminGalleriesPaginated(
+        nextPage,
+        limit,
+        debouncedSearch,
+        searchChar,
+        filterPlan,
+        filterMovie,
+        sortBy
+      );
+      if (res.galleries && res.galleries.length > 0) {
+        setGalleries((prev) => [...prev, ...res.galleries]);
+        setPage(nextPage);
+      }
+      if (res.totalCount !== undefined) {
+        setTotalCount(res.totalCount);
+      }
+    } catch (err) {
+      console.error("Error loading more admin galleries:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Load initial galleries on search/filter changes
   useEffect(() => {
-    loadGalleries();
-  }, [page, debouncedSearch, searchChar]);
+    loadInitialGalleries(debouncedSearch, searchChar, filterPlan, filterMovie, sortBy);
+  }, [debouncedSearch, searchChar, filterPlan, filterMovie, sortBy]);
+
+  // Set up intersection observer for infinite scroll
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (galleries.length >= totalCount || loading || loadingMore) return;
+
+    const observer = new IntersectionObserver(
+      async ([entry]) => {
+        if (entry.isIntersecting && !loading && !loadingMore) {
+          await loadMoreGalleries();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [galleries.length, totalCount, loading, loadingMore, page, debouncedSearch, searchChar, filterPlan, filterMovie, sortBy]);
 
   // Custom refresh function to call local loadGalleries and parent onRefresh
   const handleLocalRefresh = async () => {
-    await Promise.all([loadGalleries(), onRefresh()]);
+    await Promise.all([loadInitialGalleries(), onRefresh()]);
   };
 
   useEffect(() => {
@@ -3350,7 +3428,7 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
                       `Xoá bộ sưu tập "${targetG.name}"?`,
                       async () => {
                         await deleteGallery(targetG.id);
-                        await loadGalleries();
+                        await loadInitialGalleries();
                       }
                     )
                   }
@@ -3364,37 +3442,10 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
               </div>
             )}
 
-            {/* Pagination UI */}
-            {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#131520] border border-white/5 rounded-2xl p-4 mt-6">
-                <span className="text-xs text-gray-400">
-                  Hiển thị {(page - 1) * 24 + 1} - {Math.min(page * 24, totalCount)} trong tổng số {totalCount} bộ sưu tập
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                    disabled={page === 1 || loading}
-                    className="h-8 border-white/5 text-gray-300 hover:bg-white/5 disabled:opacity-50 cursor-pointer"
-                  >
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Trang trước
-                  </Button>
-                  <span className="text-xs text-gray-300 px-3 select-none">
-                    Trang {page} / {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-                    disabled={page === totalPages || loading}
-                    className="h-8 border-white/5 text-gray-300 hover:bg-white/5 disabled:opacity-50 cursor-pointer"
-                  >
-                    Trang sau
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
-                </div>
+            {/* Infinite Scroll Trigger */}
+            {(galleries.length < totalCount || loadingMore) && (
+              <div ref={loadMoreRef} className="py-10 flex justify-center">
+                <div className="w-8 h-8 rounded-full border-2 border-t-orange-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
               </div>
             )}
           </>

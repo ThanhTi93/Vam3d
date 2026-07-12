@@ -12,7 +12,7 @@ function revalidateAdmin() {
   revalidateTag("admin-data", "default");
 }
 import { db, schema } from "@/lib/db";
-import { eq, and, ne, sql, ilike, or, inArray, count } from "drizzle-orm";
+import { eq, and, ne, sql, ilike, or, inArray, count, isNull } from "drizzle-orm";
 import crypto from "crypto";
 
 // ─────────────────────────────────────────────────────────────────
@@ -957,7 +957,10 @@ export async function getAdminGalleriesPaginated(
   page = 1,
   limit = 24,
   search?: string,
-  searchChar?: string
+  searchChar?: string,
+  plan?: string,
+  movieId?: string,
+  sortBy?: string
 ) {
   await verifyAdmin();
   if (!db) return { galleries: [], totalCount: 0 };
@@ -991,11 +994,32 @@ export async function getAdminGalleriesPaginated(
     conditions.push(inArray(schema.aiGalleries.id, charSub));
   }
 
+  if (plan && plan !== "all") {
+    if (plan === "free") {
+      conditions.push(isNull(schema.aiGalleries.idPlan));
+    } else {
+      const planSub = db
+        .select({ id: schema.plans.id })
+        .from(schema.plans)
+        .where(ilike(schema.plans.name, `%${plan}%`));
+      conditions.push(inArray(schema.aiGalleries.idPlan, planSub));
+    }
+  }
+
+  if (movieId && movieId !== "all") {
+    conditions.push(eq(schema.aiGalleries.idMovie, parseInt(movieId, 10)));
+  }
+
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  let orderByClause: any = (g: any, { desc }: any) => [desc(g.id)];
+  if (sortBy === "views") {
+    orderByClause = (g: any, { desc }: any) => [desc(g.views)];
+  }
 
   const items = await db.query.aiGalleries.findMany({
     where: whereClause,
-    orderBy: (g, { desc }) => [desc(g.id)],
+    orderBy: orderByClause,
     limit,
     offset,
     with: {
