@@ -18,7 +18,7 @@ export function getBunnyImageUrl(
 
   // Chuẩn hóa đường dẫn: Thay thế tên miền cũ bị nhà mạng chặn (b-cdn.net) bằng tên miền cdn riêng mới
   let processedUrl = url;
-  const cdnUrl = process.env.NEXT_PUBLIC_BUNNY_CDN_URL;
+  const cdnUrl = process.env.NEXT_PUBLIC_BUNNY_CDN_URL || "https://cdn.vam3dhentai.online";
   if (cdnUrl) {
     processedUrl = processedUrl.replace(/https?:\/\/vam3d\.b-cdn\.net/g, cdnUrl.replace(/\/$/, ""));
   }
