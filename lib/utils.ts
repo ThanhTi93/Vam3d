@@ -15,12 +15,19 @@ export function getBunnyImageUrl(
     }
     return "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?q=80&w=400";
   }
+
+  // Chuẩn hóa đường dẫn: Thay thế tên miền cũ bị nhà mạng chặn (b-cdn.net) bằng tên miền cdn riêng mới
+  let processedUrl = url;
+  const cdnUrl = process.env.NEXT_PUBLIC_BUNNY_CDN_URL;
+  if (cdnUrl) {
+    processedUrl = processedUrl.replace(/https?:\/\/vam3d\.b-cdn\.net/g, cdnUrl.replace(/\/$/, ""));
+  }
   
   // If it's a Bunny CDN URL (ends with display.webp, thumb.webp, or original.png)
-  if (url.endsWith('display.webp') || url.endsWith('thumb.webp') || url.endsWith('original.png')) {
-    const lastSlashIdx = url.lastIndexOf('/');
+  if (processedUrl.endsWith('display.webp') || processedUrl.endsWith('thumb.webp') || processedUrl.endsWith('original.png')) {
+    const lastSlashIdx = processedUrl.lastIndexOf('/');
     if (lastSlashIdx !== -1) {
-      const basePath = url.substring(0, lastSlashIdx + 1); // retains the trailing slash
+      const basePath = processedUrl.substring(0, lastSlashIdx + 1); // retains the trailing slash
       if (type === 'original') {
         return `${basePath}original.png`;
       }
@@ -32,7 +39,7 @@ export function getBunnyImageUrl(
   }
   
   // Fallback to original URL (for external image URLs)
-  return url;
+  return processedUrl;
 }
 
 export function cleanFolderName(name: string): string {
