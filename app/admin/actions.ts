@@ -1204,12 +1204,8 @@ export async function deleteBunnyAsset(url: string | null | undefined) {
 
 export async function deleteGallery(id: number) {
   await verifyAdmin();
-  const fs = require("fs");
-  const path = require("path");
-  const logPath = path.join(process.cwd(), "delete_log.txt");
   const log = (msg: string) => {
-    fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${msg}\n`);
-    console.log(msg);
+    console.log(`[DeleteGallery] ${msg}`);
   };
 
   if (!db) {
