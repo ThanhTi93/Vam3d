@@ -4,7 +4,7 @@ import WatchlistPageClient from "./WatchlistPageClient";
 
 export const metadata: Metadata = {
   title: "Tủ Phim Yêu Thích Của Bạn",
-  description: "Xem lại danh sách các bộ phim chiếu rạp, phim bộ, phim lẻ và anime yêu thích đã được lưu trữ trong tủ phim cá nhân của bạn tại RoPhim.",
+  description: "Xem lại danh sách các bộ phim chiếu rạp, phim bộ, phim lẻ và anime yêu thích đã được lưu trữ trong tủ phim cá nhân của bạn tại Vam3D.",
 };
 
 export default async function WatchlistPage() {

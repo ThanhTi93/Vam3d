@@ -49,11 +49,11 @@ export default function Footer() {
         <div>
           <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Liên Hệ</h3>
           <p className="text-xs text-gray-500 mb-2">Mọi ý kiến vui lòng email:</p>
-          <p className="text-xs font-bold text-orange-500">contact@rophim.vn</p>
+          <p className="text-xs font-bold text-orange-500">contact@vam3dhentai.online</p>
         </div>
       </div>
       <div className="max-w-[1600px] mx-auto border-t border-white/5 mt-8 pt-6 flex flex-col md:flex-row items-center justify-between text-xs text-gray-600 gap-4">
-        <p>© 2026 RoPhim. Built with Next.js · Neon PostgreSQL · Drizzle ORM · React Three Fiber</p>
+        <p>© 2026 Vam3D. Built with Next.js · Neon PostgreSQL · Drizzle ORM · React Three Fiber</p>
         <p>Disclaimer: Nội dung phim mô phỏng phục vụ mục đích kiểm thử.</p>
       </div>
     </footer>

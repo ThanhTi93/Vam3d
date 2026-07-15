@@ -6,7 +6,7 @@ import CharactersPageClient from "./CharactersPageClient";
 
 export const metadata: Metadata = {
   title: "Danh Sách Nhân Vật Anime, Cosplay Hot Nhất",
-  description: "Bộ sưu tập danh sách nhân vật Anime, Cosplay, Waifu xinh đẹp nóng bỏng nhất tại RoPhim.",
+  description: "Bộ sưu tập danh sách nhân vật Anime, Cosplay, Waifu xinh đẹp nóng bỏng nhất tại Vam3D.",
 };
 
 export default async function CharactersPage() {

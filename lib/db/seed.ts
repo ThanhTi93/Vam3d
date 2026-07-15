@@ -83,7 +83,7 @@ async function seed() {
   // 4. Insert a default author
   const [authorRow] = await db
     .insert(authors)
-    .values({ name: "RoPhim Official", description: "Biên tập viên chính thức", status: 1 })
+    .values({ name: "Vam3D Official", description: "Biên tập viên chính thức", status: 1 })
     .onConflictDoNothing()
     .returning({ id: authors.id });
 

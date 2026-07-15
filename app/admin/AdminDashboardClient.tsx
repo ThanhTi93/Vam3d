@@ -271,7 +271,7 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
                 <div className="flex items-center justify-center w-full select-none">
                   <Image
                     src="/logo.png"
-                    alt="RoPhim Logo"
+                    alt="Vam3D Logo"
                     width={48}
                     height={18}
                     className="object-contain max-h-[24px] w-auto shrink-0"
@@ -283,7 +283,7 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
                 <div className="flex items-center justify-center gap-2 select-none w-full">
                   <Image
                     src="/logo.png"
-                    alt="RoPhim Logo"
+                    alt="Vam3D Logo"
                     width={130}
                     height={38}
                     className="object-contain max-h-[38px] w-auto shrink-0"
@@ -435,7 +435,7 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
               <h1 className="text-base sm:text-lg font-black text-white truncate">
                 {navItems.find(n => n.id === tab)?.label || navItems.flatMap(n => n.subItems || []).find(s => s.id === tab)?.label}
               </h1>
-              <p className="text-[11px] text-gray-500 hidden sm:block">Quản lý dữ liệu RoPhim · Neon PostgreSQL</p>
+              <p className="text-[11px] text-gray-500 hidden sm:block">Quản lý dữ liệu Vam3D · Neon PostgreSQL</p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">

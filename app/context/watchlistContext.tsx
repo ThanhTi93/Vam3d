@@ -16,7 +16,10 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
 
   // Load from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem("rophim_watchlist");
+    let saved = localStorage.getItem("vam3d_watchlist");
+    if (!saved) {
+      saved = localStorage.getItem("rophim_watchlist");
+    }
     if (saved) {
       try {
         setWatchlist(JSON.parse(saved));
@@ -30,7 +33,7 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
   // Save to localStorage when it changes
   useEffect(() => {
     if (mounted) {
-      localStorage.setItem("rophim_watchlist", JSON.stringify(watchlist));
+      localStorage.setItem("vam3d_watchlist", JSON.stringify(watchlist));
     }
   }, [watchlist, mounted]);
 

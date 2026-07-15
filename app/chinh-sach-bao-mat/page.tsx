@@ -12,9 +12,9 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Chính Sách Bảo Mật | RoPhim – Bảo Vệ Quyền Riêng Tư",
-  description: "Chính sách bảo mật chi tiết tại RoPhim. Tìm hiểu cách chúng tôi thu thập, sử dụng, lưu trữ và bảo vệ thông tin cá nhân của người dùng.",
-  keywords: ["chính sách bảo mật", "bảo mật rophim", "quyền riêng tư"],
+  title: "Chính Sách Bảo Mật | Vam3D – Bảo Vệ Quyền Riêng Tư",
+  description: "Chính sách bảo mật chi tiết tại Vam3D. Tìm hiểu cách chúng tôi thu thập, sử dụng, lưu trữ và bảo vệ thông tin cá nhân của người dùng.",
+  keywords: ["chính sách bảo mật", "bảo mật vam3d", "quyền riêng tư"],
 };
 
 export default function PrivacyPolicyPage() {
@@ -107,7 +107,7 @@ export default function PrivacyPolicyPage() {
             <ArrowRight className="w-4 h-4 text-orange-500" /> Quyền của người dùng đối với dữ liệu
           </h2>
           <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
-            Bạn có toàn quyền kiểm soát dữ liệu cá nhân của mình tại RoPhim. Cụ thể bao gồm:
+            Bạn có toàn quyền kiểm soát dữ liệu cá nhân của mình tại Vam3D. Cụ thể bao gồm:
           </p>
           <ul className="space-y-2 text-xs sm:text-sm text-gray-400 list-disc pl-5">
             <li>Yêu cầu truy xuất hoặc xuất bản sao dữ liệu cá nhân đang lưu trữ trên hệ thống.</li>
@@ -115,7 +115,7 @@ export default function PrivacyPolicyPage() {
             <li>Yêu cầu xóa vĩnh viễn tài khoản và toàn bộ dữ liệu đi kèm ra khỏi hệ thống.</li>
           </ul>
           <p className="text-xs text-gray-500 leading-relaxed pt-2">
-            Mọi yêu cầu liên quan đến quyền dữ liệu cá nhân xin vui lòng gửi email về ban hỗ trợ bảo mật tại: <a href="mailto:privacy@rophim.vn" className="text-orange-500 hover:underline font-bold">privacy@rophim.vn</a>.
+            Mọi yêu cầu liên quan đến quyền dữ liệu cá nhân xin vui lòng gửi email về ban hỗ trợ bảo mật tại: <a href="mailto:privacy@vam3dhentai.online" className="text-orange-500 hover:underline font-bold">privacy@vam3dhentai.online</a>.
           </p>
         </div>
 

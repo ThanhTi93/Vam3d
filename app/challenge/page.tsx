@@ -156,7 +156,7 @@ function ChallengeContent() {
         <div className="flex items-center gap-2 group">
           <Image
             src="/logo.png"
-            alt="RoPhim Logo"
+            alt="Vam3D Logo"
             width={110}
             height={32}
             className="object-contain h-8 w-auto"

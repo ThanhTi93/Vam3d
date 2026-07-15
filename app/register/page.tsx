@@ -69,7 +69,7 @@ function RegisterForm() {
           <Link href="/" className="inline-flex items-center gap-2.5 group">
             <Image
               src="/logo.png"
-              alt="RoPhim Logo"
+              alt="Vam3D Logo"
               width={160}
               height={46}
               className="object-contain transition-all group-hover:scale-105 h-11 w-auto"

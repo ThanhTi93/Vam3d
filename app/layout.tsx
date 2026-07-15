@@ -21,13 +21,13 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://rophim.vn";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "RoPhim – Xem Phim Online Thuyết Minh Vietsub HD",
-    template: "%s | RoPhim",
+    default: "Vam3D – Xem Phim Online Thuyết Minh Vietsub HD",
+    template: "%s | Vam3D",
   },
   description:
     "Mạng xã hội xem phim trực tuyến miễn phí lớn nhất Việt Nam. Phim lẻ, phim bộ, chiếu rạp, hoạt hình HD – Vietsub, Thuyết Minh, Lồng Tiếng cập nhật nhanh nhất.",
@@ -36,15 +36,15 @@ export const metadata: Metadata = {
     "phim vietsub",
     "phim thuyết minh",
     "phim hd",
-    "rophim",
+    "vam3d",
     "phim lẻ",
     "phim bộ",
     "phim chiếu rạp",
     "anime vietsub",
   ],
-  authors: [{ name: "RoPhim", url: siteUrl }],
-  creator: "RoPhim",
-  publisher: "RoPhim",
+  authors: [{ name: "Vam3D", url: siteUrl }],
+  creator: "Vam3D",
+  publisher: "Vam3D",
   robots: {
     index: true,
     follow: true,
@@ -54,8 +54,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "vi_VN",
     url: siteUrl,
-    siteName: "RoPhim",
-    title: "RoPhim – Xem Phim Online Thuyết Minh Vietsub HD",
+    siteName: "Vam3D",
+    title: "Vam3D – Xem Phim Online Thuyết Minh Vietsub HD",
     description:
       "Xem hàng ngàn bộ phim chất lượng cao miễn phí. Cập nhật liên tục mỗi ngày.",
     images: [
@@ -63,13 +63,13 @@ export const metadata: Metadata = {
         url: `${siteUrl}/og-image.jpg`,
         width: 1200,
         height: 630,
-        alt: "RoPhim – Xem Phim Online",
+        alt: "Vam3D – Xem Phim Online",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "RoPhim – Xem Phim Online Thuyết Minh Vietsub HD",
+    title: "Vam3D – Xem Phim Online Thuyết Minh Vietsub HD",
     description:
       "Xem hàng ngàn bộ phim chất lượng cao miễn phí. Cập nhật liên tục mỗi ngày.",
     images: [`${siteUrl}/og-image.jpg`],
@@ -80,7 +80,7 @@ export const metadata: Metadata = {
 const websiteJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  name: "RoPhim",
+  name: "Vam3D",
   url: siteUrl,
   description:
     "Mạng xã hội xem phim trực tuyến miễn phí lớn nhất Việt Nam.",
@@ -97,12 +97,12 @@ const websiteJsonLd = {
 const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "RoPhim",
+  name: "Vam3D",
   url: siteUrl,
   logo: `${siteUrl}/logo.png`,
   sameAs: [
-    "https://facebook.com/rophim",
-    "https://youtube.com/@rophim",
+    "https://facebook.com/vam3d",
+    "https://youtube.com/@vam3d",
   ],
 };
 

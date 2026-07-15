@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 
-const REVALIDATE_SECRET = process.env.REVALIDATE_SECRET || "rophim-secret";
+const REVALIDATE_SECRET = process.env.REVALIDATE_SECRET || "vam3d-secret";
 
 export async function POST(request: Request) {
   try {

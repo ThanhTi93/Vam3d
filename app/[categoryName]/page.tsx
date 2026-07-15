@@ -23,8 +23,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { categoryName } = await params;
   const titleName = formatCategoryLabel(categoryName);
   return {
-    title: `${titleName} Mới Nhất - RoPhim`,
-    description: `Danh sách phim thuộc thể loại ${titleName} chất lượng cao Vietsub, thuyết minh cập nhật nhanh nhất tại RoPhim.`,
+    title: `${titleName} Mới Nhất - Vam3D`,
+    description: `Danh sách phim thuộc thể loại ${titleName} chất lượng cao Vietsub, thuyết minh cập nhật nhanh nhất tại Vam3D.`,
   };
 }
 

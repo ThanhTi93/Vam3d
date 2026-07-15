@@ -14,9 +14,9 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Giới Thiệu Về RoPhim – Nền Tảng Xem Phim Trực Tuyến Miễn Phí",
-  description: "Khám phá sứ mệnh, tầm nhìn và các tính năng nổi bật của RoPhim. Nền tảng mạng xã hội xem phim trực tuyến miễn phí lớn nhất Việt Nam với chất lượng HD/4K siêu mượt.",
-  keywords: ["giới thiệu rophim", "về rophim", "xem phim miễn phí", "phim chất lượng cao", "rophim hd"],
+  title: "Giới Thiệu Về Vam3D – Nền Tảng Xem Phim Trực Tuyến Miễn Phí",
+  description: "Khám phá sứ mệnh, tầm nhìn và các tính năng nổi bật của Vam3D. Nền tảng mạng xã hội xem phim trực tuyến miễn phí lớn nhất Việt Nam với chất lượng HD/4K siêu mượt.",
+  keywords: ["giới thiệu vam3d", "về vam3d", "xem phim miễn phí", "phim chất lượng cao", "vam3d hd"],
 };
 
 export default function AboutPage() {
@@ -70,7 +70,7 @@ export default function AboutPage() {
             </span>
           </h1>
           <p className="max-w-2xl mx-auto text-sm sm:text-base text-gray-400 leading-relaxed">
-            Chào mừng bạn đến với <strong className="text-white">RoPhim</strong> – nền tảng mô phỏng xem phim và mạng xã hội chia sẻ trải nghiệm điện ảnh hiện đại bậc nhất. Chúng tôi mang đến cho bạn không gian giải trí đỉnh cao hoàn toàn miễn phí.
+            Chào mừng bạn đến với <strong className="text-white">Vam3D</strong> – nền tảng mô phỏng xem phim và mạng xã hội chia sẻ trải nghiệm điện ảnh hiện đại bậc nhất. Chúng tôi mang đến cho bạn không gian giải trí đỉnh cao hoàn toàn miễn phí.
           </p>
         </div>
 
@@ -80,7 +80,7 @@ export default function AboutPage() {
             <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20 mb-6 group-hover:scale-110 transition-transform">
               <Globe className="w-6 h-6 text-orange-500" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-3">Tầm Nhìn của RoPhim</h2>
+            <h2 className="text-xl font-bold text-white mb-3">Tầm Nhìn của Vam3D</h2>
             <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
               Trở thành điểm đến giải trí trực tuyến phổ biến và đáng tin cậy nhất dành cho cộng đồng yêu điện ảnh tại Việt Nam. Không ngừng áp dụng và nâng cấp các công nghệ hiển thị hình ảnh, truyền tải dữ liệu và tương tác cộng đồng để đưa trải nghiệm người dùng đạt chuẩn quốc tế.
             </p>
@@ -121,8 +121,8 @@ export default function AboutPage() {
         {/* Feature Highlights Grid */}
         <div className="space-y-8">
           <div className="text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white">Vì sao lựa chọn RoPhim?</h2>
-            <p className="text-xs sm:text-sm text-gray-500 mt-2">Những ưu điểm làm nên thương hiệu của mạng xã hội giải trí RoPhim</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white">Vì sao lựa chọn Vam3D?</h2>
+            <p className="text-xs sm:text-sm text-gray-500 mt-2">Những ưu điểm làm nên thương hiệu của mạng xã hội giải trí Vam3D</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -150,7 +150,7 @@ export default function AboutPage() {
           <div className="glassmorphism inline-flex flex-col sm:flex-row items-center gap-6 p-6 sm:p-8 rounded-3xl max-w-2xl mx-auto border-orange-500/10">
             <div className="text-left space-y-1">
               <h3 className="text-lg font-bold text-white">Bắt đầu trải nghiệm ngay hôm nay!</h3>
-              <p className="text-xs text-gray-400">Xem hàng ngàn bộ phim đỉnh cao hoàn toàn miễn phí cùng RoPhim</p>
+              <p className="text-xs text-gray-400">Xem hàng ngàn bộ phim đỉnh cao hoàn toàn miễn phí cùng Vam3D</p>
             </div>
             <Link 
               href="/"

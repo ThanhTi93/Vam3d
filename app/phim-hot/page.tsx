@@ -4,7 +4,7 @@ import CategoryCatalog from "@/components/CategoryCatalog";
 
 export const metadata: Metadata = {
   title: "Phim Hot Mới Nhất - Phim Hay Đề Cử",
-  description: "Danh sách phim hot, phim bộ phim lẻ hay được đề cử xem nhiều nhất tại RoPhim.",
+  description: "Danh sách phim hot, phim bộ phim lẻ hay được đề cử xem nhiều nhất tại Vam3D.",
 };
 
 export default async function PhimHotPage() {

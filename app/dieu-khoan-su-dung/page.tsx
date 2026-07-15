@@ -11,9 +11,9 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Điều Khoản Sử Dụng | RoPhim – Trách Nhiệm & Quyền Lợi",
-  description: "Bản quy định chi tiết các điều khoản sử dụng dịch vụ xem phim trực tuyến tại RoPhim. Vui lòng đọc kỹ trước khi đăng ký tài khoản hoặc sử dụng dịch vụ.",
-  keywords: ["điều khoản sử dụng", "quy định rophim", "chính sách rophim"],
+  title: "Điều Khoản Sử Dụng | Vam3D – Trách Nhiệm & Quyền Lợi",
+  description: "Bản quy định chi tiết các điều khoản sử dụng dịch vụ xem phim trực tuyến tại Vam3D. Vui lòng đọc kỹ trước khi đăng ký tài khoản hoặc sử dụng dịch vụ.",
+  keywords: ["điều khoản sử dụng", "quy định vam3d", "chính sách vam3d"],
 };
 
 export default function TermsOfUsePage() {
@@ -22,7 +22,7 @@ export default function TermsOfUsePage() {
       id: "chap-nhan",
       icon: <Scale className="w-5 h-5 text-orange-500" />,
       title: "1. Chấp nhận các điều khoản",
-      content: "Bằng cách truy cập, đăng ký tài khoản, hoặc sử dụng bất kỳ tính năng nào của RoPhim, bạn mặc nhiên đồng ý tuân thủ toàn bộ các điều khoản sử dụng được quy định tại đây. Nếu bạn không đồng ý với bất kỳ phần nào của các điều khoản này, vui lòng ngừng sử dụng dịch vụ ngay lập tức."
+      content: "Bằng cách truy cập, đăng ký tài khoản, hoặc sử dụng bất kỳ tính năng nào của Vam3D, bạn mặc nhiên đồng ý tuân thủ toàn bộ các điều khoản sử dụng được quy định tại đây. Nếu bạn không đồng ý với bất kỳ phần nào của các điều khoản này, vui lòng ngừng sử dụng dịch vụ ngay lập tức."
     },
     {
       id: "tai-khoan",
@@ -129,7 +129,7 @@ export default function TermsOfUsePage() {
             <div className="p-6 rounded-2xl bg-[#131520]/40 border border-white/5 space-y-3">
               <h3 className="text-sm font-bold text-white">Liên hệ và Thắc mắc</h3>
               <p className="text-xs text-gray-400 leading-relaxed">
-                Nếu bạn có bất kỳ câu hỏi nào liên quan đến các quy định và điều khoản sử dụng trên, vui lòng liên hệ với ban quản trị RoPhim qua hòm thư điện tử chính thức: <a href="mailto:contact@rophim.vn" className="text-orange-500 hover:underline font-bold">contact@rophim.vn</a>.
+                Nếu bạn có bất kỳ câu hỏi nào liên quan đến các quy định và điều khoản sử dụng trên, vui lòng liên hệ với ban quản trị Vam3D qua hòm thư điện tử chính thức: <a href="mailto:contact@vam3dhentai.online" className="text-orange-500 hover:underline font-bold">contact@vam3dhentai.online</a>.
               </p>
             </div>
           </div>

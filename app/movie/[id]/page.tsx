@@ -27,15 +27,15 @@ export async function generateMetadata({ params }: MoviePageProps): Promise<Meta
   
   if (!movie) {
     return {
-      title: "Không Tìm Thấy Phim | RoPhim",
+      title: "Không Tìm Thấy Phim | Vam3D",
       description: "Xin lỗi, bộ phim bạn yêu cầu không tồn tại hoặc đã bị gỡ bỏ khỏi hệ thống.",
     };
   }
 
   const movieData = movie as any;
   const title = `${movieData.name} (${movieData.originalTitle || ""}) [${movieData.year || 2026}] – Thuyết Minh Vietsub Full HD`;
-  const description = movieData.description || `Xem phim ${movieData.name} chất lượng cao Full HD Vietsub, Thuyết minh cập nhật nhanh nhất tại RoPhim.`;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://rophim.vn";
+  const description = movieData.description || `Xem phim ${movieData.name} chất lượng cao Full HD Vietsub, Thuyết minh cập nhật nhanh nhất tại Vam3D.`;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
   const movieUrl = `${siteUrl}/movie/${movieData.id}`;
   const posterUrl = movieData.imgUrl || `${siteUrl}/og-image.jpg`;
 

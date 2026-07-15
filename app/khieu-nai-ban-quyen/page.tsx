@@ -10,9 +10,9 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Khiếu Nại Bản Quyền (DMCA) | RoPhim – Tôn Trọng Bản Quyền",
-  description: "Quy định và hướng dẫn chi tiết về việc khiếu nại bản quyền sở hữu trí tuệ tại RoPhim. Quy trình báo cáo vi phạm nội dung (DMCA Compliance).",
-  keywords: ["khiếu nại bản quyền", "dmca rophim", "bản quyền rophim", "báo cáo vi phạm"],
+  title: "Khiếu Nại Bản Quyền (DMCA) | Vam3D – Tôn Trọng Bản Quyền",
+  description: "Quy định và hướng dẫn chi tiết về việc khiếu nại bản quyền sở hữu trí tuệ tại Vam3D. Quy trình báo cáo vi phạm nội dung (DMCA Compliance).",
+  keywords: ["khiếu nại bản quyền", "dmca vam3d", "bản quyền vam3d", "báo cáo vi phạm"],
 };
 
 export default function CopyrightPage() {
@@ -20,7 +20,7 @@ export default function CopyrightPage() {
     {
       step: "01",
       title: "Xác định nội dung vi phạm",
-      description: "Thu thập đường dẫn URL cụ thể của video, hình ảnh hoặc tài liệu trên hệ thống RoPhim mà bạn tin rằng đã xâm phạm quyền sở hữu trí tuệ của mình."
+      description: "Thu thập đường dẫn URL cụ thể của video, hình ảnh hoặc tài liệu trên hệ thống Vam3D mà bạn tin rằng đã xâm phạm quyền sở hữu trí tuệ của mình."
     },
     {
       step: "02",
@@ -35,14 +35,14 @@ export default function CopyrightPage() {
     {
       step: "04",
       title: "Gửi tới ban quản trị",
-      description: "Gửi email trực tiếp đến bộ phận bản quyền của RoPhim. Hệ thống sẽ tiến hành xác minh và phản hồi nhanh chóng."
+      description: "Gửi email trực tiếp đến bộ phận bản quyền của Vam3D. Hệ thống sẽ tiến hành xác minh và phản hồi nhanh chóng."
     }
   ];
 
   const templateText = `TIÊU ĐỀ EMAIL: [DMCA] Yêu cầu gỡ bỏ nội dung vi phạm bản quyền - [Tên Tác Phẩm]
 
 NỘI DUNG EMAIL:
-Kính gửi Ban quản trị RoPhim,
+Kính gửi Ban quản trị Vam3D,
 
 Tôi tên là: [Tên của bạn hoặc tổ chức đại diện]
 Địa chỉ liên hệ: [Địa chỉ của bạn]
@@ -51,11 +51,11 @@ Email liên hệ: [Địa chỉ email của bạn]
 
 Tôi là chủ sở hữu hợp pháp (hoặc người đại diện được ủy quyền hợp pháp) đối với tác phẩm: [Tên tác phẩm/bộ phim/hình ảnh].
 
-Tôi phát hiện tác phẩm trên đang được phát sóng/đăng tải trái phép trên website RoPhim tại các liên kết (URL) sau:
+Tôi phát hiện tác phẩm trên đang được phát sóng/đăng tải trái phép trên website Vam3D tại các liên kết (URL) sau:
 1. [Điền link URL vi phạm 1]
 2. [Điền link URL vi phạm 2]
 
-Tôi yêu cầu Ban quản trị RoPhim tiến hành gỡ bỏ hoặc khóa quyền truy cập vào các nội dung vi phạm nêu trên ngay lập tức theo quy định bản quyền quốc tế.
+Tôi yêu cầu Ban quản trị Vam3D tiến hành gỡ bỏ hoặc khóa quyền truy cập vào các nội dung vi phạm nêu trên ngay lập tức theo quy định bản quyền quốc tế.
 
 Tôi xin cam đoan các thông tin cung cấp ở trên là hoàn toàn chính xác và trung thực.
 
@@ -79,7 +79,7 @@ Trân trọng,
             Khiếu Nại Bản Quyền (DMCA)
           </h1>
           <p className="text-xs sm:text-sm text-gray-400">
-            RoPhim tôn trọng quyền sở hữu trí tuệ của các tác giả và nhà phát hành nghệ thuật.
+            Vam3D tôn trọng quyền sở hữu trí tuệ của các tác giả và nhà phát hành nghệ thuật.
           </p>
         </div>
 
@@ -89,7 +89,7 @@ Trân trọng,
             <AlertCircle className="w-5 h-5 text-orange-500" /> Tuyên bố bản quyền thương hiệu
           </h2>
           <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
-            RoPhim hoạt động như một nền tảng mạng xã hội chia sẻ trải nghiệm điện ảnh và mô phỏng các tính năng kỹ thuật. Chúng tôi không chủ động lưu trữ hoặc tải lên các tệp tin đa phương tiện lên hệ thống máy chủ của mình. Dữ liệu phim được tham chiếu, liên kết hoặc nhúng từ các nguồn mở trên Internet. 
+            Vam3D hoạt động như một nền tảng mạng xã hội chia sẻ trải nghiệm điện ảnh và mô phỏng các tính năng kỹ thuật. Chúng tôi không chủ động lưu trữ hoặc tải lên các tệp tin đa phương tiện lên hệ thống máy chủ của mình. Dữ liệu phim được tham chiếu, liên kết hoặc nhúng từ các nguồn mở trên Internet. 
           </p>
           <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
             Tuy nhiên, nếu bạn phát hiện bất kỳ liên kết nội dung nào hiển thị trên website xâm phạm quyền tác giả hợp pháp của bạn, vui lòng liên hệ với chúng tôi theo quy trình bên dưới. Chúng tôi cam kết hợp tác và xử lý gỡ bỏ ngay lập tức sau khi nhận được khiếu nại hợp lệ.
@@ -131,7 +131,7 @@ Trân trọng,
               </p>
               <div className="p-3 bg-white/5 border border-white/5 rounded-xl text-center">
                 <span className="text-sm font-bold text-orange-500 block select-all">
-                  copyright@rophim.vn
+                  copyright@vam3dhentai.online
                 </span>
               </div>
             </div>

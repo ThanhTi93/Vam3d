@@ -127,7 +127,7 @@ export default function Header() {
           <Link href="/" className="flex items-center gap-2 group">
             <Image
               src="/logo.png"
-              alt="RoPhim Logo"
+              alt="Vam3D Logo"
               width={140}
               height={40}
               className="object-contain transition-transform group-hover:scale-105 h-10 w-auto"
