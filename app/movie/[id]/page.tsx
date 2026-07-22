@@ -68,13 +68,18 @@ export async function generateMetadata({ params }: MoviePageProps): Promise<Meta
 
 // Render dynamic JSON-LD structured schema on server-side for search engines
 function MovieSchemaScript({ movie }: { movie: any }) {
-  const schema = {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
+  const movieUrl = `${siteUrl}/movie/${movie.id}`;
+  const posterUrl = movie.thumbnail || movie.banner || `${siteUrl}/og-image.jpg`;
+
+  const movieSchema = {
     "@context": "https://schema.org",
     "@type": "Movie",
-    name: movie.name,
+    name: movie.title || movie.name,
     alternateName: movie.originalTitle,
     description: movie.description,
-    image: movie.imgUrl,
+    image: posterUrl,
+    url: movieUrl,
     dateCreated: movie.year?.toString() || "2026",
     director: { "@type": "Person", name: movie.director || "—" },
     actor: movie.cast?.map((name: string) => ({ "@type": "Person", name })) || [],
@@ -86,13 +91,63 @@ function MovieSchemaScript({ movie }: { movie: any }) {
     },
   };
 
+  const videoSchema = {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    name: movie.title || movie.name,
+    description: movie.description || `Xem phim ${movie.title} Vietsub HD`,
+    thumbnailUrl: [posterUrl],
+    uploadDate: new Date().toISOString(),
+    contentUrl: movie.videoUrl || movieUrl,
+    embedUrl: movieUrl,
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Trang chủ",
+        item: siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: movie.category === "phim-bo" ? "Phim Bộ" : movie.category === "hoat-hinh" ? "Hoạt Hình" : movie.category === "chieu-rap" ? "Chiếu Rạp" : "Phim Lẻ",
+        item: `${siteUrl}/${movie.category || "phim-le"}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: movie.title || movie.name,
+        item: movieUrl,
+      },
+    ],
+  };
+
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{
-        __html: JSON.stringify(schema).replace(/</g, "\\u003c"),
-      }}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(movieSchema).replace(/</g, "\\u003c"),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(videoSchema).replace(/</g, "\\u003c"),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbSchema).replace(/</g, "\\u003c"),
+        }}
+      />
+    </>
   );
 }
 

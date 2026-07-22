@@ -75,6 +75,9 @@ export const metadata: Metadata = {
     images: [`${siteUrl}/og-image.jpg`],
   },
   alternates: { canonical: siteUrl },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
+  },
 };
 
 const websiteJsonLd = {

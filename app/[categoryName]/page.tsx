@@ -22,9 +22,28 @@ const formatCategoryLabel = (name: string) => {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { categoryName } = await params;
   const titleName = formatCategoryLabel(categoryName);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
+  const categoryUrl = `${siteUrl}/${encodeURIComponent(categoryName)}`;
+  const title = `${titleName} Mới Nhất – Xem Phim ${titleName} Vietsub HD | Vam3D`;
+  const description = `Danh sách phim thuộc thể loại ${titleName} chất lượng cao Vietsub, thuyết minh cập nhật nhanh nhất tại Vam3D.`;
+
   return {
-    title: `${titleName} Mới Nhất - Vam3D`,
-    description: `Danh sách phim thuộc thể loại ${titleName} chất lượng cao Vietsub, thuyết minh cập nhật nhanh nhất tại Vam3D.`,
+    title,
+    description,
+    alternates: {
+      canonical: categoryUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: categoryUrl,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   };
 }
 
@@ -118,12 +137,41 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
   }));
 
   const titleName = formatCategoryLabel(decodedCategory);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
+  const categoryUrl = `${siteUrl}/${encodeURIComponent(decodedCategory)}`;
+
+  const categoryBreadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Trang chủ",
+        item: siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: titleName,
+        item: categoryUrl,
+      },
+    ],
+  };
 
   return (
-    <CategoryCatalog
-      categoryTitle={`${titleName} Mới Nhất`}
-      movies={formattedMovies}
-      allMovies={formattedAllMovies}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(categoryBreadcrumb).replace(/</g, "\\u003c"),
+        }}
+      />
+      <CategoryCatalog
+        categoryTitle={`${titleName} Mới Nhất`}
+        movies={formattedMovies}
+        allMovies={formattedAllMovies}
+      />
+    </>
   );
 }
