@@ -198,6 +198,28 @@ export async function getAdminCategories() {
   return getCached_getAdminCategories();
 }
 
+const getCached_getFooterData = unstable_cache(
+  async () => {
+    if (!db) return { categories: [], topMovies: [] };
+    const [categories, topMovies] = await Promise.all([
+      db.query.categories.findMany({ orderBy: (c, { asc }) => [asc(c.id)] }),
+      db.query.movies.findMany({
+        columns: { id: true, name: true },
+        where: (m, { eq }) => eq(m.status, 1),
+        orderBy: (m, { desc }) => [desc(m.id)],
+        limit: 6,
+      }),
+    ]);
+    return { categories, topMovies };
+  },
+  ["footer-data"],
+  { revalidate: 3600, tags: ["admin-data", "categories", "movies"] }
+);
+
+export async function getFooterData() {
+  return getCached_getFooterData();
+}
+
 export async function createCategory(data: {
   name: string;
   description?: string;
@@ -606,7 +628,7 @@ export async function deleteActor(id: number) {
 const getCached_getAdminCharacters = unstable_cache(
   async () => {
     if (!db) return [];
-  return db.query.characters.findMany({ orderBy: (c, { asc }) => [asc(c.name)] });
+  return db.query.characters.findMany({ orderBy: (c, { asc }) => [asc(c.name)], with: { movie: true } });
   },
   ["admin-characters"],
   { revalidate: 3600, tags: ["admin-data", "admin-characters", "characters"] }
@@ -619,6 +641,9 @@ export async function getAdminCharacters() {
 
 export async function createCharacter(data: {
   name: string;
+  nameEn?: string;
+  nameZh?: string;
+  idMovie?: number;
   imgUrl?: string;
   description?: string;
 }) {
@@ -629,7 +654,7 @@ export async function createCharacter(data: {
 
 export async function updateCharacter(
   id: number,
-  data: { name?: string; imgUrl?: string; description?: string; status?: number }
+  data: { name?: string; nameEn?: string; nameZh?: string; idMovie?: number; imgUrl?: string; description?: string; status?: number }
 ) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");

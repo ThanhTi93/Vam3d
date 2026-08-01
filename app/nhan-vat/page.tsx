@@ -14,15 +14,19 @@ export default async function CharactersPage() {
     return <CharactersPageClient characters={[]} />;
   }
 
-  // Fetch all characters where status = 1
-  const characters = await db.select({
-    id: charactersTable.id,
-    name: charactersTable.name,
-    imgUrl: charactersTable.imgUrl,
-  })
-  .from(charactersTable)
-  .where(eq(charactersTable.status, 1))
-  .orderBy(desc(charactersTable.id));
+  // Fetch all characters where status = 1 with movie relation
+  const characters = await db.query.characters.findMany({
+    where: eq(charactersTable.status, 1),
+    with: {
+      movie: {
+        columns: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+    orderBy: [desc(charactersTable.id)],
+  });
 
   return <CharactersPageClient characters={characters} />;
 }

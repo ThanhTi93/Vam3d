@@ -92,6 +92,7 @@ export default function Header() {
 
   const [categories, setCategories] = useState<any[]>([]);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -176,17 +177,18 @@ export default function Header() {
               </button>
 
               {isCategoryOpen && (
-                <div className="absolute top-full left-0 pt-2 w-44 z-50">
-                  <div className="rounded-xl bg-[#090a0f]/95 border border-white/10 backdrop-blur-xl py-2 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute top-full left-0 pt-2 w-[420px] z-50">
+                  <div className="rounded-2xl bg-[#090a0f]/95 border border-white/10 backdrop-blur-xl p-2.5 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200 grid grid-cols-3 gap-1.5">
                     {categories.map((cat) => (
                       <Link
                         key={cat.id}
                         href={`/${cat.name}`}
                         onClick={() => setIsCategoryOpen(false)}
-                        className={`block px-4 py-2 text-xs font-bold hover:bg-orange-500/10 hover:text-orange-500 transition-colors ${pathname === `/${cat.name}` ? "text-orange-500 bg-orange-500/5" : "text-gray-300"
+                        className={`px-2.5 py-2 text-xs font-bold rounded-lg hover:bg-orange-500/10 hover:text-orange-400 transition-all flex items-center gap-1.5 ${pathname === `/${cat.name}` ? "text-orange-500 bg-orange-500/10" : "text-gray-300"
                           }`}
                       >
-                        {formatCategoryLabel(cat.name)}
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500/60 shrink-0" />
+                        <span className="line-clamp-1">{formatCategoryLabel(cat.name)}</span>
                       </Link>
                     ))}
                   </div>
@@ -435,20 +437,39 @@ export default function Header() {
             Phim Hot <span className="bg-red-600 text-white text-[9px] px-1 py-0.5 rounded font-black tracking-wide uppercase leading-none">New</span>
           </Link>
 
-          {/* Thể loại mobile */}
-          <div className="flex flex-col gap-1.5 pl-2 border-l border-white/5">
-            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Thể loại</span>
-            {categories.map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/${cat.name}`}
-                onClick={() => setShowMobileMenu(false)}
-                className={`text-xs font-bold py-0.5 ${pathname === `/${cat.name}` ? "text-orange-500" : "text-gray-400"
-                  }`}
-              >
-                {formatCategoryLabel(cat.name)}
-              </Link>
-            ))}
+          {/* Thể loại mobile với nút Đóng/Mở */}
+          <div className="flex flex-col">
+            <button
+              type="button"
+              onClick={() => setIsMobileCategoryOpen((prev) => !prev)}
+              className="flex items-center justify-between text-sm font-bold py-1 text-gray-400 hover:text-white w-full text-left cursor-pointer"
+            >
+              <span className={categories.some((cat) => pathname === `/${cat.name}`) ? "text-orange-500" : ""}>
+                Thể loại
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform duration-200 ${
+                  isMobileCategoryOpen ? "rotate-180 text-orange-500" : "text-gray-400"
+                }`}
+              />
+            </button>
+
+            {isMobileCategoryOpen && (
+              <div className="flex flex-col gap-1.5 pl-3 pt-1.5 pb-1 border-l-2 border-orange-500/40 my-1 ml-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    href={`/${cat.name}`}
+                    onClick={() => setShowMobileMenu(false)}
+                    className={`text-xs font-semibold py-1 transition-colors ${
+                      pathname === `/${cat.name}` ? "text-orange-500 font-bold" : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    {formatCategoryLabel(cat.name)}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
 
           <Link

@@ -19,10 +19,14 @@ export function getBunnyImageUrl(
   // Chuẩn hóa đường dẫn: Thay thế tên miền cũ bị nhà mạng chặn (b-cdn.net) bằng tên miền cdn riêng mới
   let processedUrl = url;
   const cdnUrl = process.env.NEXT_PUBLIC_BUNNY_CDN_URL || "https://cdn.vam3dhentai.online";
-  if (cdnUrl) {
+
+  if (!processedUrl.startsWith("http://") && !processedUrl.startsWith("https://")) {
+    const cleanPath = processedUrl.startsWith("/") ? processedUrl : `/${processedUrl}`;
+    processedUrl = `${cdnUrl.replace(/\/$/, "")}${cleanPath}`;
+  } else if (cdnUrl) {
     processedUrl = processedUrl.replace(/https?:\/\/vam3d\.b-cdn\.net/g, cdnUrl.replace(/\/$/, ""));
   }
-  
+
   // If it's a Bunny CDN URL (ends with display.webp, thumb.webp, or original.png)
   if (processedUrl.endsWith('display.webp') || processedUrl.endsWith('thumb.webp') || processedUrl.endsWith('original.png')) {
     const lastSlashIdx = processedUrl.lastIndexOf('/');
@@ -37,8 +41,8 @@ export function getBunnyImageUrl(
       return `${basePath}display.webp`;
     }
   }
-  
-  // Fallback to original URL (for external image URLs)
+
+  // Fallback to original URL
   return processedUrl;
 }
 

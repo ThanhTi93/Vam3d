@@ -518,7 +518,7 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
           {/* ═══ CHARACTERS ══════════════════════════════════════════════════ */}
           {tab === "characters" && (
             <CharactersTab
-              characters={characters} search={search} setSearch={setSearch}
+              movies={movies} characters={characters} search={search} setSearch={setSearch}
               isPending={isPending} startTransition={startTransition}
               onRefresh={() => loadData("characters", true)} show={show}
               confirmThenDelete={confirmThenDelete}
@@ -1956,6 +1956,9 @@ function CharacterLightbox({ characters, activeIndex, onClose, onPrev, onNext }:
           {/* Character info */}
           <div className="text-right min-w-0">
             <p className="text-xs font-bold text-white truncate">{character.name}</p>
+            {(character.nameEn || character.nameZh) && (
+              <p className="text-[10px] text-gray-400 truncate">{[character.nameEn, character.nameZh].filter(Boolean).join(" · ")}</p>
+            )}
             <p className="text-[10px] text-gray-400 mt-0.5">{activeIndex + 1} / {characters.length}</p>
           </div>
         </div>
@@ -2081,13 +2084,21 @@ function CharacterLightbox({ characters, activeIndex, onClose, onPrev, onNext }:
 // ═══════════════════════════════════════════════════════════════════════
 // CHARACTERS TAB
 // ═══════════════════════════════════════════════════════════════════════
-function CharactersTab({ characters, search, setSearch, isPending, startTransition, onRefresh, show, confirmThenDelete }: any) {
-  const [form, setForm] = useState({ name: "", imgUrl: "" as string | File | null, description: "" });
+function CharactersTab({ movies = [], characters, search, setSearch, isPending, startTransition, onRefresh, show, confirmThenDelete }: any) {
+  const [form, setForm] = useState({ name: "", nameEn: "", nameZh: "", idMovie: 0, imgUrl: "" as string | File | null, description: "" });
   const [editing, setEditing] = useState<number | null>(null);
   const [activePreviewIndex, setActivePreviewIndex] = useState<number | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
-  const filtered = characters.filter((c: any) => c.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = characters.filter((c: any) => {
+    const q = search.toLowerCase();
+    return (
+      c.name?.toLowerCase().includes(q) ||
+      c.nameEn?.toLowerCase().includes(q) ||
+      c.nameZh?.toLowerCase().includes(q) ||
+      c.movie?.name?.toLowerCase().includes(q)
+    );
+  });
   const charactersWithImages = filtered.filter((c: any) => !!c.imgUrl);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -2103,12 +2114,16 @@ function CharactersTab({ characters, search, setSearch, isPending, startTransiti
           const customPath = `characters/${safeName}_${uniqueId}.${extension}`;
           finalImgUrl = await uploadFileToBunny(form.imgUrl, "characters", customPath);
         }
-        const submitData = { ...form, imgUrl: (finalImgUrl as string) || "" };
+        const submitData = {
+          ...form,
+          idMovie: form.idMovie > 0 ? form.idMovie : undefined,
+          imgUrl: (finalImgUrl as string) || ""
+        };
 
         if (isEdit) { await updateCharacter(editing!, submitData); }
         else { await createCharacter(submitData); }
         await onRefresh();
-        setForm({ name: "", imgUrl: "", description: "" });
+        setForm({ name: "", nameEn: "", nameZh: "", idMovie: 0, imgUrl: "", description: "" });
         setEditing(null);
         setIsFormOpen(false);
         show(isEdit ? "Đã cập nhật nhân vật!" : "Đã thêm nhân vật!");
@@ -2122,10 +2137,10 @@ function CharactersTab({ characters, search, setSearch, isPending, startTransiti
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#131520] border border-white/5 rounded-2xl p-4">
         <div className="relative w-full sm:max-w-xs">
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-          <Input placeholder="Tìm nhân vật…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-[#090a0f] border-white/5 text-sm h-9 w-full" />
+          <Input placeholder="Tìm nhân vật (Việt, Anh, Trung, Phim)…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-[#090a0f] border-white/5 text-sm h-9 w-full" />
         </div>
         <Button
-          onClick={() => { setEditing(null); setForm({ name: "", imgUrl: "", description: "" }); setIsFormOpen(true); }}
+          onClick={() => { setEditing(null); setForm({ name: "", nameEn: "", nameZh: "", idMovie: 0, imgUrl: "", description: "" }); setIsFormOpen(true); }}
           className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold h-9 text-xs px-4 rounded-xl shadow-lg border-0 gap-1.5 flex items-center justify-center shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
@@ -2156,7 +2171,7 @@ function CharactersTab({ characters, search, setSearch, isPending, startTransiti
                 )}
                 {c.imgUrl && (
                   <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-10">
-                    <span className="text-[10px] font-bold text-white bg-black/60 px-2.5 py-1 rounded-full border border-white/10 backdrop-blur-md shadow-lg">Phóng to 🔍</span>
+                    <span className="text-[10px] font-bold text-white bg-black/60 px-2.5 py-1 rounded-full border border-white/10 backdrop-blur-md shadow-lg">Phóng to 🔍 </span>
                   </div>
                 )}
               </div>
@@ -2164,13 +2179,23 @@ function CharactersTab({ characters, search, setSearch, isPending, startTransiti
               <div className="absolute bottom-0 left-0 right-0 p-3 bg-black/25 backdrop-blur-[3px] border-t border-white/5 z-10 flex flex-col justify-between min-h-[70px]">
                 <div>
                   <h4 className="text-xs font-bold text-gray-100 line-clamp-1">{c.name}</h4>
+                  {(c.nameEn || c.nameZh) && (
+                    <p className="text-[10px] text-amber-400 font-medium line-clamp-1 mt-0.5">
+                      {[c.nameEn, c.nameZh].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
+                  {c.movie?.name && (
+                    <p className="text-[9px] text-orange-400 font-medium line-clamp-1 mt-0.5">
+                      🎬 {c.movie.name}
+                    </p>
+                  )}
                   <p className="text-[10px] text-gray-300 line-clamp-2 mt-1">{c.description || "Chưa có giới thiệu."}</p>
                 </div>
               </div>
 
               <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10 shadow-lg z-20">
                 <button
-                  onClick={() => { setEditing(c.id); setForm({ name: c.name, imgUrl: c.imgUrl ?? "", description: c.description ?? "" }); setIsFormOpen(true); }}
+                  onClick={() => { setEditing(c.id); setForm({ name: c.name, nameEn: c.nameEn ?? "", nameZh: c.nameZh ?? "", idMovie: c.idMovie ?? c.movie?.id ?? 0, imgUrl: c.imgUrl ?? "", description: c.description ?? "" }); setIsFormOpen(true); }}
                   className="p-1 text-gray-400 hover:text-white rounded-md transition-colors cursor-pointer"
                   title="Sửa nhân vật"
                 >
@@ -2196,13 +2221,36 @@ function CharactersTab({ characters, search, setSearch, isPending, startTransiti
       </div>
 
       {/* Add / Edit Character Modal */}
-      <Dialog open={isFormOpen} onOpenChange={(open) => { if (!open) { setIsFormOpen(false); setEditing(null); setForm({ name: "", imgUrl: "", description: "" }); } }}>
+      <Dialog open={isFormOpen} onOpenChange={(open) => { if (!open) { setIsFormOpen(false); setEditing(null); setForm({ name: "", nameEn: "", nameZh: "", idMovie: 0, imgUrl: "", description: "" }); } }}>
         <DialogContent className="bg-[#131520] border border-white/10 rounded-2xl max-w-md p-6 text-gray-100 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
           <form onSubmit={handleSubmit} className="space-y-4">
             <h3 className="text-base font-bold text-white mb-2">{editing !== null ? "✏️ Sửa nhân vật" : "➕ Thêm nhân vật"}</h3>
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">Tên nhân vật <span className="text-red-400">*</span></label>
+              <label className="text-xs text-gray-400 mb-1 block">Tên nhân vật (Tiếng Việt) <span className="text-red-400">*</span></label>
               <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required className="bg-[#090a0f] border-white/5 text-sm h-9" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Tên Tiếng Anh (EN)</label>
+                <Input value={form.nameEn} onChange={e => setForm(p => ({ ...p, nameEn: e.target.value }))} placeholder="Ex: Tifa Lockhart" className="bg-[#090a0f] border-white/5 text-sm h-9" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Tên Tiếng Trung (ZH)</label>
+                <Input value={form.nameZh} onChange={e => setForm(p => ({ ...p, nameZh: e.target.value }))} placeholder="Ex: 蒂法" className="bg-[#090a0f] border-white/5 text-sm h-9" />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">Thuộc Phim</label>
+              <select
+                value={form.idMovie}
+                onChange={e => setForm(p => ({ ...p, idMovie: parseInt(e.target.value) || 0 }))}
+                className="w-full bg-[#090a0f] border border-white/5 rounded-lg h-9 px-3 text-sm text-gray-200"
+              >
+                <option value={0}>-- Chọn phim --</option>
+                {movies.map((m: any) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Ảnh đại diện (Đứng)</label>
@@ -2217,7 +2265,7 @@ function CharactersTab({ characters, search, setSearch, isPending, startTransiti
                 {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                 {editing !== null ? "Lưu thay đổi" : "Thêm nhân vật"}
               </Button>
-              <Button type="button" variant="outline" onClick={() => { setIsFormOpen(false); setEditing(null); setForm({ name: "", imgUrl: "", description: "" }); }} className="border-white/10 text-gray-400 h-9 text-xs cursor-pointer">Huỷ</Button>
+              <Button type="button" variant="outline" onClick={() => { setIsFormOpen(false); setEditing(null); setForm({ name: "", nameEn: "", nameZh: "", idMovie: 0, imgUrl: "", description: "" }); }} className="border-white/10 text-gray-400 h-9 text-xs cursor-pointer">Huỷ</Button>
             </div>
           </form>
         </DialogContent>
@@ -3475,14 +3523,6 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Tên bộ sưu tập <span className="text-red-400">*</span></label>
               <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required className="bg-[#090a0f] border-white/5 text-sm h-9" placeholder="Bộ sưu tập Cosplay Dune" />
-            </div>
-
-            <div>
-              <label className="text-xs text-gray-400 mb-1 block">Liên kết Phim</label>
-              <select value={form.idMovie} onChange={e => setForm(p => ({ ...p, idMovie: parseInt(e.target.value) }))} className="w-full bg-[#090a0f] border border-white/5 rounded-lg h-9 px-3 text-sm text-gray-200">
-                <option value={0}>-- Không liên kết --</option>
-                {movies.map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
             </div>
 
             <div>

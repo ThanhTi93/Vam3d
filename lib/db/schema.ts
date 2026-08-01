@@ -124,12 +124,19 @@ export const characters = pgTable("characters", {
   id: serial("id").primaryKey(),
   imgUrl: varchar("img_url", { length: 500 }),
   name: varchar("name", { length: 255 }).notNull(),
+  nameEn: varchar("name_en", { length: 255 }),
+  nameZh: varchar("name_zh", { length: 255 }),
+  idMovie: integer("id_movie").references(() => movies.id, { onDelete: "set null" }),
   description: text("description"),
   status: integer("status").default(1),
 });
 
 // Characters Relations
-export const charactersRelations = relations(characters, ({ many }) => ({
+export const charactersRelations = relations(characters, ({ one, many }) => ({
+  movie: one(movies, {
+    fields: [characters.idMovie],
+    references: [movies.id],
+  }),
   episodesCharacters: many(episodesCharacter),
   galleryCharacters: many(galleryCharacter),
 }));
