@@ -97,7 +97,7 @@ function MovieSchemaScript({ movie }: { movie: any }) {
     name: movie.title || movie.name,
     description: movie.description || `Xem phim ${movie.title} Vietsub HD`,
     thumbnailUrl: [posterUrl],
-    uploadDate: new Date().toISOString(),
+    uploadDate: movie.createdAt ? new Date(movie.createdAt).toISOString() : "2026-01-01T00:00:00.000Z",
     contentUrl: movie.videoUrl || movieUrl,
     embedUrl: movieUrl,
   };

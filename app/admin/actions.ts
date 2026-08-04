@@ -1548,4 +1548,23 @@ export async function incrementEpisodeViews(id: number) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────
+// SYSTEM SETTINGS (VIP FREE MODE)
+// ─────────────────────────────────────────────────────────────────
+import { getFreeVipMode, setFreeVipMode } from "@/lib/db/settings";
+
+export async function getFreeVipModeAction(): Promise<boolean> {
+  return await getFreeVipMode();
+}
+
+export async function toggleFreeVipModeAction(enabled: boolean): Promise<{ success: boolean; enabled: boolean }> {
+  await verifyAdmin();
+  await setFreeVipMode(enabled);
+  revalidateAdmin();
+  revalidateTag("system-settings", "default");
+  revalidatePath("/", "layout");
+  return { success: true, enabled };
+}
+
+
 

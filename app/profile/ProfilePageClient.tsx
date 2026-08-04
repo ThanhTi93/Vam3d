@@ -21,7 +21,7 @@ interface ProfilePageClientProps {
 }
 
 export default function ProfilePageClient({ currentUser, initialPlans, initialPayments, initialSubscriptions = [] }: ProfilePageClientProps) {
-  const { user: authUser, refreshUser } = useAuth();
+  const { user: authUser, refreshUser, freeVipMode } = useAuth();
   const user = currentUser || authUser;
   const [plans] = useState<any[]>(initialPlans);
   const [payments] = useState<any[]>(initialPayments);
@@ -127,7 +127,12 @@ export default function ProfilePageClient({ currentUser, initialPlans, initialPa
                   </span>
                 </div>
 
-                {isVip ? (
+                {freeVipMode ? (
+                  <div className="flex items-start gap-2 bg-green-500/10 border border-green-500/30 rounded-xl p-3 text-[10px] text-green-400 leading-relaxed">
+                    <ShieldCheck className="w-4 h-4 shrink-0 text-green-400" />
+                    <span>🎉 Hệ thống đang mở chiếu <strong>MIỄN PHÍ</strong> tất cả phim & bộ sưu tập VIP cho toàn bộ thành viên!</span>
+                  </div>
+                ) : isVip ? (
                   <>
                     <div className="flex items-center justify-between border-b border-white/5 pb-2.5 text-xs">
                       <span className="text-gray-400">Trạng thái:</span>
@@ -156,10 +161,10 @@ export default function ProfilePageClient({ currentUser, initialPlans, initialPa
                 )}
 
                 <div className="pt-2">
-                  <Link href="/upgrade" className="w-full block">
+                  <Link href={freeVipMode ? "/" : "/upgrade"} className="w-full block">
                     <Button className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs py-2 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5">
                       <CreditCard className="w-4 h-4" />
-                      {isVip && !isExpired ? "Gia hạn / Nâng cấp VIP" : "Nâng cấp VIP ngay"}
+                      {freeVipMode ? "Khám Phá Xem Phim Free" : isVip && !isExpired ? "Gia hạn / Nâng cấp VIP" : "Nâng cấp VIP ngay"}
                     </Button>
                   </Link>
                 </div>

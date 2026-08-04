@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 
 // ─── Sub-component: Home Gallery Card ────────────────────────────────────────
 export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) => void }) {
+  const { freeVipMode } = useAuth();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [hovered, setHovered] = useState(false);
 
@@ -60,7 +61,11 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) =>
         )}
 
         <div className="absolute top-2 left-2 z-10">
-          {g.plan ? (
+          {freeVipMode ? (
+            <Badge className="bg-green-600 hover:bg-green-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded border-0 shadow-md">
+              MIỄN PHÍ
+            </Badge>
+          ) : g.plan ? (
             <Badge className="bg-orange-500 hover:bg-orange-500 text-white font-bold text-[9px] uppercase px-1.5 py-0.5 rounded tracking-wide shadow-md border-0">
               {g.plan.name}
             </Badge>
@@ -641,7 +646,7 @@ interface GalleryDetailModalProps {
 
 export function GalleryDetailModal({ gallery, onClose }: GalleryDetailModalProps) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, freeVipMode } = useAuth();
   
   const [restrictedError, setRestrictedError] = useState<string | null>(null);
   const [galleryVisibleCount, setGalleryVisibleCount] = useState(24);
@@ -650,6 +655,7 @@ export function GalleryDetailModal({ gallery, onClose }: GalleryDetailModalProps
 
   // Check user subscription level access
   const checkAccess = (requiredPlan: any) => {
+    if (freeVipMode) return true;
     if (!requiredPlan) return true;
     const requiredLevel = requiredPlan.level || 0;
     if (requiredLevel === 0) return true; // Free level 0 is open to all
@@ -669,7 +675,7 @@ export function GalleryDetailModal({ gallery, onClose }: GalleryDetailModalProps
     }
 
     // Access check on gallery load
-    if (gallery.plan) {
+    if (!freeVipMode && gallery.plan) {
       const requiredLevel = gallery.plan.level || 0;
       if (requiredLevel > 0) {
         if (!user) {
@@ -685,7 +691,7 @@ export function GalleryDetailModal({ gallery, onClose }: GalleryDetailModalProps
     
     setRestrictedError(null);
     setGalleryVisibleCount(24);
-  }, [gallery, user]);
+  }, [gallery?.id, user?.id, Boolean(freeVipMode)]);
 
   return (
     <>

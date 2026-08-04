@@ -51,7 +51,7 @@ export default function MoviePageClient({
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const isCurrentRoute = pathname === `/movie/${movie.id}`;
-  const { user } = useAuth();
+  const { user, freeVipMode } = useAuth();
   const { toggleWatchlist, isInWatchlist } = useWatchlist();
 
   const [showPlayer, setShowPlayer] = useState(false);
@@ -161,6 +161,7 @@ export default function MoviePageClient({
   }, []);
 
   const checkAccess = (requiredPlan: any) => {
+    if (freeVipMode) return true;
     if (!requiredPlan) return true;
     const requiredLevel = requiredPlan.level || 0;
     if (requiredLevel === 0) return true; // Free level 0 is open to all

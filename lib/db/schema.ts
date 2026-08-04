@@ -443,3 +443,11 @@ export const userSubscriptionsRelations = relations(userSubscriptions, ({ one })
     references: [plans.id],
   }),
 }));
+
+// 24. System Settings Table
+export const systemSettings = pgTable("system_settings", {
+  key: varchar("key", { length: 255 }).primaryKey(),
+  value: text("value"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+

@@ -11,7 +11,7 @@ interface UpgradePageClientProps {
 }
 
 export default function UpgradePageClient({ initialPlans }: UpgradePageClientProps) {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, freeVipMode } = useAuth();
   const [plans] = useState<any[]>(initialPlans);
   const [selectedPackages, setSelectedPackages] = useState<Record<number, number>>({});
   const [buyingPackageId, setBuyingPackageId] = useState<number | null>(null);
@@ -91,6 +91,10 @@ export default function UpgradePageClient({ initialPlans }: UpgradePageClientPro
   };
 
   const handleCheckout = async (packageId: number) => {
+    if (freeVipMode) {
+      showNotification("Hệ thống đang mở chiếu FREE tất cả nội dung! Bạn không cần mua gói VIP lúc này.", "success");
+      return;
+    }
     if (!user) {
       showNotification("Vui lòng đăng nhập để nâng cấp gói cước!", "error");
       setTimeout(() => {
@@ -144,188 +148,206 @@ export default function UpgradePageClient({ initialPlans }: UpgradePageClientPro
         </div>
       )}
 
-      <div className="text-center max-w-2xl mx-auto space-y-3">
-        <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-300 bg-clip-text text-transparent uppercase tracking-wider">
-          Nâng Cấp Thành Viên VIP
-        </h1>
-        <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
-          Mở khóa toàn bộ đặc quyền xem phim chất lượng cao HD/4K không chứa quảng cáo và truy cập kho bộ sưu tập ảnh AI độc quyền lớn nhất.
-        </p>
-      </div>
+      {/* Free VIP Mode Notice Banner */}
+      {freeVipMode ? (
+        <div className="max-w-3xl mx-auto py-12 bg-gradient-to-r from-emerald-500/20 via-green-500/10 to-emerald-500/20 border border-green-500/40 rounded-3xl p-8 sm:p-12 text-center space-y-6 shadow-2xl backdrop-blur-xl animate-in zoom-in-95 duration-300 my-8">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-500/20 text-green-400 text-xs font-bold uppercase tracking-wider border border-green-500/30">
+            🎉 Thông báo sự kiện đặc biệt
+          </div>
+          <h1 className="text-2xl sm:text-4xl font-black text-white uppercase tracking-wider">
+            Tất Cả Nội Dung VIP Đang Được Mở Cho Xem FREE!
+          </h1>
+          <p className="text-sm sm:text-base text-gray-300 leading-relaxed max-w-2xl mx-auto">
+            Hệ thống quản trị đã tạm thời hủy bỏ toàn bộ gói cước thanh toán. Bạn có thể thưởng thức toàn bộ Phim HD/4K, phim bộ, phim lẻ & Kho ảnh AI đặc quyền hoàn toàn Miễn Phí mà không cần nâng cấp!
+          </p>
+          <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
+            <a
+              href="/"
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-black text-sm uppercase tracking-wider shadow-xl shadow-green-500/30 transition-all transform hover:scale-105"
+            >
+              🚀 Khám Phá Xem Phim & Ảnh Free Ngay
+            </a>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="text-center max-w-2xl mx-auto space-y-3">
+            <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-300 bg-clip-text text-transparent uppercase tracking-wider">
+              Nâng Cấp Thành Viên VIP
+            </h1>
+            <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+              Mở khóa toàn bộ đặc quyền xem phim chất lượng cao HD/4K không chứa quảng cáo và truy cập kho bộ sưu tập ảnh AI độc quyền lớn nhất.
+            </p>
+          </div>
 
-      <div className="flex flex-wrap justify-center gap-6 max-w-7xl mx-auto items-stretch">
-        {plans.map((plan: any) => {
-          const isFree = plan.level === 0;
-          const hasPackages = plan.packages && plan.packages.length > 0;
-          const selectedPkgId = selectedPackages[plan.id];
-          const selectedPkg = plan.packages?.find((p: any) => p.id === selectedPkgId);
+          <div className="flex flex-wrap justify-center gap-6 max-w-7xl mx-auto items-stretch">
+            {plans.map((plan: any) => {
+              const isFree = plan.level === 0;
+              const hasPackages = plan.packages && plan.packages.length > 0;
+              const selectedPkgId = selectedPackages[plan.id];
+              const selectedPkg = plan.packages?.find((p: any) => p.id === selectedPkgId);
 
-          let totalCost = 0;
-          let finalMonthCost = 0;
-          let hasDiscount = false;
-          let discountPercent = 0;
+              let totalCost = 0;
+              let finalMonthCost = 0;
+              let hasDiscount = false;
+              let discountPercent = 0;
 
-          if (selectedPkg) {
-            const baseMonthPrice = parseFloat(plan.priceMonth);
-            discountPercent = parseFloat(selectedPkg.discount || "0");
-            hasDiscount = discountPercent > 0;
-            totalCost = Math.round(baseMonthPrice * selectedPkg.time * (1 - discountPercent / 100));
-            finalMonthCost = Math.round(baseMonthPrice * (1 - discountPercent / 100));
-          } else {
-            totalCost = Math.round(parseFloat(plan.priceMonth));
-            finalMonthCost = totalCost;
-          }
+              if (selectedPkg) {
+                const baseMonthPrice = parseFloat(plan.priceMonth);
+                discountPercent = parseFloat(selectedPkg.discount || "0");
+                hasDiscount = discountPercent > 0;
+                totalCost = Math.round(baseMonthPrice * selectedPkg.time * (1 - discountPercent / 100));
+                finalMonthCost = Math.round(baseMonthPrice * (1 - discountPercent / 100));
+              } else {
+                totalCost = Math.round(parseFloat(plan.priceMonth));
+                finalMonthCost = totalCost;
+              }
 
-          // User package tier status check
-          const isUserLogged = !!user;
-          const userVipLevel = user?.level || 0;
-          const isUserVip = userVipLevel > 0;
-          const isUserExpired = user?.expiredAt ? new Date(user.expiredAt) < new Date() : true;
+              // User package tier status check
+              const isUserLogged = !!user;
+              const userVipLevel = user?.level || 0;
+              const isUserVip = userVipLevel > 0;
+              const isUserExpired = user?.expiredAt ? new Date(user.expiredAt) < new Date() : true;
 
-          const isCurrentPlan = isUserLogged && isUserVip && !isUserExpired && userVipLevel === plan.level;
-          const isLowerPlan = isUserLogged && isUserVip && !isUserExpired && plan.level > 0 && plan.level < userVipLevel;
+              const isCurrentPlan = isUserLogged && isUserVip && !isUserExpired && userVipLevel === plan.level;
+              const isLowerPlan = isUserLogged && isUserVip && !isUserExpired && plan.level > 0 && plan.level < userVipLevel;
 
-          let cardClasses = `flex-1 min-w-[240px] max-w-[300px] bg-[#131520] border-2 rounded-2xl p-6 flex flex-col justify-between relative transition-all duration-300 overflow-visible`;
-          if (isFree) {
-            cardClasses += " border-white/5 opacity-80";
-          } else if (isCurrentPlan) {
-            cardClasses += " border-amber-500 bg-[#161a2c] shadow-2xl shadow-amber-500/10 md:scale-[1.03] z-10";
-          } else if (isLowerPlan) {
-            cardClasses += " border-white/5 opacity-40 hover:opacity-60";
-          } else {
-            cardClasses += " border-orange-500/20 hover:border-orange-500/40 shadow-xl shadow-orange-500/5";
-          }
+              let cardClasses = `flex-1 min-w-[240px] max-w-[300px] bg-[#131520] border-2 rounded-2xl p-6 flex flex-col justify-between relative transition-all duration-300 overflow-visible`;
+              if (isFree) {
+                cardClasses += " border-white/5 opacity-80";
+              } else if (isCurrentPlan) {
+                cardClasses += " border-amber-500 bg-[#161a2c] shadow-2xl shadow-amber-500/10 md:scale-[1.03] z-10";
+              } else if (isLowerPlan) {
+                cardClasses += " border-white/5 opacity-40 hover:opacity-60";
+              } else {
+                cardClasses += " border-orange-500/20 hover:border-orange-500/40 shadow-xl shadow-orange-500/5";
+              }
 
-          return (
-            <Card key={plan.id} className={cardClasses}>
-              {isCurrentPlan && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-black font-black text-[9px] px-3.5 py-1 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1">
-                  <Check className="w-3 h-3 stroke-[3]" /> Gói hiện tại
-                </div>
-              )}
+              return (
+                <Card key={plan.id} className={cardClasses}>
+                  {isCurrentPlan && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-black font-black text-[9px] px-3.5 py-1 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1">
+                      <Check className="w-3 h-3 stroke-[3]" /> Gói hiện tại
+                    </div>
+                  )}
 
-              {plan.level > 1 && !isCurrentPlan && !isLowerPlan && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-[9px] px-3 py-1 rounded-full uppercase tracking-wider shadow">
-                  Phổ Biến Nhất
-                </div>
-              )}
+                  {plan.level > 1 && !isCurrentPlan && !isLowerPlan && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-[9px] px-3 py-1 rounded-full uppercase tracking-wider shadow">
+                      Phổ Biến Nhất
+                    </div>
+                  )}
 
-              <div className="space-y-5">
-                <div>
-                  <h3 className="text-lg font-black text-white">{plan.name}</h3>
-                  <div className="flex items-baseline mt-2">
-                    <span className="text-2xl font-black text-white">
-                      {isFree ? "0" : finalMonthCost.toLocaleString("vi-VN")}đ
-                    </span>
-                    <span className="text-gray-400 text-xs ml-1">/tháng</span>
-                  </div>
-                </div>
+                  <div className="space-y-5">
+                    <div>
+                      <h3 className="text-lg font-black text-white">{plan.name}</h3>
+                      <div className="flex items-baseline mt-2">
+                        <span className="text-2xl font-black text-white">
+                          {isFree ? "0" : finalMonthCost.toLocaleString("vi-VN")}đ
+                        </span>
+                        <span className="text-gray-400 text-xs ml-1">/tháng</span>
+                      </div>
+                    </div>
 
-                {!isFree && hasPackages && (
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide block">
-                      Chọn Thời Hạn:
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {plan.packages.map((pkg: any) => {
-                        const pkgDiscount = parseFloat(pkg.discount || "0");
-                        return (
-                          <button
-                            key={pkg.id}
-                            disabled={isLowerPlan}
-                            onClick={() =>
-                              setSelectedPackages((prev) => ({ ...prev, [plan.id]: pkg.id }))
-                            }
-                            className={`border px-2.5 py-2 rounded-xl text-left transition-all ${
-                              isLowerPlan
-                                ? "border-white/5 bg-[#090a0f] text-gray-600 cursor-not-allowed"
-                                : selectedPkgId === pkg.id
-                                ? isCurrentPlan
-                                  ? "border-amber-500 bg-amber-500/10 text-white"
-                                  : "border-orange-500 bg-orange-500/10 text-white"
-                                : "border-white/5 bg-[#090a0f] text-gray-400 hover:text-white"
-                            }`}
-                          >
-                            <div className="text-xs font-bold">{pkg.time} Tháng</div>
-                            {pkgDiscount > 0 && (
-                              <div className={`text-[9px] font-semibold mt-0.5 ${isLowerPlan ? "text-gray-600" : "text-green-400"}`}>
-                                Giảm {pkgDiscount}%
-                              </div>
-                            )}
-                          </button>
-                        );
-                      })}
+                    {hasPackages && (
+                      <div className="space-y-2 pt-2 border-t border-white/5">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Chọn thời hạn:</label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {plan.packages.map((pkg: any) => {
+                            const isSelected = selectedPkgId === pkg.id;
+                            const disc = parseFloat(pkg.discount || "0");
+                            return (
+                              <button
+                                key={pkg.id}
+                                onClick={() => setSelectedPackages(p => ({ ...p, [plan.id]: pkg.id }))}
+                                className={`p-2 rounded-xl border text-left transition-all relative ${
+                                  isSelected
+                                    ? "border-orange-500 bg-orange-500/10 text-white shadow-md shadow-orange-500/10"
+                                    : "border-white/5 bg-[#090a0f] text-gray-400 hover:text-white hover:border-white/20"
+                                }`}
+                              >
+                                <div className="text-xs font-bold">{pkg.time} Tháng</div>
+                                {disc > 0 && (
+                                  <div className="text-[9px] text-green-400 font-semibold">Giảm {disc}%</div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2.5 pt-2 border-t border-white/5">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tính năng nổi bật:</p>
+                      {plan.features && plan.features.length > 0 ? (
+                        <ul className="space-y-2 text-xs">
+                          {plan.features.map((feat: any) => (
+                            <li key={feat.id} className="flex items-center gap-2">
+                              {feat.available ? (
+                                <Check className="w-3.5 h-3.5 text-green-400 shrink-0" />
+                              ) : (
+                                <X className="w-3.5 h-3.5 text-red-400/60 shrink-0" />
+                              )}
+                              <span className={feat.available ? "text-gray-300" : "text-gray-500 line-through text-[11px]"}>
+                                {feat.name}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-xs text-gray-500 italic">Chưa có thông tin tính năng</p>
+                      )}
                     </div>
                   </div>
-                )}
 
-                <div className="space-y-2 border-t border-white/5 pt-4">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide block">
-                    Tính Năng Nổi Bật:
-                  </span>
-                  <ul className="space-y-2 text-xs">
-                    {plan.features?.map((f: any) => (
-                      <li key={f.id} className="flex items-center gap-2 text-gray-300">
-                        {f.available ? (
-                          <Check className="w-4 h-4 text-green-500 shrink-0" />
-                        ) : (
-                          <X className="w-4 h-4 text-red-500/50 shrink-0" />
-                        )}
-                        <span className={f.available ? "" : "text-gray-500 line-through"}>
-                          {f.name}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              <div className="pt-6 mt-6 border-t border-white/5">
-                {isFree ? (
-                  <Button
-                    disabled
-                    className="w-full bg-white/5 border border-white/10 text-gray-400 cursor-default h-10 text-xs"
-                  >
-                    Gói Mặc Định
-                  </Button>
-                ) : isLowerPlan ? (
-                  <Button
-                    disabled
-                    className="w-full bg-white/5 border border-white/10 text-gray-500 cursor-not-allowed h-10 text-xs font-bold"
-                  >
-                    Đang dùng gói cao hơn
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => handleCheckout(selectedPkgId)}
-                    disabled={!selectedPkgId || buyingPackageId !== null}
-                    className={`w-full font-bold h-10 text-xs shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 rounded-xl ${
-                      isCurrentPlan
-                        ? "bg-amber-500 hover:bg-amber-600 text-black shadow-amber-500/10"
-                        : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/10"
-                    }`}
-                  >
-                    {buyingPackageId === selectedPkgId && (
-                      <div className={`w-3.5 h-3.5 rounded-full border border-r-transparent border-b-transparent border-l-transparent animate-spin ${
-                        isCurrentPlan ? "border-black" : "border-white"
-                      }`} />
-                    )}
-                    {isCurrentPlan ? (
-                      `Gia Hạn Gói (${totalCost.toLocaleString("vi-VN")}đ)`
-                    ) : isUserVip && !isUserExpired ? (
-                      `Nâng Cấp Lên Gói Này (${totalCost.toLocaleString("vi-VN")}đ)`
-                    ) : hasDiscount ? (
-                      <span>Mua Ngay - {totalCost.toLocaleString("vi-VN")}đ</span>
+                  <div className="pt-6 border-t border-white/5 mt-6">
+                    {isFree ? (
+                      <Button
+                        disabled
+                        variant="outline"
+                        className="w-full border-white/10 text-gray-500 cursor-default h-10 text-xs font-bold"
+                      >
+                        Gói Miễn Phí Mặc Định
+                      </Button>
+                    ) : isLowerPlan ? (
+                      <Button
+                        disabled
+                        className="w-full bg-white/5 border border-white/10 text-gray-500 cursor-not-allowed h-10 text-xs font-bold"
+                      >
+                        Đang dùng gói cao hơn
+                      </Button>
                     ) : (
-                      `Thanh Toán QR (${totalCost.toLocaleString("vi-VN")}đ)`
+                      <Button
+                        onClick={() => handleCheckout(selectedPkgId)}
+                        disabled={!selectedPkgId || buyingPackageId !== null}
+                        className={`w-full font-bold h-10 text-xs shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 rounded-xl ${
+                          isCurrentPlan
+                            ? "bg-amber-500 hover:bg-amber-600 text-black shadow-amber-500/10"
+                            : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/10"
+                        }`}
+                      >
+                        {buyingPackageId === selectedPkgId && (
+                          <div className={`w-3.5 h-3.5 rounded-full border border-r-transparent border-b-transparent border-l-transparent animate-spin ${
+                            isCurrentPlan ? "border-black" : "border-white"
+                          }`} />
+                        )}
+                        {isCurrentPlan ? (
+                          `Gia Hạn Gói (${totalCost.toLocaleString("vi-VN")}đ)`
+                        ) : isUserVip && !isUserExpired ? (
+                          `Nâng Cấp Lên Gói Này (${totalCost.toLocaleString("vi-VN")}đ)`
+                        ) : hasDiscount ? (
+                          <span>Mua Ngay - {totalCost.toLocaleString("vi-VN")}đ</span>
+                        ) : (
+                          `Thanh Toán QR (${totalCost.toLocaleString("vi-VN")}đ)`
+                        )}
+                      </Button>
                     )}
-                  </Button>
-                )}
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </>
+      )}
     </main>
   );
 }

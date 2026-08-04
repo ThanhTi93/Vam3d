@@ -31,6 +31,7 @@ import {
   getAdminGalleries, getAdminGalleriesPaginated, createGallery, updateGallery, deleteGallery,
   getAdminCollections, createCollection, updateCollection, deleteCollection,
   addImageToCollection, removeImageFromCollection, getAdminAiImages,
+  getFreeVipModeAction, toggleFreeVipModeAction,
 } from "./actions";
 import { ImagePicker } from "@/components/ui/image-picker";
 import { uploadFileToBunny } from "@/lib/uploadClient";
@@ -472,7 +473,7 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
 
           {/* ═══ OVERVIEW ═══════════════════════════════════════════════════ */}
           {tab === "overview" && (
-            <OverviewTab movies={movies} categories={categories} />
+            <OverviewTab movies={movies} categories={categories} show={show} />
           )}
 
           {/* ═══ MOVIES ══════════════════════════════════════════════════════ */}
@@ -604,9 +605,107 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// VIP FREE MODE CONTROL CARD
+// ═══════════════════════════════════════════════════════════════════════
+function VipFreeModeCard({ show }: { show: (msg: string, type?: "success" | "error") => void }) {
+  const [freeMode, setFreeMode] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [toggling, setToggling] = useState<boolean>(false);
+
+  const fetchStatus = async () => {
+    try {
+      const mode = await getFreeVipModeAction();
+      setFreeMode(mode);
+    } catch (err) {
+      console.error("Error loading free vip mode:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+  }, []);
+
+  const handleToggle = async () => {
+    setToggling(true);
+    try {
+      const newStatus = !freeMode;
+      const res = await toggleFreeVipModeAction(newStatus);
+      if (res.success) {
+        setFreeMode(res.enabled);
+        show(
+          res.enabled
+            ? "Đã BẬT cho xem FREE & Hủy hiển thị gói VIP bên người dùng!"
+            : "Đã TẮT chế độ Free. Đã khôi phục hiển thị gói VIP!"
+        );
+      }
+    } catch {
+      show("Không thể thay đổi cài đặt VIP", "error");
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  return (
+    <div className="bg-gradient-to-r from-[#181a28] via-[#151726] to-[#131520] border border-orange-500/30 rounded-2xl p-5 mb-6 shadow-2xl relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="p-2 rounded-xl bg-orange-500/10 text-orange-400">
+              <Shield className="w-5 h-5" />
+            </span>
+            <h3 className="text-base font-bold text-white">
+              Cấu hình hiển thị Gói VIP & Cho Xem Free
+            </h3>
+            {loading ? (
+              <Loader2 className="w-4 h-4 text-orange-400 animate-spin" />
+            ) : freeMode ? (
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[11px] px-2.5 py-0.5">
+                ⚡ Đang mở chiếu FREE toàn bộ VIP
+              </Badge>
+            ) : (
+              <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 text-[11px] px-2.5 py-0.5">
+                🔒 Đang bật gói cước VIP
+              </Badge>
+            )}
+          </div>
+          <p className="text-xs text-gray-400 leading-relaxed max-w-xl">
+            {freeMode
+              ? "Hệ thống đang ẨN các gói cước thanh toán bên người dùng. Toàn bộ phim & bộ sưu tập VIP đang cho tất cả thành viên xem MIỄN PHÍ."
+              : "Công tắc này dùng để HỦY BỎ hiển thị các gói VIP bên người dùng và mở khóa tất cả nội dung VIP cho phép xem Miễn Phí (Free)."}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+          <span className="text-xs font-bold text-gray-300">
+            {freeMode ? "Hủy hiển thị VIP (Cho xem Free)" : "Hiển thị gói VIP"}
+          </span>
+          <button
+            type="button"
+            disabled={loading || toggling}
+            onClick={handleToggle}
+            className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              freeMode ? "bg-orange-500 shadow-lg shadow-orange-500/30" : "bg-gray-700"
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                freeMode ? "translate-x-7" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // OVERVIEW TAB
 // ═══════════════════════════════════════════════════════════════════════
-function OverviewTab({ movies, categories }: { movies: any[]; categories: any[] }) {
+function OverviewTab({ movies, categories, show }: { movies: any[]; categories: any[]; show: (msg: string, type?: "success" | "error") => void }) {
   const stats = [
     { label: "Tổng phim", value: movies.length, icon: <Film className="w-5 h-5" />, color: "text-orange-400 bg-orange-500/10" },
     { label: "Thể loại", value: categories.length, icon: <List className="w-5 h-5" />, color: "text-green-400 bg-green-500/10" },
@@ -614,6 +713,9 @@ function OverviewTab({ movies, categories }: { movies: any[]; categories: any[] 
 
   return (
     <div className="space-y-8">
+      {/* Vip Free Mode Control Card */}
+      <VipFreeModeCard show={show} />
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, idx) => (
@@ -2312,7 +2414,9 @@ function PlansTab({ plans, search, setSearch, isPending, startTransition, onRefr
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="space-y-6">
+      <VipFreeModeCard show={show} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div>
         <form onSubmit={handleSubmit} className="bg-[#131520] border border-white/5 rounded-2xl p-5 space-y-4">
           <h3 className="text-sm font-bold text-white">{editing !== null ? "✏️ Sửa gói cước" : "➕ Thêm gói cước"}</h3>
@@ -2371,6 +2475,7 @@ function PlansTab({ plans, search, setSearch, isPending, startTransition, onRefr
           ))}
         </div>
       </div>
+    </div>
     </div>
   );
 }

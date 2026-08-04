@@ -77,7 +77,7 @@ export default function Header() {
     return null;
   }
   const { watchlist } = useWatchlist();
-  const { user, loading: authLoading, logout, refreshUser } = useAuth();
+  const { user, loading: authLoading, logout, refreshUser, freeVipMode } = useAuth();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showProfileUploader, setShowProfileUploader] = useState(false);
@@ -229,18 +229,20 @@ export default function Header() {
               )}
             </Link>
 
-            <Link
-              href="/upgrade"
-              className={`relative px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all duration-300 border border-yellow-500/50 overflow-hidden group flex items-center justify-center gap-1 ${pathname === "/upgrade"
-                  ? "bg-gradient-to-r from-yellow-500 via-orange-500 to-red-600 border-transparent text-white shadow-lg shadow-orange-500/40"
-                  : "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 hover:from-yellow-500/20 hover:to-orange-500/20 border-yellow-500/30 text-yellow-400 hover:text-white shadow-sm hover:shadow-yellow-500/20"
-                }`}
-            >
-              {/* Pulse effect border */}
-              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
-              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 blur opacity-30 group-hover:opacity-80 transition-all duration-300 -z-10 animate-pulse" />
-              ⚡ Nâng cấp VIP
-            </Link>
+            {!freeVipMode && (
+              <Link
+                href="/upgrade"
+                className={`relative px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all duration-300 border border-yellow-500/50 overflow-hidden group flex items-center justify-center gap-1 ${pathname === "/upgrade"
+                    ? "bg-gradient-to-r from-yellow-500 via-orange-500 to-red-600 border-transparent text-white shadow-lg shadow-orange-500/40"
+                    : "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 hover:from-yellow-500/20 hover:to-orange-500/20 border-yellow-500/30 text-yellow-400 hover:text-white shadow-sm hover:shadow-yellow-500/20"
+                  }`}
+              >
+                {/* Pulse effect border */}
+                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
+                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 blur opacity-30 group-hover:opacity-80 transition-all duration-300 -z-10 animate-pulse" />
+                ⚡ Nâng cấp VIP
+              </Link>
+            )}
           </nav>
 
           {/* Mobile hamburger menu button */}
