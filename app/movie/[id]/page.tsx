@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getMovieById, getAllMovies, getRecommendedEpisodes } from "@/lib/db/queries";
 import MoviePageClient from "./MoviePageClient";
 import RankingsSidebar from "@/components/RankingsSidebar";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 // Enable Instant Nav dev validation and production speed
 export const unstable_instant = {
@@ -20,9 +21,23 @@ interface MoviePageProps {
   searchParams: Promise<{ ep?: string }>;
 }
 
-// Generate dynamic metadata for SEO crawling
-export async function generateMetadata({ params }: MoviePageProps): Promise<Metadata> {
+export async function generateStaticParams() {
+  try {
+    const movies = await getAllMovies();
+    return (movies || []).map((m: any) => ({
+      id: m.id.toString(),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// Generate dynamic metadata for SEO crawling with per-episode support
+export async function generateMetadata({ params, searchParams }: MoviePageProps): Promise<Metadata> {
   const { id } = await params;
+  const resolvedSearchParams = await searchParams;
+  const ep = resolvedSearchParams?.ep;
+
   const movie = await getMovieById(id);
   
   if (!movie) {
@@ -33,15 +48,28 @@ export async function generateMetadata({ params }: MoviePageProps): Promise<Meta
   }
 
   const movieData = movie as any;
-  const title = `${movieData.name} (${movieData.originalTitle || ""}) [${movieData.year || 2026}] – Thuyết Minh Vietsub Full HD`;
-  const description = movieData.description || `Xem phim ${movieData.name} chất lượng cao Full HD Vietsub, Thuyết minh cập nhật nhanh nhất tại Vam3D.`;
+  const epSuffix = ep ? ` Tập ${ep}` : "";
+  const title = `${movieData.name}${epSuffix} (${movieData.originalTitle || ""}) [${movieData.year || 2026}] – Vietsub Thuyết Minh Full HD | Vam3D`;
+  const description = ep
+    ? `Xem phim ${movieData.name} Tập ${ep} chất lượng cao Full HD Vietsub, Thuyết minh mới nhất tại Vam3D. ${movieData.description || ""}`.substring(0, 160)
+    : (movieData.description || `Xem phim ${movieData.name} chất lượng cao Full HD Vietsub, Thuyết minh cập nhật nhanh nhất tại Vam3D.`).substring(0, 160);
+  
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
-  const movieUrl = `${siteUrl}/movie/${movieData.id}`;
+  const movieUrl = ep ? `${siteUrl}/movie/${movieData.id}?ep=${ep}` : `${siteUrl}/movie/${movieData.id}`;
   const posterUrl = movieData.imgUrl || `${siteUrl}/og-image.jpg`;
 
   return {
     title,
     description,
+    keywords: [
+      movieData.name,
+      `${movieData.name} vietsub`,
+      `${movieData.name} thuyết minh`,
+      ep ? `${movieData.name} tap ${ep}` : `${movieData.name} full hd`,
+      "hoat hinh 3d trung quoc",
+      "hh3d",
+      "vam3d",
+    ],
     alternates: {
       canonical: movieUrl,
     },
@@ -53,7 +81,7 @@ export async function generateMetadata({ params }: MoviePageProps): Promise<Meta
       images: [
         {
           url: posterUrl,
-          alt: movieData.name,
+          alt: `${movieData.name}${epSuffix} Vietsub HD`,
         },
       ],
     },
@@ -67,64 +95,118 @@ export async function generateMetadata({ params }: MoviePageProps): Promise<Meta
 }
 
 // Render dynamic JSON-LD structured schema on server-side for search engines
-function MovieSchemaScript({ movie }: { movie: any }) {
+function MovieSchemaScript({ movie, currentEp }: { movie: any; currentEp?: string }) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
   const movieUrl = `${siteUrl}/movie/${movie.id}`;
+  const currentUrl = currentEp ? `${movieUrl}?ep=${currentEp}` : movieUrl;
   const posterUrl = movie.thumbnail || movie.banner || `${siteUrl}/og-image.jpg`;
 
-  const movieSchema = {
-    "@context": "https://schema.org",
-    "@type": "Movie",
-    name: movie.title || movie.name,
-    alternateName: movie.originalTitle,
-    description: movie.description,
-    image: posterUrl,
-    url: movieUrl,
-    dateCreated: movie.year?.toString() || "2026",
-    director: { "@type": "Person", name: movie.director || "—" },
-    actor: movie.cast?.map((name: string) => ({ "@type": "Person", name })) || [],
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: movie.rating?.toString() || "10",
-      bestRating: "10",
-      ratingCount: movie.votes || 1,
-    },
-  };
+  const isSeries = movie.category === "phim-bo" || movie.category === "hoat-hinh" || (movie.episodes && movie.episodes.length > 1);
+
+  const mainSchema = isSeries
+    ? {
+        "@context": "https://schema.org",
+        "@type": "TVSeries",
+        name: movie.title || movie.name,
+        alternateName: movie.originalTitle,
+        description: movie.description,
+        image: posterUrl,
+        url: movieUrl,
+        numberOfEpisodes: movie.episodes?.length || 1,
+        genre: movie.genres || ["Hoạt Hình 3D"],
+        dateCreated: movie.year?.toString() || "2026",
+        director: { "@type": "Person", name: movie.director || "—" },
+        actor: movie.cast?.map((name: string) => ({ "@type": "Person", name })) || [],
+        aggregateRating: {
+          "@type": "AggregateRating",
+          ratingValue: movie.rating?.toString() || "9.8",
+          bestRating: "10",
+          ratingCount: movie.votes || 1,
+        },
+      }
+    : {
+        "@context": "https://schema.org",
+        "@type": "Movie",
+        name: movie.title || movie.name,
+        alternateName: movie.originalTitle,
+        description: movie.description,
+        image: posterUrl,
+        url: movieUrl,
+        dateCreated: movie.year?.toString() || "2026",
+        director: { "@type": "Person", name: movie.director || "—" },
+        actor: movie.cast?.map((name: string) => ({ "@type": "Person", name })) || [],
+        aggregateRating: {
+          "@type": "AggregateRating",
+          ratingValue: movie.rating?.toString() || "9.8",
+          bestRating: "10",
+          ratingCount: movie.votes || 1,
+        },
+      };
+
+  const episodeSchema = currentEp
+    ? {
+        "@context": "https://schema.org",
+        "@type": "TVEpisode",
+        name: `${movie.title || movie.name} - Tập ${currentEp}`,
+        episodeNumber: parseInt(currentEp, 10) || 1,
+        partOfSeries: {
+          "@type": "TVSeries",
+          name: movie.title || movie.name,
+          url: movieUrl,
+        },
+        description: movie.description || `Xem phim ${movie.title} Tập ${currentEp} Vietsub HD`,
+        image: posterUrl,
+        url: currentUrl,
+      }
+    : null;
 
   const videoSchema = {
     "@context": "https://schema.org",
     "@type": "VideoObject",
-    name: movie.title || movie.name,
+    name: currentEp ? `${movie.title || movie.name} Tập ${currentEp}` : (movie.title || movie.name),
     description: movie.description || `Xem phim ${movie.title} Vietsub HD`,
     thumbnailUrl: [posterUrl],
     uploadDate: movie.createdAt ? new Date(movie.createdAt).toISOString() : "2026-01-01T00:00:00.000Z",
-    contentUrl: movie.videoUrl || movieUrl,
-    embedUrl: movieUrl,
+    contentUrl: movie.videoUrl || currentUrl,
+    embedUrl: currentUrl,
   };
+
+  const categoryLabel = movie.category === "phim-bo" ? "Phim Bộ" : movie.category === "hoat-hinh" ? "Hoạt Hình 3D" : movie.category === "chieu-rap" ? "Chiếu Rạp" : "Phim Lẻ";
+
+  const breadcrumbItems = [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Trang chủ",
+      item: siteUrl,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: categoryLabel,
+      item: `${siteUrl}/${movie.category || "hoat-hinh"}`,
+    },
+    {
+      "@type": "ListItem",
+      position: 3,
+      name: movie.title || movie.name,
+      item: movieUrl,
+    },
+  ];
+
+  if (currentEp) {
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      position: 4,
+      name: `Tập ${currentEp}`,
+      item: currentUrl,
+    });
+  }
 
   const breadcrumbSchema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Trang chủ",
-        item: siteUrl,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: movie.category === "phim-bo" ? "Phim Bộ" : movie.category === "hoat-hinh" ? "Hoạt Hình" : movie.category === "chieu-rap" ? "Chiếu Rạp" : "Phim Lẻ",
-        item: `${siteUrl}/${movie.category || "phim-le"}`,
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: movie.title || movie.name,
-        item: movieUrl,
-      },
-    ],
+    itemListElement: breadcrumbItems,
   };
 
   return (
@@ -132,9 +214,17 @@ function MovieSchemaScript({ movie }: { movie: any }) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(movieSchema).replace(/</g, "\\u003c"),
+          __html: JSON.stringify(mainSchema).replace(/</g, "\\u003c"),
         }}
       />
+      {episodeSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(episodeSchema).replace(/</g, "\\u003c"),
+          }}
+        />
+      )}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -250,9 +340,18 @@ export default async function MovieDetailPage({ params, searchParams }: MoviePag
     })) || [],
   }));
 
+  const categoryLabel = formattedMovie.category === "phim-bo" ? "Phim Bộ" : formattedMovie.category === "hoat-hinh" ? "Hoạt Hình 3D" : formattedMovie.category === "chieu-rap" ? "Chiếu Rạp" : "Phim Lẻ";
+  const breadcrumbItems = [
+    { label: categoryLabel, href: `/${formattedMovie.category || "hoat-hinh"}` },
+    { label: formattedMovie.title, href: `/movie/${formattedMovie.id}` },
+    ...(epParam ? [{ label: `Tập ${epParam}` }] : []),
+  ];
+
   return (
     <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6">
-      <MovieSchemaScript movie={formattedMovie} />
+      <MovieSchemaScript movie={formattedMovie} currentEp={epParam} />
+
+      <Breadcrumbs items={breadcrumbItems} />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Left col: Movie Player and Info */}

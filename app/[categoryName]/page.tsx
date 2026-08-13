@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getMoviesByCategory, getAllMovies } from "@/lib/db/queries";
 import { getAdminCategories } from "@/app/admin/actions";
 import CategoryCatalog from "@/components/CategoryCatalog";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { notFound } from "next/navigation";
 
 interface PageProps {
@@ -17,6 +18,15 @@ const formatCategoryLabel = (name: string) => {
   
   return decoded.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 };
+
+export async function generateStaticParams() {
+  try {
+    const categories = await getAdminCategories();
+    return (categories || []).map((c: any) => ({ categoryName: encodeURIComponent(c.name) }));
+  } catch {
+    return [];
+  }
+}
 
 // Generate dynamic metadata
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -57,10 +67,7 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
     (c) => c.name.toLowerCase() === decodedCategory.toLowerCase()
   );
 
-  // If not found in database and is not one of the default standard ones
-  const isDefault = ["phim-le", "phim-bo", "chieu-rap", "hoat-hinh"].includes(decodedCategory.toLowerCase());
-
-  if (!exists && !isDefault) {
+  if (!exists) {
     notFound();
   }
 
@@ -160,18 +167,13 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
   };
 
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(categoryBreadcrumb).replace(/</g, "\\u003c"),
-        }}
-      />
+    <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-4">
+      <Breadcrumbs items={[{ label: titleName }]} />
       <CategoryCatalog
         categoryTitle={`${titleName} Mới Nhất`}
         movies={formattedMovies}
         allMovies={formattedAllMovies}
       />
-    </>
+    </div>
   );
 }

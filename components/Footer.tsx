@@ -1,27 +1,12 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { getFooterData } from "@/app/admin/actions";
-
-const formatCategoryLabel = (name: string) => {
-  if (name === "phim-le") return "Phim Lẻ";
-  if (name === "phim-bo") return "Phim Bộ";
-  if (name === "chieu-rap") return "Phim Chiếu Rạp";
-  if (name === "hoat-hinh") return "Hoạt Hình Anime";
-  return name.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-};
-
 export default function Footer() {
   const pathname = usePathname();
-  const [categories, setCategories] = useState<{ id: number; name: string }[]>([
-    { id: 1, name: "phim-le" },
-    { id: 2, name: "phim-bo" },
-    { id: 3, name: "chieu-rap" },
-    { id: 4, name: "hoat-hinh" },
-  ]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [topMovies, setTopMovies] = useState<{ id: number; name: string }[]>([]);
 
   useEffect(() => {
@@ -66,7 +51,7 @@ export default function Footer() {
               <li key={cat.id}>
                 <Link href={`/${cat.name}`} className="hover:text-orange-500 transition-colors flex items-center gap-1.5 line-clamp-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-orange-500/60 shrink-0" />
-                  {formatCategoryLabel(cat.name)}
+                  {cat.name}
                 </Link>
               </li>
             ))}
@@ -98,12 +83,15 @@ export default function Footer() {
 
         {/* Info & Contact Column */}
         <div>
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Thông Tin & Liên Hệ</h3>
+          <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Thông Tin &amp; Liên Hệ</h3>
           <ul className="space-y-2 text-xs mb-4">
+            <li><Link href="/lich-chieu" className="hover:text-orange-500 transition-colors font-semibold text-orange-400">📅 Lịch Chiếu Phim 3D</Link></li>
             <li><Link href="/gioi-thieu" className="hover:text-orange-500 transition-colors">Giới thiệu</Link></li>
             <li><Link href="/dieu-khoan-su-dung" className="hover:text-orange-500 transition-colors">Điều khoản sử dụng</Link></li>
             <li><Link href="/chinh-sach-bao-mat" className="hover:text-orange-500 transition-colors">Chính sách bảo mật</Link></li>
             <li><Link href="/khieu-nai-ban-quyen" className="hover:text-orange-500 transition-colors">Khiếu nại bản quyền</Link></li>
+            <li><a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors text-amber-400/80">📡 RSS Feed (Google Index)</a></li>
+            <li><a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors">🗺️ XML Sitemap</a></li>
           </ul>
           <p className="text-[11px] text-gray-500 mb-1">Email hỗ trợ:</p>
           <p className="text-xs font-bold text-orange-500">contact@vam3dhentai.online</p>

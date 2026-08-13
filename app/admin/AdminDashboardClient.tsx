@@ -450,6 +450,25 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
               <RefreshCw className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Làm mới cache</span>
             </Button>
+            <Button
+              size="sm"
+              onClick={() => startTransition(async () => {
+                try {
+                  const res = await fetch("/api/seo/reindex", { method: "POST" });
+                  const data = await res.json();
+                  if (data.success) {
+                    show(data.message);
+                  } else {
+                    show("Lỗi khi gửi lập chỉ mục", "error");
+                  }
+                } catch {
+                  show("Không thể gửi yêu cầu lập chỉ mục", "error");
+                }
+              })}
+              className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold gap-1.5 shadow-md shadow-orange-500/20"
+            >
+              🚀 Lập Chỉ Mục Ngay
+            </Button>
           </div>
         </div>
 

@@ -24,7 +24,7 @@ export default function MovieCard({ movie }: { movie: Movie }) {
       <div className="relative aspect-video w-full bg-[#090a0f] overflow-hidden">
         <Image
           src={getBunnyImageUrl(movie.thumbnail, 'thumb')}
-          alt={movie.title}
+          alt={`Xem phim ${movie.title} Full HD Vietsub Thuyết minh`}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-500"
           sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
