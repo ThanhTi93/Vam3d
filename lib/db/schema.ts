@@ -5,6 +5,7 @@ import { relations } from "drizzle-orm";
 export const authors = pgTable("authors", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }),
   description: text("description"),
   status: integer("status").default(1), // 1 = Active, 0 = Inactive
 });
@@ -20,8 +21,8 @@ export const plans = pgTable("plans", {
   level: integer("level").notNull(), // 0 = Free, 1 = VIP, 2 = VIP+, etc.
   priceMonth: decimal("price_month", { precision: 10, scale: 2 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }),
   status: integer("status").default(1),
-
 });
 
 // Plans Relations
@@ -67,6 +68,7 @@ export const packagesRelations = relations(packages, ({ one }) => ({
 export const movies = pgTable("movies", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }),
   description: text("description"),
   idAuthor: integer("id_author").references(() => authors.id, { onDelete: "set null" }),
   imgUrl: varchar("img_url", { length: 500 }), // Thumbnail URL
@@ -91,6 +93,7 @@ export const moviesRelations = relations(movies, ({ one, many }) => ({
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }),
   description: text("description"),
   status: integer("status").default(1),
 });
@@ -124,6 +127,7 @@ export const characters = pgTable("characters", {
   id: serial("id").primaryKey(),
   imgUrl: varchar("img_url", { length: 500 }),
   name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }),
   nameEn: varchar("name_en", { length: 255 }),
   nameZh: varchar("name_zh", { length: 255 }),
   idMovie: integer("id_movie").references(() => movies.id, { onDelete: "set null" }),
@@ -165,6 +169,7 @@ export const actors = pgTable("actors", {
   id: serial("id").primaryKey(),
   imgUrl: varchar("img_url", { length: 500 }),
   name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }),
   description: text("description"),
   status: integer("status").default(1),
 });
@@ -197,6 +202,7 @@ export const episodesActorRelations = relations(episodesActor, ({ one }) => ({
 export const episodes = pgTable("episodes", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }),
+  slug: varchar("slug", { length: 255 }),
   banner: varchar("banner", { length: 500 }),
   idMovie: integer("id_movie").references(() => movies.id, { onDelete: "cascade" }),
   status: integer("status").default(1),
@@ -309,6 +315,7 @@ export const watchHistoryRelations = relations(watchHistory, ({ one }) => ({
 export const aiGalleries = pgTable("ai_galleries", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }),
   idMovie: integer("id_movie").references(() => movies.id, { onDelete: "cascade" }),
   idPlan: integer("id_plan").references(() => plans.id, { onDelete: "set null" }),
   status: integer("status").default(1),
@@ -371,6 +378,7 @@ export const aiImagesRelations = relations(aiImages, ({ one, many }) => ({
 export const collections = pgTable("collections", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -57,6 +57,21 @@ export function cleanFolderName(name: string): string {
     .replace(/\s+/g, "_"); // replace spaces with underscore
 }
 
+export function slugify(str: string | null | undefined): string {
+  if (!str) return "";
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .replace(/[^a-zA-Z0-9\s-]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
+
 export function formatRelativeTime(date: string | Date | null | undefined): string {
   if (!date) return "Mới cập nhật";
   const d = typeof date === "string" ? new Date(date) : date;

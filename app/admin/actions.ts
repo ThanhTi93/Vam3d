@@ -14,6 +14,7 @@ function revalidateAdmin() {
 import { db, schema } from "@/lib/db";
 import { eq, and, ne, sql, ilike, or, inArray, count, isNull } from "drizzle-orm";
 import crypto from "crypto";
+import { slugify } from "@/lib/utils";
 
 // ─────────────────────────────────────────────────────────────────
 // MOVIES
@@ -78,6 +79,7 @@ export async function createMovie(data: {
 
   const [inserted] = await db.insert(schema.movies).values({
     ...movieData,
+    slug: slugify(movieData.name),
     idAuthor: idAuthor || null,
     status: 1,
   }).returning({ id: schema.movies.id });
@@ -226,7 +228,7 @@ export async function createCategory(data: {
 }) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
-  await db.insert(schema.categories).values({ ...data, status: 1 });
+  await db.insert(schema.categories).values({ ...data, slug: slugify(data.name), status: 1 });
   revalidateAdmin();
   revalidateTag("categories:all", "default");
   revalidateTag("movies:category", "default");
@@ -371,6 +373,7 @@ export async function createEpisode(data: {
 
   const [inserted] = await db.insert(schema.episodes).values({
     ...episodeData,
+    slug: slugify(episodeData.name || "tap"),
     status: 1,
     views: 0
   }).returning({ id: schema.episodes.id });
@@ -579,7 +582,7 @@ export async function createActor(data: {
 }) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
-  await db.insert(schema.actors).values({ ...data, status: 1 });
+  await db.insert(schema.actors).values({ ...data, slug: slugify(data.name), status: 1 });
 }
 
 export async function updateActor(
@@ -649,7 +652,7 @@ export async function createCharacter(data: {
 }) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
-  await db.insert(schema.characters).values({ ...data, status: 1 });
+  await db.insert(schema.characters).values({ ...data, slug: slugify(data.name), status: 1 });
 }
 
 export async function updateCharacter(
@@ -721,6 +724,7 @@ export async function createPlan(data: {
   if (!db) throw new Error("Database not available");
   await db.insert(schema.plans).values({
     ...data,
+    slug: slugify(data.name),
     priceMonth: data.priceMonth.toString(),
     status: 1,
   });
@@ -876,7 +880,7 @@ export async function createAuthor(data: {
 }) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
-  await db.insert(schema.authors).values({ ...data, status: 1 });
+  await db.insert(schema.authors).values({ ...data, slug: slugify(data.name), status: 1 });
 }
 
 export async function updateAuthor(
@@ -1090,6 +1094,7 @@ export async function createGallery(data: {
 
   const [inserted] = await db.insert(schema.aiGalleries).values({
     name,
+    slug: slugify(name),
     idMovie: idMovie || null,
     idPlan: idPlan || null,
     status: 1,
