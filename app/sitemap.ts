@@ -1,7 +1,9 @@
 import { MetadataRoute } from "next";
 import { db } from "@/lib/db";
+import { connection } from "next/server";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  await connection();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
   
   // Basic static pages (excluding dynamic categories)

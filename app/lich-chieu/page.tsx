@@ -5,6 +5,7 @@ import Image from "next/image";
 import { getAllMovies } from "@/lib/db/queries";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { Calendar, Play, Sparkles, Clock, Flame } from "lucide-react";
+import { connection } from "next/server";
 
 export const metadata: Metadata = {
   title: "Lịch Chiếu Phim Hoạt Hình 3D Trung Quốc Mới Nhất 2026 | Vam3D",
@@ -40,6 +41,7 @@ const DAYS_OF_WEEK = [
 ];
 
 export default async function SchedulePage() {
+  await connection();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
   const allMovies = await getAllMovies();
 
