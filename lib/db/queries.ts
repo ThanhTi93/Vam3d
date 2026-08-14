@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { db } from "./index";
 import * as schema from "./schema";
 import { eq, and, or, ilike, inArray, count, isNull } from "drizzle-orm";
+import { slugify } from "@/lib/utils";
 
 
 // ─── Get All Movies ─────────────────────────────────────────────────────────
@@ -71,8 +72,8 @@ export const getHotMovies = unstable_cache(
   { revalidate: 60, tags: ["movies:hot"] }
 );
 
-// ─── Get Movies by Category slug ────────────────────────────────────────────
-export const getMoviesByCategory = (categoryName: string) => unstable_cache(
+// ─── Get Movies by Category slug or name ────────────────────────────────────
+export const getMoviesByCategory = (categoryIdentifier: string) => unstable_cache(
   async () => {
     try {
       if (!db) throw new Error("No DB");
@@ -87,32 +88,49 @@ export const getMoviesByCategory = (categoryName: string) => unstable_cache(
         },
       });
 
+      const decoded = decodeURIComponent(categoryIdentifier).trim();
+      const inputSlug = slugify(decoded);
+
       return result.filter((movie) =>
-        movie.movieCategories.some(
-          (mc) => mc.category?.name?.toLowerCase() === categoryName.toLowerCase()
-        )
+        movie.movieCategories.some((mc) => {
+          if (!mc.category) return false;
+          const catName = mc.category.name.trim();
+          const catSlug = mc.category.slug || slugify(catName);
+          return (
+            catSlug.toLowerCase() === inputSlug.toLowerCase() ||
+            catName.toLowerCase() === decoded.toLowerCase() ||
+            catSlug.toLowerCase() === decoded.toLowerCase()
+          );
+        })
       );
     } catch {
       return [];
     }
   },
-  ["movies-by-category", categoryName],
-  { revalidate: 120, tags: ["movies:category", `movies:category-${categoryName}`] }
+  ["movies-by-category", categoryIdentifier],
+  { revalidate: 120, tags: ["movies:category", `movies:category-${categoryIdentifier}`] }
 )();
 
-// ─── Get Single Movie by ID ──────────────────────────────────────────────────
+// ─── Get Single Movie by ID or Slug ─────────────────────────────────────────
 export const getMovieById = (id: string) => unstable_cache(
   async () => {
     try {
       if (!db) throw new Error("No DB");
 
-      const numericId = parseInt(id, 10);
-      if (isNaN(numericId)) {
-        return null;
-      }
+      const trimmedId = id ? decodeURIComponent(id).trim() : "";
+      if (!trimmedId) return null;
 
-      const result = await db.query.movies.findFirst({
-        where: (movies, { eq }) => eq(movies.id, numericId),
+      const isNumeric = /^\d+$/.test(trimmedId);
+      const numericId = isNumeric ? parseInt(trimmedId, 10) : -1;
+      const targetSlug = slugify(trimmedId);
+
+      let result = await db.query.movies.findFirst({
+        where: (movies, { eq, or }) => {
+          if (isNumeric) {
+            return or(eq(movies.id, numericId), eq(movies.slug, trimmedId), eq(movies.slug, targetSlug));
+          }
+          return or(eq(movies.slug, trimmedId), eq(movies.slug, targetSlug));
+        },
         with: {
           author: true,
           movieCategories: { with: { category: true } },
@@ -143,6 +161,48 @@ export const getMovieById = (id: string) => unstable_cache(
         },
       });
 
+      if (!result) {
+        const all = await db.query.movies.findMany({
+          where: (movies, { eq }) => eq(movies.status, 1),
+          with: {
+            author: true,
+            movieCategories: { with: { category: true } },
+            episodes: {
+              orderBy: (ep, { asc }) => [asc(ep.id)],
+              with: {
+                episodesActors: { with: { actor: true } },
+                episodesCharacters: { with: { character: true } },
+                plan: true,
+              }
+            },
+            aiGalleries: {
+              where: (g, { eq }) => eq(g.status, 1),
+              orderBy: (g, { desc }) => [desc(g.id)],
+              with: {
+                galleryCharacters: {
+                  with: { character: { columns: { id: true, name: true } } }
+                },
+                images: {
+                  columns: { id: true, imgUrl: true },
+                  with: {
+                    collectionImages: true
+                  }
+                },
+                plan: true,
+              }
+            }
+          },
+        });
+
+        result = all.find(
+          (m) =>
+            m.id.toString() === trimmedId ||
+            m.slug === trimmedId ||
+            m.slug === targetSlug ||
+            slugify(m.name) === targetSlug
+        );
+      }
+
       if (!result) return null;
 
       const uniqueActors = new Map<number, any>();
@@ -166,7 +226,7 @@ export const getMovieById = (id: string) => unstable_cache(
     }
   },
   ["movie-by-id", id],
-  { revalidate: 300, tags: ["movie:detail", `movie:detail-${id}`] }
+  { revalidate: 60, tags: ["movies:detail", `movie:detail-${id}`] }
 )();
 
 // ─── Get Top Ranked Movies ───────────────────────────────────────────────────

@@ -4,6 +4,7 @@ import { getAdminCategories } from "@/app/admin/actions";
 import CategoryCatalog from "@/components/CategoryCatalog";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { notFound } from "next/navigation";
+import { slugify } from "@/lib/utils";
 
 interface PageProps {
   params: Promise<{ categoryName: string }>;
@@ -22,7 +23,14 @@ const formatCategoryLabel = (name: string) => {
 export async function generateStaticParams() {
   try {
     const categories = await getAdminCategories();
-    return (categories || []).map((c: any) => ({ categoryName: encodeURIComponent(c.name) }));
+    const params: { categoryName: string }[] = [];
+    (categories || []).forEach((c: any) => {
+      if (c.name) params.push({ categoryName: c.name });
+      if (c.name) params.push({ categoryName: encodeURIComponent(c.name) });
+      const slug = c.slug || slugify(c.name);
+      if (slug) params.push({ categoryName: slug });
+    });
+    return params;
   } catch {
     return [];
   }
@@ -31,7 +39,17 @@ export async function generateStaticParams() {
 // Generate dynamic metadata
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { categoryName } = await params;
-  const titleName = formatCategoryLabel(categoryName);
+  const decoded = decodeURIComponent(categoryName).trim();
+  const inputSlug = slugify(decoded).toLowerCase();
+  
+  const categories = await getAdminCategories();
+  const cat = categories.find((c: any) => {
+    const catName = (c.name || "").trim().toLowerCase();
+    const catSlug = (c.slug || slugify(c.name)).trim().toLowerCase();
+    return catSlug === inputSlug || catName === decoded.toLowerCase() || catSlug === decoded.toLowerCase();
+  });
+
+  const titleName = cat ? cat.name : formatCategoryLabel(categoryName);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
   const categoryUrl = `${siteUrl}/${encodeURIComponent(categoryName)}`;
   const title = `${titleName} Mới Nhất – Xem Phim ${titleName} Vietsub HD | Vam3D`;
@@ -59,20 +77,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function DynamicCategoryPage({ params }: PageProps) {
   const { categoryName } = await params;
-  const decodedCategory = decodeURIComponent(categoryName);
+  const decodedCategory = decodeURIComponent(categoryName).trim();
+  const inputSlug = slugify(decodedCategory).toLowerCase();
 
-  // Check if this category exists in the database
+  // Check if this category exists in the database by slug or name
   const allDbCategories = await getAdminCategories();
-  const exists = allDbCategories.some(
-    (c) => c.name.toLowerCase() === decodedCategory.toLowerCase()
-  );
+  const targetCategory = allDbCategories.find((c: any) => {
+    const catName = (c.name || "").trim().toLowerCase();
+    const catSlug = (c.slug || slugify(c.name)).trim().toLowerCase();
+    return (
+      catSlug === inputSlug ||
+      catName === decodedCategory.toLowerCase() ||
+      catSlug === decodedCategory.toLowerCase()
+    );
+  });
 
-  if (!exists) {
+  if (!targetCategory) {
     notFound();
   }
 
   const [movies, allMovies] = await Promise.all([
-    getMoviesByCategory(decodedCategory),
+    getMoviesByCategory(targetCategory.slug || targetCategory.name),
     getAllMovies(),
   ]);
 
@@ -143,7 +168,7 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
     })) || [],
   }));
 
-  const titleName = formatCategoryLabel(decodedCategory);
+  const titleName = targetCategory?.name || formatCategoryLabel(decodedCategory);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
   const categoryUrl = `${siteUrl}/${encodeURIComponent(decodedCategory)}`;
 

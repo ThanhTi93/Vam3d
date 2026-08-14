@@ -24,9 +24,12 @@ interface MoviePageProps {
 export async function generateStaticParams() {
   try {
     const movies = await getAllMovies();
-    return (movies || []).map((m: any) => ({
-      id: m.id.toString(),
-    }));
+    const params: { id: string }[] = [];
+    (movies || []).forEach((m: any) => {
+      params.push({ id: m.id.toString() });
+      if (m.slug) params.push({ id: m.slug });
+    });
+    return params;
   } catch {
     return [];
   }

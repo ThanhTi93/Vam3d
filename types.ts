@@ -11,6 +11,7 @@ export interface Episode {
 
 export interface Movie {
   id: string;
+  slug?: string;
   title: string;
   originalTitle: string;
   thumbnail: string;

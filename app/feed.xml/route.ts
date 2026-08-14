@@ -22,7 +22,7 @@ export async function GET() {
 
   const feedItemsXml = movies
     .map((movie) => {
-      const movieUrl = `${siteUrl}/movie/${movie.id}`;
+      const movieUrl = `${siteUrl}/movie/${movie.slug || movie.id}`;
       const pubDate = movie.createdAt ? new Date(movie.createdAt).toUTCString() : new Date().toUTCString();
       const description = movie.description
         ? movie.description.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")

@@ -206,7 +206,7 @@ const getCached_getFooterData = unstable_cache(
     const [categories, topMovies] = await Promise.all([
       db.query.categories.findMany({ orderBy: (c, { asc }) => [asc(c.id)] }),
       db.query.movies.findMany({
-        columns: { id: true, name: true },
+        columns: { id: true, name: true, slug: true },
         where: (m, { eq }) => eq(m.status, 1),
         orderBy: (m, { desc }) => [desc(m.id)],
         limit: 6,

@@ -46,23 +46,25 @@ export async function POST() {
     if (db) {
       // Fetch dynamic category URLs
       const dbCategories = await db.query.categories.findMany({
-        columns: { name: true },
+        columns: { name: true, slug: true },
         where: (cats, { eq }) => eq(cats.status, 1),
       });
       dbCategories?.forEach((cat) => {
-        urlList.push(`${siteUrl}/${encodeURIComponent(cat.name)}`);
+        urlList.push(`${siteUrl}/${cat.slug || encodeURIComponent(cat.name)}`);
       });
 
       // Fetch dynamic movie & episode URLs
       const dbMovies = await db.query.movies.findMany({
+        columns: { id: true, slug: true },
         where: (movies, { eq }) => eq(movies.status, 1),
         with: { episodes: { columns: { id: true } } },
       });
 
       dbMovies?.forEach((movie) => {
-        urlList.push(`${siteUrl}/movie/${movie.id}`);
-        movie.episodes?.forEach((_, idx) => {
-          urlList.push(`${siteUrl}/movie/${movie.id}?ep=${idx + 1}`);
+        const movieKey = movie.slug || movie.id;
+        urlList.push(`${siteUrl}/movie/${movieKey}`);
+        movie.episodes?.forEach((ep) => {
+          urlList.push(`${siteUrl}/movie/${movieKey}?ep=${ep.id}`);
         });
       });
     }

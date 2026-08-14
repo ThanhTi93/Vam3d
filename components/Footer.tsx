@@ -4,10 +4,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { getFooterData } from "@/app/admin/actions";
+import { slugify } from "@/lib/utils";
+
 export default function Footer() {
   const pathname = usePathname();
-  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
-  const [topMovies, setTopMovies] = useState<{ id: number; name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string; slug?: string | null }[]>([]);
+  const [topMovies, setTopMovies] = useState<{ id: number; name: string; slug?: string | null }[]>([]);
 
   useEffect(() => {
     getFooterData().then((res) => {
@@ -47,14 +49,17 @@ export default function Footer() {
         <div className="md:col-span-2">
           <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Thể Loại Phim</h3>
           <ul className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2.5 text-xs">
-            {categories.map((cat) => (
-              <li key={cat.id}>
-                <Link href={`/${cat.name}`} className="hover:text-orange-500 transition-colors flex items-center gap-1.5 line-clamp-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500/60 shrink-0" />
-                  {cat.name}
-                </Link>
-              </li>
-            ))}
+            {categories.map((cat) => {
+              const href = `/${cat.slug || slugify(cat.name) || encodeURIComponent(cat.name)}`;
+              return (
+                <li key={cat.id}>
+                  <Link href={href} className="hover:text-orange-500 transition-colors flex items-center gap-1.5 line-clamp-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500/60 shrink-0" />
+                    {cat.name}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
 
@@ -63,14 +68,17 @@ export default function Footer() {
           <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Phim Nổi Bật</h3>
           <ul className="space-y-2 text-xs">
             {topMovies.length > 0 ? (
-              topMovies.map((m) => (
-                <li key={m.id}>
-                  <Link href={`/movie/${m.id}`} className="hover:text-orange-500 transition-colors line-clamp-1 flex items-center gap-1.5">
-                    <span className="w-1 h-1 rounded-full bg-amber-400/60 shrink-0" />
-                    {m.name}
-                  </Link>
-                </li>
-              ))
+              topMovies.map((m) => {
+                const href = `/movie/${m.slug || m.id}`;
+                return (
+                  <li key={m.id}>
+                    <Link href={href} className="hover:text-orange-500 transition-colors line-clamp-1 flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full bg-amber-400/60 shrink-0" />
+                      {m.name}
+                    </Link>
+                  </li>
+                );
+              })
             ) : (
               <>
                 <li><Link href="/phim-hot" className="hover:text-orange-500 transition-colors">Phim Hot Đang Chiếu</Link></li>

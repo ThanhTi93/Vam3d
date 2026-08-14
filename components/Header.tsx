@@ -10,7 +10,7 @@ import {
 import { useWatchlist } from "@/app/context/watchlistContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { updateUserAvatar } from "@/lib/auth/actions";
-import { getBunnyImageUrl } from "@/lib/utils";
+import { getBunnyImageUrl, slugify } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 const AvatarUpload = React.lazy(() => import("@/app/components/AvatarUpload"));
@@ -179,18 +179,22 @@ export default function Header() {
               {isCategoryOpen && (
                 <div className="absolute top-full left-0 pt-2 w-[420px] z-50">
                   <div className="rounded-2xl bg-[#090a0f]/95 border border-white/10 backdrop-blur-xl p-2.5 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200 grid grid-cols-3 gap-1.5">
-                    {categories.map((cat) => (
-                      <Link
-                        key={cat.id}
-                        href={`/${cat.name}`}
-                        onClick={() => setIsCategoryOpen(false)}
-                        className={`px-2.5 py-2 text-xs font-bold rounded-lg hover:bg-orange-500/10 hover:text-orange-400 transition-all flex items-center gap-1.5 ${pathname === `/${cat.name}` ? "text-orange-500 bg-orange-500/10" : "text-gray-300"
-                          }`}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500/60 shrink-0" />
-                        <span className="line-clamp-1">{formatCategoryLabel(cat.name)}</span>
-                      </Link>
-                    ))}
+                    {categories.map((cat) => {
+                      const catPath = `/${cat.slug || slugify(cat.name) || encodeURIComponent(cat.name)}`;
+                      const isActive = pathname === catPath || pathname === `/${cat.name}` || pathname === `/${encodeURIComponent(cat.name)}`;
+                      return (
+                        <Link
+                          key={cat.id}
+                          href={catPath}
+                          onClick={() => setIsCategoryOpen(false)}
+                          className={`px-2.5 py-2 text-xs font-bold rounded-lg hover:bg-orange-500/10 hover:text-orange-400 transition-all flex items-center gap-1.5 ${isActive ? "text-orange-500 bg-orange-500/10" : "text-gray-300"
+                            }`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-orange-500/60 shrink-0" />
+                          <span className="line-clamp-1">{cat.name?.trim() ? formatCategoryLabel(cat.name) : "Thể loại"}</span>
+                        </Link>
+                      );
+                    })}
                   </div>
                 </div>
               )}
