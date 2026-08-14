@@ -8,15 +8,7 @@ const ADMIN_ROUTE_PREFIX = "/admin";
 const AUTH_ROUTES = ["/login", "/register"];
 
 export async function proxy(request: NextRequest) {
-  const { pathname, search } = request.nextUrl;
-  const host = request.headers.get("host") || "";
-
-  // Redirect www to non-www domain
-  if (host.startsWith("www.")) {
-    const url = request.nextUrl.clone();
-    url.host = host.replace(/^www\./, "");
-    return NextResponse.redirect(url, { status: 301 });
-  }
+  const { pathname } = request.nextUrl;
 
   // 1. Skip challenge check for static assets, files, APIs, the challenge page, and Server Actions
   if (
