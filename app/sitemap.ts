@@ -4,8 +4,9 @@ import { connection } from "next/server";
 import { slugify } from "@/lib/utils";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  await connection();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost"))
+    ? process.env.NEXT_PUBLIC_SITE_URL
+    : "https://www.vam3dhentai.online";
   
   // Basic static pages
   const staticPaths: MetadataRoute.Sitemap = [
