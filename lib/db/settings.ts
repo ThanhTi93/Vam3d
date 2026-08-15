@@ -67,3 +67,33 @@ export async function getFreeVipMode(): Promise<boolean> {
 export async function setFreeVipMode(enabled: boolean): Promise<void> {
   await setSystemSetting("free_vip_mode", enabled ? "true" : "false");
 }
+
+let turnstileMemoryCache: { value: boolean; timestamp: number } | null = null;
+const CACHE_TTL_MS = 15000; // 15s in-memory cache for fast proxy/middleware execution
+
+export async function getTurnstileMode(): Promise<boolean> {
+  const now = Date.now();
+  if (turnstileMemoryCache && now - turnstileMemoryCache.timestamp < CACHE_TTL_MS) {
+    return turnstileMemoryCache.value;
+  }
+  if (!db) return true;
+  try {
+    await ensureSettingsTableExists();
+    const setting = await db.query.systemSettings.findFirst({
+      where: eq(schema.systemSettings.key, "turnstile_enabled"),
+    });
+    // Default to true if not explicitly set to "false"
+    const enabled = setting ? setting.value !== "false" : true;
+    turnstileMemoryCache = { value: enabled, timestamp: now };
+    return enabled;
+  } catch (err) {
+    console.error("Error fetching turnstile mode:", err);
+    return turnstileMemoryCache ? turnstileMemoryCache.value : true;
+  }
+}
+
+export async function setTurnstileMode(enabled: boolean): Promise<void> {
+  await setSystemSetting("turnstile_enabled", enabled ? "true" : "false");
+  turnstileMemoryCache = { value: enabled, timestamp: Date.now() };
+}
+

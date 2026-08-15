@@ -1554,9 +1554,9 @@ export async function incrementEpisodeViews(id: number) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// SYSTEM SETTINGS (VIP FREE MODE)
+// SYSTEM SETTINGS (VIP FREE MODE & TURNSTILE ANTI-BOT)
 // ─────────────────────────────────────────────────────────────────
-import { getFreeVipMode, setFreeVipMode } from "@/lib/db/settings";
+import { getFreeVipMode, setFreeVipMode, getTurnstileMode, setTurnstileMode } from "@/lib/db/settings";
 
 export async function getFreeVipModeAction(): Promise<boolean> {
   return await getFreeVipMode();
@@ -1570,6 +1570,20 @@ export async function toggleFreeVipModeAction(enabled: boolean): Promise<{ succe
   revalidatePath("/", "layout");
   return { success: true, enabled };
 }
+
+export async function getTurnstileModeAction(): Promise<boolean> {
+  return await getTurnstileMode();
+}
+
+export async function toggleTurnstileModeAction(enabled: boolean): Promise<{ success: boolean; enabled: boolean }> {
+  await verifyAdmin();
+  await setTurnstileMode(enabled);
+  revalidateAdmin();
+  revalidateTag("system-settings", "default");
+  revalidatePath("/", "layout");
+  return { success: true, enabled };
+}
+
 
 
 

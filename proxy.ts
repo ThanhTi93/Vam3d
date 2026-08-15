@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { decryptSession } from "./lib/auth/session";
 import { decryptChallengeClearance } from "./lib/auth/challenge";
+import { getTurnstileMode } from "./lib/db/settings";
 
 // Define paths that require authentication and the admin role
 const ADMIN_ROUTE_PREFIX = "/admin";
@@ -21,15 +22,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Cloudflare Turnstile bot verification check
-  const clearanceCookie = request.cookies.get("cf_clearance")?.value;
-  const clearance = await decryptChallengeClearance(clearanceCookie || "");
+  // 2. Cloudflare Turnstile bot verification check (if enabled in Admin)
+  const isTurnstileEnabled = await getTurnstileMode();
+  if (isTurnstileEnabled) {
+    const clearanceCookie = request.cookies.get("cf_clearance")?.value;
+    const clearance = await decryptChallengeClearance(clearanceCookie || "");
 
-  if (!clearance || !clearance.verified) {
-    // User is not verified, redirect to challenge page with callback URL
-    const challengeUrl = new URL("/challenge", request.url);
-    challengeUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(challengeUrl);
+    if (!clearance || !clearance.verified) {
+      // User is not verified, redirect to challenge page with callback URL
+      const challengeUrl = new URL("/challenge", request.url);
+      challengeUrl.searchParams.set("next", pathname);
+      return NextResponse.redirect(challengeUrl);
+    }
   }
 
   // 3. Get the session token from the cookies

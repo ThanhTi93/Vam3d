@@ -32,6 +32,7 @@ import {
   getAdminCollections, createCollection, updateCollection, deleteCollection,
   addImageToCollection, removeImageFromCollection, getAdminAiImages,
   getFreeVipModeAction, toggleFreeVipModeAction,
+  getTurnstileModeAction, toggleTurnstileModeAction,
 } from "./actions";
 import { ImagePicker } from "@/components/ui/image-picker";
 import { uploadFileToBunny } from "@/lib/uploadClient";
@@ -667,7 +668,7 @@ function VipFreeModeCard({ show }: { show: (msg: string, type?: "success" | "err
   };
 
   return (
-    <div className="bg-gradient-to-r from-[#181a28] via-[#151726] to-[#131520] border border-orange-500/30 rounded-2xl p-5 mb-6 shadow-2xl relative overflow-hidden">
+    <div className="bg-gradient-to-r from-[#181a28] via-[#151726] to-[#131520] border border-orange-500/30 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
       <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
         <div className="space-y-1">
@@ -722,6 +723,104 @@ function VipFreeModeCard({ show }: { show: (msg: string, type?: "success" | "err
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// TURNSTILE ANTI-BOT CONTROL CARD
+// ═══════════════════════════════════════════════════════════════════════
+function TurnstileControlCard({ show }: { show: (msg: string, type?: "success" | "error") => void }) {
+  const [enabled, setEnabled] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [toggling, setToggling] = useState<boolean>(false);
+
+  const fetchStatus = async () => {
+    try {
+      const mode = await getTurnstileModeAction();
+      setEnabled(mode);
+    } catch (err) {
+      console.error("Error loading turnstile mode:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+  }, []);
+
+  const handleToggle = async () => {
+    setToggling(true);
+    try {
+      const newStatus = !enabled;
+      const res = await toggleTurnstileModeAction(newStatus);
+      if (res.success) {
+        setEnabled(res.enabled);
+        show(
+          res.enabled
+            ? "Đã BẬT kiểm tra bảo vệ bot (Cloudflare Turnstile)!"
+            : "Đã TẮT kiểm tra bảo vệ bot! Người dùng sẽ truy cập trực tiếp."
+        );
+      }
+    } catch {
+      show("Không thể thay đổi cài đặt xác minh bot", "error");
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  return (
+    <div className="bg-gradient-to-r from-[#181a28] via-[#151726] to-[#131520] border border-blue-500/30 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
+              <Shield className="w-5 h-5" />
+            </span>
+            <h3 className="text-base font-bold text-white">
+              Cấu hình Xác minh Bot (Cloudflare Turnstile)
+            </h3>
+            {loading ? (
+              <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+            ) : enabled ? (
+              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[11px] px-2.5 py-0.5">
+                🛡️ Đang BẬT xác minh con người
+              </Badge>
+            ) : (
+              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[11px] px-2.5 py-0.5">
+                🔓 Đã TẮT xác minh (Truy cập thẳng)
+              </Badge>
+            )}
+          </div>
+          <p className="text-xs text-gray-400 leading-relaxed max-w-xl">
+            {enabled
+              ? "Hệ thống đang hiển thị màn hình kiểm tra 'Xác minh bạn là con người' của Cloudflare Turnstile trước khi cho phép người dùng vào trang web."
+              : "Đã TẮT chế độ xác minh bot. Tất cả người dùng sẽ truy cập trực tiếp các trang mà không bị chặn bởi trang thử thách /challenge."}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+          <span className="text-xs font-bold text-gray-300">
+            {enabled ? "Đang Bật xác minh" : "Đang Tắt xác minh"}
+          </span>
+          <button
+            type="button"
+            disabled={loading || toggling}
+            onClick={handleToggle}
+            className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              enabled ? "bg-blue-600 shadow-lg shadow-blue-500/30" : "bg-gray-700"
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                enabled ? "translate-x-7" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // OVERVIEW TAB
 // ═══════════════════════════════════════════════════════════════════════
 function OverviewTab({ movies, categories, show }: { movies: any[]; categories: any[]; show: (msg: string, type?: "success" | "error") => void }) {
@@ -732,8 +831,11 @@ function OverviewTab({ movies, categories, show }: { movies: any[]; categories: 
 
   return (
     <div className="space-y-8">
-      {/* Vip Free Mode Control Card */}
-      <VipFreeModeCard show={show} />
+      {/* Control Cards Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <VipFreeModeCard show={show} />
+        <TurnstileControlCard show={show} />
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
