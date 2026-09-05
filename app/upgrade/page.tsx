@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { getSubscriptionPlans } from "@/app/admin/actions";
 import UpgradePageClient from "./UpgradePageClient";
 
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default async function UpgradePage() {
+  await connection();
   const plans = await getSubscriptionPlans();
   
   return <UpgradePageClient initialPlans={plans || []} />;
