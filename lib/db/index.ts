@@ -8,13 +8,10 @@ const databaseUrl =
 
 export const sql = postgres(databaseUrl, {
   prepare: false,
-  max: 10,
-  idle_timeout: 20,
+  max: 1,
+  idle_timeout: 0,
   connect_timeout: 10,
-  ssl: {
-    rejectUnauthorized: false,
-    servername: "aws-0-ap-southeast-1.pooler.supabase.com",
-  },
+  ssl: "require",
 });
 
 export const db = drizzle(sql, { schema });
