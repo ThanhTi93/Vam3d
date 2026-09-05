@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth/actions";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import ProfileContentWrapper from "./ProfileContentWrapper";
 import ProfileSkeleton from "./ProfileSkeleton";
 
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfilePage() {
+  await connection();
   const user = await getCurrentUser();
   console.log("Server side user in /profile:", user);
   if (!user) {

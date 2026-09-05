@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getAllMovies } from "@/lib/db/queries";
+import { connection } from "next/server";
 import CategoryCatalog from "@/components/CategoryCatalog";
 
 export const metadata: Metadata = {
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default async function PhimHotPage() {
+  await connection();
   const allMovies = await getAllMovies();
   
   // Filter for hot movies

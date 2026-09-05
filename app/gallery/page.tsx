@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getGalleriesPublicPaginated, getGalleryFilterOptions } from "@/lib/db/queries";
+import { connection } from "next/server";
 import GalleryPageClient from "./GalleryPageClient";
 
 export const metadata: Metadata = {
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default async function GalleryPage() {
+  await connection();
   const [initialData, filterOptions] = await Promise.all([
     getGalleriesPublicPaginated({ page: 1, limit: 12 }),
     getGalleryFilterOptions()

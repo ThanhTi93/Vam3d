@@ -1,9 +1,10 @@
-import React from "react";
 import { getHotMovies, getAllMovies, getMostViewedEpisodes, getLatestEpisodes, getLatestGalleries } from "@/lib/db/queries";
+import { connection } from "next/server";
 import HeroCarousel from "@/components/HeroCarousel";
 import HomeCatalog from "@/components/HomeCatalog";
 
 export default async function Home() {
+  await connection();
   const [hotMovies, allMovies, galleries, mostViewedEpisodes, latestEpisodes] = await Promise.all([
     getHotMovies(),
     getAllMovies(),

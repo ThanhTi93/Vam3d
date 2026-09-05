@@ -3,6 +3,7 @@ import { getMoviesByCategory, getAllMovies, getAllCategories } from "@/lib/db/qu
 import CategoryCatalog from "@/components/CategoryCatalog";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { slugify } from "@/lib/utils";
 
 interface PageProps {
@@ -19,24 +20,9 @@ const formatCategoryLabel = (name: string) => {
   return decoded.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 };
 
-export async function generateStaticParams() {
-  try {
-    const categories = await getAllCategories();
-    const params: { categoryName: string }[] = [];
-    (categories || []).forEach((c: any) => {
-      if (c.name) params.push({ categoryName: c.name });
-      if (c.name) params.push({ categoryName: encodeURIComponent(c.name) });
-      const slug = c.slug || slugify(c.name);
-      if (slug) params.push({ categoryName: slug });
-    });
-    return params;
-  } catch {
-    return [];
-  }
-}
-
 // Generate dynamic metadata
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  await connection();
   const { categoryName } = await params;
   const decoded = decodeURIComponent(categoryName).trim();
   const inputSlug = slugify(decoded).toLowerCase();
@@ -75,6 +61,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function DynamicCategoryPage({ params }: PageProps) {
+  await connection();
   const { categoryName } = await params;
   const decodedCategory = decodeURIComponent(categoryName).trim();
   const inputSlug = slugify(decodedCategory).toLowerCase();

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
+import { connection } from "next/server";
 import { desc, eq } from "drizzle-orm";
 import { actors as actorsTable } from "@/lib/db/schema";
 import ActorsPageClient from "./ActorsPageClient";
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ActorsPage() {
+  await connection();
   if (!db) {
     return <ActorsPageClient actors={[]} />;
   }

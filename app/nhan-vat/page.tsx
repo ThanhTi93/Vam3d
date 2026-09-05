@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
+import { connection } from "next/server";
 import { desc, eq } from "drizzle-orm";
 import { characters as charactersTable } from "@/lib/db/schema";
 import CharactersPageClient from "./CharactersPageClient";
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CharactersPage() {
+  await connection();
   if (!db) {
     return <CharactersPageClient characters={[]} />;
   }

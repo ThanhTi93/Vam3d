@@ -4,39 +4,16 @@ import { getMovieById, getAllMovies, getRecommendedEpisodes } from "@/lib/db/que
 import MoviePageClient from "./MoviePageClient";
 import RankingsSidebar from "@/components/RankingsSidebar";
 import Breadcrumbs from "@/components/Breadcrumbs";
-
-// Enable Instant Nav dev validation and production speed
-export const unstable_instant = {
-  prefetch: "runtime",
-  samples: [
-    {
-      params: { id: "dune-part-two" },
-      searchParams: { ep: "1" },
-    },
-  ],
-};
+import { connection } from "next/server";
 
 interface MoviePageProps {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ ep?: string }>;
 }
 
-export async function generateStaticParams() {
-  try {
-    const movies = await getAllMovies();
-    const params: { id: string }[] = [];
-    (movies || []).forEach((m: any) => {
-      params.push({ id: m.id.toString() });
-      if (m.slug) params.push({ id: m.slug });
-    });
-    return params;
-  } catch {
-    return [];
-  }
-}
-
 // Generate dynamic metadata for SEO crawling with per-episode support
 export async function generateMetadata({ params, searchParams }: MoviePageProps): Promise<Metadata> {
+  await connection();
   const { id } = await params;
   const resolvedSearchParams = await searchParams;
   const ep = resolvedSearchParams?.ep;
@@ -245,6 +222,7 @@ function MovieSchemaScript({ movie, currentEp }: { movie: any; currentEp?: strin
 }
 
 export default async function MovieDetailPage({ params, searchParams }: MoviePageProps) {
+  await connection();
   const { id } = await params;
   const [movie, allMovies, resolvedSearchParams] = await Promise.all([
     getMovieById(id),
