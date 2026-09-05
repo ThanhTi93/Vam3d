@@ -45,7 +45,7 @@ export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
     const instance = getDb();
     const val = (instance as any)[prop];
     if (typeof val === "function") {
-      return (...args: any[]) => (getDb() as any)[prop](...args);
+      return val.bind(instance);
     }
     return val;
   },
@@ -53,22 +53,16 @@ export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
 
 export const sql = new Proxy((() => {}) as unknown as ReturnType<typeof postgres>, {
   get(_target, prop) {
-    const connStr = getConnectionString();
-    if (!cachedClient || cachedConnStr !== connStr) {
-      getDb();
-    }
+    getDb();
     const val = (cachedClient as any)[prop];
     if (typeof val === "function") {
       return val.bind(cachedClient);
     }
     return val;
   },
-  apply(_target, thisArg, argArray) {
-    const connStr = getConnectionString();
-    if (!cachedClient || cachedConnStr !== connStr) {
-      getDb();
-    }
-    return (cachedClient as any).apply(thisArg, argArray);
+  apply(_target, _thisArg, argArray) {
+    getDb();
+    return (cachedClient as any).apply(cachedClient, argArray);
   },
 });
 
