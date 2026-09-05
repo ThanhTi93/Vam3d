@@ -105,6 +105,11 @@ export default function VideoPlayer({
     }
   }, [progressKey]);
 
+  // Calculate effective stream source
+  const effectiveSrc = bunnyVideoId
+    ? `/api/stream/${bunnyVideoId}/playlist.m3u8`
+    : src;
+
   // Setup HLS / Video source
   useEffect(() => {
     setErrorMsg(null);
@@ -112,9 +117,9 @@ export default function VideoPlayer({
     setCurrentQuality(-1);
 
     const video = videoRef.current;
-    if (!video || !src) return;
+    if (!video || !effectiveSrc) return;
 
-    const isHlsStream = src.includes(".m3u8") || src.includes("/hls/");
+    const isHlsStream = effectiveSrc.includes(".m3u8") || effectiveSrc.includes("/hls/") || effectiveSrc.includes("/api/stream/");
 
     if (isHlsStream) {
       if (Hls.isSupported()) {
@@ -130,7 +135,7 @@ export default function VideoPlayer({
         });
 
         hlsRef.current = hls;
-        hls.loadSource(src);
+        hls.loadSource(effectiveSrc);
         hls.attachMedia(video);
 
         hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
@@ -182,7 +187,7 @@ export default function VideoPlayer({
         };
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         // Native HLS for Safari & iOS
-        video.src = src;
+        video.src = effectiveSrc;
         if (autoPlay) {
           video.play().catch(() => {});
         }
@@ -191,7 +196,7 @@ export default function VideoPlayer({
       }
     } else {
       // Standard MP4 / WebM direct playback
-      video.src = src;
+      video.src = effectiveSrc;
       if (autoPlay) {
         video.play().catch(() => {});
       }
@@ -203,7 +208,7 @@ export default function VideoPlayer({
         hlsRef.current = null;
       }
     };
-  }, [src, autoPlay]);
+  }, [effectiveSrc, autoPlay]);
 
   const handleQualityChange = (levelIndex: number) => {
     if (!hlsRef.current) return;
@@ -212,43 +217,29 @@ export default function VideoPlayer({
     setShowSettings(false);
   };
 
-  // 1. Bunny Stream Iframe (When bunnyVideoId is available)
-  if (bunnyVideoId) {
-    if (bunnyStatus === "failed") {
-      return (
-        <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-3 text-red-400 ${className}`}>
-          <AlertCircle className="w-8 h-8" />
-          <h3 className="text-md font-bold">Xử lý video thất bại</h3>
-          <p className="text-xs text-gray-500 max-w-sm">Quá trình xử lý video trên máy chủ gặp sự cố. Vui lòng liên hệ Admin.</p>
-        </div>
-      );
-    }
-
-    if (bunnyStatus !== "completed" && bunnyStatus !== undefined) {
-      return (
-        <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-4 ${className}`}>
-          <div className="w-10 h-10 rounded-full border-2 border-t-orange-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
-          <h3 className="text-sm font-bold text-gray-300">Tập phim đang được tối ưu HLS...</h3>
-          <p className="text-xs text-gray-500 max-w-xs">Hệ thống đang chia phân đoạn và nén đa độ phân giải để tiết kiệm băng thông. Vui lòng quay lại sau ít phút!</p>
-        </div>
-      );
-    }
-
+  // 1. Video Processing or Failed States
+  if (bunnyStatus === "failed") {
     return (
-      <div className={`relative w-full aspect-video bg-black rounded-xl overflow-hidden ${className}`}>
-        <iframe
-          src={`https://iframe.mediadelivery.net/embed/${finalLibId}/${bunnyVideoId}?autoplay=${autoPlay}&loop=false&muted=false&preload=true&responsive=true`}
-          loading="lazy"
-          className="w-full h-full border-0 aspect-video"
-          allow="autoplay; fullscreen; picture-in-picture;"
-          allowFullScreen
-        />
+      <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-3 text-red-400 ${className}`}>
+        <AlertCircle className="w-8 h-8" />
+        <h3 className="text-md font-bold">Xử lý video thất bại</h3>
+        <p className="text-xs text-gray-500 max-w-sm">Quá trình xử lý video trên máy chủ gặp sự cố. Vui lòng liên hệ Admin.</p>
+      </div>
+    );
+  }
+
+  if (bunnyVideoId && bunnyStatus !== "completed" && bunnyStatus !== undefined && !src) {
+    return (
+      <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-4 ${className}`}>
+        <div className="w-10 h-10 rounded-full border-2 border-t-orange-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+        <h3 className="text-sm font-bold text-gray-300">Tập phim đang được tối ưu HLS...</h3>
+        <p className="text-xs text-gray-500 max-w-xs">Hệ thống đang chia phân đoạn và nén đa độ phân giải để tiết kiệm băng thông. Vui lòng quay lại sau ít phút!</p>
       </div>
     );
   }
 
   // 2. No source available
-  if (!src) {
+  if (!effectiveSrc) {
     return (
       <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-3 text-orange-400 ${className}`}>
         <span className="text-3xl">🎬</span>
