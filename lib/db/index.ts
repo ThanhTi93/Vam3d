@@ -4,40 +4,33 @@ import * as schema from "./schema";
 
 const cfSymbol = Symbol.for("__cloudflare-context__");
 
-function getConnectionString(): string {
+function getConnectionString(): { connStr: string; isHyperdrive: boolean } {
   try {
     const cf = (globalThis as any)[cfSymbol];
     if (cf?.env?.HYPERDRIVE?.connectionString) {
-      return cf.env.HYPERDRIVE.connectionString;
+      return { connStr: cf.env.HYPERDRIVE.connectionString, isHyperdrive: true };
     }
-  } catch {
-    // Ignore context extraction errors
-  }
-  return (
+  } catch {}
+  const connStr =
     process.env.DATABASE_URL ||
-    "postgresql://postgres.qgvklbzwwbzswpivvgsm:149162536Ti%40@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
-  );
+    "postgresql://postgres.qgvklbzwwbzswpivvgsm:149162536Ti%40@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres";
+  return { connStr, isHyperdrive: !connStr.includes("supabase.com") };
 }
 
-let cachedClient: ReturnType<typeof postgres> | null = null;
-let cachedDb: ReturnType<typeof drizzle<typeof schema>> | null = null;
-let cachedConnStr: string = "";
+function createClientInstance() {
+  const { connStr, isHyperdrive } = getConnectionString();
+  return postgres(connStr, {
+    prepare: false,
+    ssl: isHyperdrive ? false : { rejectUnauthorized: false, servername: "aws-0-ap-southeast-1.pooler.supabase.com" },
+    max: 1,
+    idle_timeout: 1,
+    connect_timeout: 10,
+  });
+}
 
 export function getDb() {
-  const connStr = getConnectionString();
-  if (!cachedDb || cachedConnStr !== connStr) {
-    cachedConnStr = connStr;
-    const isHyperdrive = !connStr.includes("supabase.com");
-    cachedClient = postgres(connStr, {
-      prepare: false,
-      ssl: isHyperdrive ? false : { rejectUnauthorized: false, servername: "aws-0-ap-southeast-1.pooler.supabase.com" },
-      max: 1,
-      idle_timeout: 0,
-      connect_timeout: 10,
-    });
-    cachedDb = drizzle(cachedClient, { schema });
-  }
-  return cachedDb;
+  const client = createClientInstance();
+  return drizzle(client, { schema });
 }
 
 export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
@@ -53,19 +46,17 @@ export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
 
 export const sql = new Proxy((() => {}) as unknown as ReturnType<typeof postgres>, {
   get(_target, prop) {
-    getDb();
-    const val = (cachedClient as any)[prop];
+    const client = createClientInstance();
+    const val = (client as any)[prop];
     if (typeof val === "function") {
-      return val.bind(cachedClient);
+      return val.bind(client);
     }
     return val;
   },
   apply(_target, _thisArg, argArray) {
-    getDb();
-    return (cachedClient as any).apply(cachedClient, argArray);
+    const client = createClientInstance();
+    return (client as any).apply(client, argArray);
   },
 });
 
 export { schema };
-
-
