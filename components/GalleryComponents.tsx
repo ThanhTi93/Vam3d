@@ -29,13 +29,7 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) =>
   }, [g.images, hovered]);
 
   const activeImage = g.images && g.images.length > 0 ? g.images[currentIdx] : null;
-  const [displaySrc, setDisplaySrc] = useState(activeImage?.imgUrl || "");
-
-  useEffect(() => {
-    if (activeImage) {
-      setDisplaySrc(activeImage.imgUrl);
-    }
-  }, [activeImage]);
+  const imageUrl = activeImage?.imgUrl || "";
 
   return (
     <Card
@@ -45,11 +39,10 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) =>
       className="bg-[#131520] border border-white/5 rounded-2xl overflow-hidden group flex flex-col relative aspect-[2/3] shadow-xl hover:border-orange-500/50 hover:shadow-orange-500/5 transition-all duration-300 cursor-pointer p-0 gap-0"
     >
       <div className="absolute inset-0 w-full h-full bg-[#090a0f] overflow-hidden">
-        {displaySrc ? (
+        {imageUrl ? (
           <Image
-            key={displaySrc}
-            src={getBunnyImageUrl(displaySrc, 'thumb')}
-            alt={g.name}
+            src={getBunnyImageUrl(imageUrl, 'thumb')}
+            alt={g.name || "AI Gallery"}
             fill
             className="object-cover group-hover:scale-105 transition-all duration-500 absolute inset-0 animate-in fade-in"
             sizes="(max-width: 768px) 50vw, 25vw"
@@ -229,7 +222,7 @@ export function HomeGalleryGrid({
         .filter((g) => g.movie && g.movie.id && g.movie.name)
         .map((g) => [g.movie.id, { id: g.movie.id, name: g.movie.name }])
     ).values()
-  ).sort((a: any, b: any) => a.name.localeCompare(b.name, "vi"));
+  ).sort((a: any, b: any) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 
   // Extract unique characters present in galleries
   const uniqueCharacters = filterCharacters || Array.from(
@@ -239,7 +232,7 @@ export function HomeGalleryGrid({
         .filter((gc) => gc.character && gc.character.id && gc.character.name)
         .map((gc) => [gc.character.id, { id: gc.character.id, name: gc.character.name }])
     ).values()
-  ).sort((a: any, b: any) => a.name.localeCompare(b.name, "vi"));
+  ).sort((a: any, b: any) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 
   // Filter & Sort
   let displayGalleries = [...galleries];
@@ -290,7 +283,7 @@ export function HomeGalleryGrid({
           <Camera className="w-5 h-5 text-orange-500" />
           BỘ SƯU TẬP AI
         </h1>
-        <span className="text-gray-400 text-xs font-semibold bg-[#131520] border border-white/5 px-2.5 py-1 rounded">
+        <span suppressHydrationWarning className="text-gray-400 text-xs font-semibold bg-[#131520] border border-white/5 px-2.5 py-1 rounded">
           {displayedCount} bộ sưu tập
         </span>
       </div>
@@ -302,6 +295,7 @@ export function HomeGalleryGrid({
           <div className="flex flex-col gap-1.5">
             <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider select-none">Gói cước</span>
             <select
+              suppressHydrationWarning
               value={currentPlan}
               onChange={(e) => handlePlanChange(e.target.value)}
               className="bg-[#090a0f] border border-white/5 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-orange-500 transition-colors min-w-[140px] cursor-pointer"
@@ -318,6 +312,7 @@ export function HomeGalleryGrid({
           <div className="flex flex-col gap-1.5">
             <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider select-none">Phim</span>
             <select
+              suppressHydrationWarning
               value={currentMovie}
               onChange={(e) => handleMovieChange(e.target.value)}
               className="bg-[#090a0f] border border-white/5 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-orange-500 transition-colors min-w-[160px] max-w-[200px] cursor-pointer"
@@ -335,6 +330,7 @@ export function HomeGalleryGrid({
           <div className="flex flex-col gap-1.5">
             <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider select-none">Nhân vật</span>
             <select
+              suppressHydrationWarning
               value={currentCharacter}
               onChange={(e) => handleCharacterChange(e.target.value)}
               className="bg-[#090a0f] border border-white/5 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-orange-500 transition-colors min-w-[140px] max-w-[180px] cursor-pointer"
@@ -353,6 +349,7 @@ export function HomeGalleryGrid({
         <div className="flex flex-col gap-1.5 shrink-0">
           <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider select-none">Sắp xếp</span>
           <select
+            suppressHydrationWarning
             value={currentSortBy}
             onChange={(e) => handleSortByChange(e.target.value)}
             className="bg-[#090a0f] border border-white/5 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-orange-500 transition-colors min-w-[140px] cursor-pointer"

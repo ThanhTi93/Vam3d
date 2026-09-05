@@ -568,8 +568,8 @@ export async function getGalleryFilterOptions() {
       .where(eq(schema.aiGalleries.status, 1));
 
     return {
-      movies: moviesList.sort((a, b) => a.name.localeCompare(b.name, "vi")),
-      characters: charactersList.sort((a, b) => a.name.localeCompare(b.name, "vi")),
+      movies: moviesList.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)),
+      characters: charactersList.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)),
     };
   } catch (err) {
     console.error("Error in getGalleryFilterOptions:", err);
