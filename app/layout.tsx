@@ -133,25 +133,11 @@ export default function RootLayout({
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[#090a0f] text-gray-100 selection:bg-orange-500 selection:text-white">
         <AuthProvider>
           <WatchlistProvider>
-            <Suspense fallback={
-              <div className="h-16 bg-[#090a0f] border-b border-white/5 animate-pulse w-full" />
-            }>
-              <Header />
-            </Suspense>
+            <Header />
             <div className="flex-1 flex flex-col">
-              <Suspense fallback={
-                <div className="flex-1 flex items-center justify-center py-20 bg-[#090a0f]">
-                  <div className="w-10 h-10 rounded-full border-2 border-t-orange-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
-                </div>
-              }>
-                {children}
-              </Suspense>
+              {children}
             </div>
-            <Suspense fallback={
-              <div className="h-40 bg-[#090a0f] animate-pulse w-full" />
-            }>
-              <Footer />
-            </Suspense>
+            <Footer />
           </WatchlistProvider>
         </AuthProvider>
         <Script
