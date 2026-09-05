@@ -1,29 +1,10 @@
-import { db, schema, sql } from "./index";
+import { db, schema } from "./index";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
-
-let tableEnsured = false;
-
-async function ensureSettingsTableExists() {
-  if (tableEnsured || !sql) return;
-  try {
-    await sql`
-      CREATE TABLE IF NOT EXISTS system_settings (
-        key VARCHAR(255) PRIMARY KEY,
-        value TEXT,
-        updated_at TIMESTAMP DEFAULT NOW()
-      );
-    `;
-    tableEnsured = true;
-  } catch (err) {
-    console.error("Error creating system_settings table:", err);
-  }
-}
 
 export async function getCachedSystemSetting(key: string, defaultValue: string = "") {
   if (!db) return defaultValue;
   try {
-    await ensureSettingsTableExists();
     const setting = await db.query.systemSettings.findFirst({
       where: eq(schema.systemSettings.key, key),
     });
@@ -37,7 +18,6 @@ export async function getCachedSystemSetting(key: string, defaultValue: string =
 export async function setSystemSetting(key: string, value: string) {
   if (!db) return;
   try {
-    await ensureSettingsTableExists();
     await db
       .insert(schema.systemSettings)
       .values({ key, value, updatedAt: new Date() })
@@ -71,13 +51,11 @@ export async function getTurnstileMode(): Promise<boolean> {
   if (turnstileMemoryCache && now - turnstileMemoryCache.timestamp < CACHE_TTL_MS) {
     return turnstileMemoryCache.value;
   }
-  if (!db) return true;
+  if (!db) return false;
   try {
-    await ensureSettingsTableExists();
     const setting = await db.query.systemSettings.findFirst({
       where: eq(schema.systemSettings.key, "turnstile_enabled"),
     });
-    // Default to false unless explicitly set to "true"
     const enabled = setting ? setting.value === "true" : false;
     turnstileMemoryCache = { value: enabled, timestamp: now };
     return enabled;
