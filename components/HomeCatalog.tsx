@@ -7,17 +7,12 @@ import { Flame, Award, Film, Tv, TrendingUp, Camera, Play, Clock } from "lucide-
 import MovieCard from "@/components/MovieCard";
 import MovieSection from "@/components/MovieSection";
 import RankingsSidebar from "@/components/RankingsSidebar";
-import dynamic from "next/dynamic";
-import { HomeGallerySection } from "@/components/GalleryComponents";
+import { HomeGallerySection, GalleryDetailModal } from "@/components/GalleryComponents";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { getBunnyImageUrl, formatRelativeTime, formatDuration } from "@/lib/utils";
 import { Movie } from "@/types";
 import { incrementGalleryViews } from "@/app/admin/actions";
-
-const GalleryDetailModal = dynamic(() => import("@/components/GalleryComponents").then((mod) => mod.GalleryDetailModal), {
-  ssr: false,
-});
 
 interface HomeCatalogProps {
   movies: Movie[];

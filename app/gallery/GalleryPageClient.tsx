@@ -1,14 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import dynamic from "next/dynamic";
-import { HomeGalleryGrid } from "@/components/GalleryComponents";
+import { HomeGalleryGrid, GalleryDetailModal } from "@/components/GalleryComponents";
 import { incrementGalleryViews } from "@/app/admin/actions";
 import { fetchMoreGalleries } from "./actions";
-
-const GalleryDetailModal = dynamic(() => import("@/components/GalleryComponents").then((mod) => mod.GalleryDetailModal), {
-  ssr: false,
-});
 
 interface GalleryPageClientProps {
   initialGalleries: any[];
