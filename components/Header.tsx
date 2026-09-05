@@ -94,8 +94,10 @@ export default function Header() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
@@ -231,7 +233,7 @@ export default function Header() {
               )}
             </Link>
 
-            {!freeVipMode && (
+            {mounted && !freeVipMode && (
               <Link
                 href="/upgrade"
                 className={`relative px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all duration-300 border border-yellow-500/50 overflow-hidden group flex items-center justify-center gap-1 ${pathname === "/upgrade"
@@ -271,7 +273,7 @@ export default function Header() {
             aria-label="Tủ phim yêu thích"
           >
             <Heart className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            {watchlist.length > 0 && (
+            {mounted && watchlist.length > 0 && (
               <span className="absolute -top-1 -right-1 bg-gradient-to-r from-orange-600 to-amber-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#090a0f]">
                 {watchlist.length}
               </span>
@@ -279,7 +281,16 @@ export default function Header() {
           </Link>
 
           {/* User Profile / Login Action Section */}
-          {authLoading ? (
+          {!mounted ? (
+            <div className="flex items-center gap-2" suppressHydrationWarning>
+              <Link href="/login" className="text-xs font-bold text-gray-300 hover:text-white px-3.5 py-2 rounded-xl border border-white/5 bg-[#161925] hover:bg-[#1f2334] transition-all">
+                Đăng Nhập
+              </Link>
+              <Link href="/register" className="text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-3.5 py-2 rounded-xl shadow-lg shadow-orange-500/15 transition-all">
+                Đăng Ký
+              </Link>
+            </div>
+          ) : authLoading ? (
             <div className="w-8 h-8 rounded-full bg-white/5 animate-pulse" />
           ) : !user ? (
             <div className="flex items-center gap-2">
