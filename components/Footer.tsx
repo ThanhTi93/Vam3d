@@ -17,9 +17,9 @@ export default function Footer() {
 
   useEffect(() => {
     fetch("/api/categories")
-      .then((res) => res.json())
+      .then((res) => (res.ok ? res.json() : []))
       .then((cats) => {
-        if (cats && cats.length > 0) {
+        if (cats && Array.isArray(cats) && cats.length > 0) {
           setCategories(cats);
         }
       })

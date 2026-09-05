@@ -9,11 +9,11 @@ export async function GET() {
       return NextResponse.json([]);
     }
     const categories = await db.query.categories.findMany({
-      where: (cats, { eq }) => eq(cats.status, 1),
       orderBy: (c, { asc }) => [asc(c.id)],
     });
     return NextResponse.json(categories || []);
   } catch (err: any) {
+    console.error("Error in /api/categories:", err);
     return NextResponse.json([]);
   }
 }
