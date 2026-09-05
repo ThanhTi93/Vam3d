@@ -13,16 +13,7 @@ export default function ErrorBoundary({
 }) {
   useEffect(() => {
     console.error("App error caught by ErrorBoundary:", error);
-    const msg = error?.message || "";
-    if (msg.includes("412") || msg.toLowerCase().includes("hydration")) {
-      const timer = setTimeout(() => {
-        try {
-          reset();
-        } catch (_) {}
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [error, reset]);
+  }, [error]);
 
   return (
     <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
