@@ -4,10 +4,10 @@ import * as schema from "./schema";
 
 const databaseUrl =
   process.env.DATABASE_URL ||
-  "postgresql://postgres.qgvklbzwwbzswpivvgsm:149162536Ti%40@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres";
+  "postgresql://postgres.qgvklbzwwbzswpivvgsm:149162536Ti%40@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres";
 
 export const sql = postgres(databaseUrl, {
-  prepare: false, // Required for Supabase Transaction Connection Pooler
+  prepare: false,
   max: 10,
   idle_timeout: 20,
   connect_timeout: 10,
