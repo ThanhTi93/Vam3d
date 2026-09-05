@@ -123,25 +123,14 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
+      suppressHydrationWarning
       className={`${inter.variable} ${geistMono.variable} dark h-full antialiased bg-[#090a0f] text-gray-100`}
     >
       <head>
         <JsonLd data={websiteJsonLd} />
         <JsonLd data={organizationJsonLd} />
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-FND8B4GNWE"
-          strategy="lazyOnload"
-        />
-        <Script id="google-analytics" strategy="lazyOnload">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-FND8B4GNWE');
-          `}
-        </Script>
       </head>
-      <body className="min-h-full flex flex-col bg-[#090a0f] text-gray-100 selection:bg-orange-500 selection:text-white">
+      <body suppressHydrationWarning className="min-h-full flex flex-col bg-[#090a0f] text-gray-100 selection:bg-orange-500 selection:text-white">
         <AuthProvider>
           <WatchlistProvider>
             <Suspense fallback={
@@ -165,6 +154,18 @@ export default function RootLayout({
             </Suspense>
           </WatchlistProvider>
         </AuthProvider>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-FND8B4GNWE"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-FND8B4GNWE');
+          `}
+        </Script>
       </body>
     </html>
   );
