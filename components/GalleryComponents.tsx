@@ -7,11 +7,8 @@ import { useRouter } from "next/navigation";
 import { Camera, X, ChevronLeft, ChevronRight, Award } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import { getBunnyImageUrl } from "@/lib/utils";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 
 // ─── Sub-component: Home Gallery Card ────────────────────────────────────────
 export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) => void }) {
@@ -32,7 +29,7 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) =>
   const imageUrl = activeImage?.imgUrl || "";
 
   return (
-    <Card
+    <div
       onClick={() => onSelect(g)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -55,17 +52,17 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) =>
 
         <div className="absolute top-2 left-2 z-10">
           {freeVipMode ? (
-            <Badge className="bg-green-600 hover:bg-green-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded border-0 shadow-md">
+            <span className="bg-green-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded shadow-md">
               MIỄN PHÍ
-            </Badge>
+            </span>
           ) : g.plan ? (
-            <Badge className="bg-orange-500 hover:bg-orange-500 text-white font-bold text-[9px] uppercase px-1.5 py-0.5 rounded tracking-wide shadow-md border-0">
+            <span className="bg-orange-500 text-white font-bold text-[9px] uppercase px-1.5 py-0.5 rounded tracking-wide shadow-md">
               {g.plan.name}
-            </Badge>
+            </span>
           ) : (
-            <Badge className="bg-green-600 hover:bg-green-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded border-0 shadow-md">
+            <span className="bg-green-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded shadow-md">
               MIỄN PHÍ
-            </Badge>
+            </span>
           )}
         </div>
 
@@ -113,7 +110,7 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) =>
           </div>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
 

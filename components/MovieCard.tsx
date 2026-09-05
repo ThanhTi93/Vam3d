@@ -6,8 +6,6 @@ import Link from "next/link";
 import { Heart, Star, Play, Clock } from "lucide-react";
 import { useWatchlist } from "@/app/context/watchlistContext";
 import { getBunnyImageUrl } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Movie } from "@/types";
 
 export default function MovieCard({ movie }: { movie: Movie }) {
