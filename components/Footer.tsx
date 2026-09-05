@@ -4,27 +4,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { slugify } from "@/lib/utils";
+import { DEFAULT_CATEGORIES } from "@/lib/categories";
 
 export default function Footer() {
   const pathname = usePathname();
-  const [categories, setCategories] = useState<{ id: number; name: string; slug?: string | null }[]>([
-    { id: 1, name: "Phim Lẻ", slug: "phim-le" },
-    { id: 2, name: "Phim Bộ", slug: "phim-bo" },
-    { id: 3, name: "Chiếu Rạp", slug: "chieu-rap" },
-    { id: 4, name: "Hoạt Hình", slug: "hoat-hinh" },
-  ]);
-  const [topMovies, setTopMovies] = useState<{ id: number; name: string; slug?: string | null }[]>([]);
-
-  useEffect(() => {
-    fetch("/api/categories")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((cats) => {
-        if (cats && Array.isArray(cats) && cats.length > 0) {
-          setCategories(cats);
-        }
-      })
-      .catch((err) => console.warn("Error fetching footer categories:", err));
-  }, []);
+  const [categories] = useState<any[]>(DEFAULT_CATEGORIES);
+  const [topMovies] = useState<{ id: number; name: string; slug?: string | null }[]>([]);
 
   if (pathname?.startsWith("/admin")) {
     return null;

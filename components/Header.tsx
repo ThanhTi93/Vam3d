@@ -12,6 +12,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { updateUserAvatar } from "@/lib/auth/actions";
 import { getBunnyImageUrl, slugify } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { DEFAULT_CATEGORIES } from "@/lib/categories";
 
 const AvatarUpload = React.lazy(() => import("@/app/components/AvatarUpload"));
 
@@ -89,28 +90,12 @@ export default function Header() {
     return () => window.removeEventListener("click", closeMenu);
   }, []);
 
-  const [categories, setCategories] = useState<any[]>([
-    { id: 1, name: "phim-le" },
-    { id: 2, name: "phim-bo" },
-    { id: 3, name: "chieu-rap" },
-    { id: 4, name: "hoat-hinh" },
-  ]);
+  const [categories] = useState<any[]>(DEFAULT_CATEGORIES);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    fetch("/api/categories")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((cats) => {
-        if (cats && Array.isArray(cats) && cats.length > 0) {
-          setCategories(cats);
-        }
-      })
-      .catch((err) => {
-        console.warn("Header categories fetch fallback:", err);
-      });
-
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
