@@ -21,6 +21,11 @@ function formatNumber(num: number): string {
 export default function RankingsSidebar({ movies }: RankingsSidebarProps) {
   const { watchlist } = useWatchlist();
   const [rankingTab, setRankingTab] = useState<"day" | "week" | "month">("day");
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const getRankings = () => {
     if (!movies || movies.length === 0) return [];
@@ -47,7 +52,7 @@ export default function RankingsSidebar({ movies }: RankingsSidebarProps) {
   return (
     <div className="space-y-6">
       {/* rankings Card */}
-      <Card className="bg-[#131520] border-white/5 p-5 shadow-xl gap-0">
+      <div className="bg-[#131520] border border-white/5 rounded-2xl p-5 shadow-xl">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-5 h-5 text-orange-500" />
           <h2 className="text-md font-bold uppercase tracking-wider text-white">Bảng Xếp Hạng</h2>
@@ -55,15 +60,18 @@ export default function RankingsSidebar({ movies }: RankingsSidebarProps) {
 
         <div className="flex bg-[#090a0f] rounded-lg p-1 border border-white/5 mb-5">
           {(["day", "week", "month"] as const).map((tab) => (
-            <Button
+            <button
               key={tab}
-              variant={rankingTab === tab ? "default" : "outline"}
-              size="xs"
+              type="button"
               onClick={() => setRankingTab(tab)}
-              className="flex-1"
+              className={`flex-1 py-1 px-2 text-xs font-bold rounded-md transition-colors cursor-pointer ${
+                rankingTab === tab
+                  ? "bg-orange-500 text-white shadow-sm"
+                  : "text-gray-400 hover:text-white"
+              }`}
             >
               {tab === "day" ? "Ngày" : tab === "week" ? "Tuần" : "Tháng"}
-            </Button>
+            </button>
           ))}
         </div>
 
@@ -118,19 +126,19 @@ export default function RankingsSidebar({ movies }: RankingsSidebarProps) {
             );
           })}
         </div>
-      </Card>
+      </div>
 
       {/* Watchlist CTA Card */}
-      <Card className="bg-[#131520] border-white/5 p-5 shadow-xl text-center gap-0">
+      <div className="bg-[#131520] border border-white/5 rounded-2xl p-5 shadow-xl text-center">
         <Heart className="w-8 h-8 text-orange-500 mx-auto mb-3" />
         <h3 className="text-sm font-bold text-gray-200 mb-1">Tủ Phim Của Bạn</h3>
         <Link
           href="/watchlist"
           className="w-full block text-center bg-[#1c1f2f] hover:bg-orange-500 hover:text-white border border-white/5 rounded-lg py-2.5 text-xs font-bold tracking-wide transition-all text-gray-300 cursor-pointer"
         >
-          Xem Tủ Phim ({watchlist.length})
+          Xem Tủ Phim (<span suppressHydrationWarning>{mounted ? watchlist.length : 0}</span>)
         </Link>
-      </Card>
+      </div>
     </div>
   );
 }
