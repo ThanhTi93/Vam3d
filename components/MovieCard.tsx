@@ -40,22 +40,30 @@ export default function MovieCard({ movie }: { movie: Movie }) {
         </div>
 
         <div className="absolute top-2 right-2 z-10">
-          <Button
-            type="button"
+          <div
+            role="button"
+            tabIndex={0}
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
               toggleWatchlist(movie.id);
             }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.stopPropagation();
+                e.preventDefault();
+                toggleWatchlist(movie.id);
+              }
+            }}
             aria-label={isInWatchlist(movie.id) ? "Xóa khỏi tủ phim" : "Thêm vào tủ phim"}
-            className={`p-1.5 rounded-full backdrop-blur-md border transition-all cursor-pointer ${
+            className={`p-1.5 rounded-full backdrop-blur-md border transition-all cursor-pointer inline-flex items-center justify-center ${
               isInWatchlist(movie.id)
                 ? "bg-red-500 border-transparent text-white scale-110"
                 : "bg-black/50 border-white/10 text-gray-400 hover:text-white"
             }`}
           >
             <Heart className={`w-3.5 h-3.5 ${isInWatchlist(movie.id) ? "fill-white" : ""}`} />
-          </Button>
+          </div>
         </div>
 
         <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">

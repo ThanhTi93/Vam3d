@@ -124,14 +124,11 @@ export default function RankingsSidebar({ movies }: RankingsSidebarProps) {
       <Card className="bg-[#131520] border-white/5 p-5 shadow-xl text-center gap-0">
         <Heart className="w-8 h-8 text-orange-500 mx-auto mb-3" />
         <h3 className="text-sm font-bold text-gray-200 mb-1">Tủ Phim Của Bạn</h3>
-        <p className="text-xs text-gray-500 mb-4">Lưu lại phim hay để xem bất cứ khi nào!</p>
-        <Link href="/watchlist" className="w-full block">
-          <Button
-            variant="outline"
-            className="w-full bg-[#1c1f2f] hover:bg-orange-500 hover:text-white border border-white/5 rounded-lg py-2 text-xs font-bold tracking-wide transition-all text-gray-300 cursor-pointer"
-          >
-            Xem Tủ Phim ({watchlist.length})
-          </Button>
+        <Link
+          href="/watchlist"
+          className="w-full block text-center bg-[#1c1f2f] hover:bg-orange-500 hover:text-white border border-white/5 rounded-lg py-2.5 text-xs font-bold tracking-wide transition-all text-gray-300 cursor-pointer"
+        >
+          Xem Tủ Phim ({watchlist.length})
         </Link>
       </Card>
     </div>
