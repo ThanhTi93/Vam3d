@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserType | null>(null);
   const [freeVipMode, setFreeVipModeState] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   const fetchAuthData = async () => {
     try {
@@ -58,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    setMounted(true);
     fetchAuthData();
   }, []);
 
@@ -104,7 +106,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, freeVipMode, login, register, logout, refreshUser, refreshSettings }}>
+    <AuthContext.Provider value={{ 
+      user: mounted ? user : null, 
+      loading: mounted ? loading : true, 
+      freeVipMode: mounted ? freeVipMode : false, 
+      login, 
+      register, 
+      logout, 
+      refreshUser, 
+      refreshSettings 
+    }}>
       {children}
     </AuthContext.Provider>
   );
