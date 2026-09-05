@@ -82,13 +82,13 @@ export async function getTurnstileMode(): Promise<boolean> {
     const setting = await db.query.systemSettings.findFirst({
       where: eq(schema.systemSettings.key, "turnstile_enabled"),
     });
-    // Default to true if not explicitly set to "false"
-    const enabled = setting ? setting.value !== "false" : true;
+    // Default to false unless explicitly set to "true"
+    const enabled = setting ? setting.value === "true" : false;
     turnstileMemoryCache = { value: enabled, timestamp: now };
     return enabled;
   } catch (err) {
     console.error("Error fetching turnstile mode:", err);
-    return turnstileMemoryCache ? turnstileMemoryCache.value : true;
+    return turnstileMemoryCache ? turnstileMemoryCache.value : false;
   }
 }
 
