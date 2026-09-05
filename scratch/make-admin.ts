@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
 
@@ -29,7 +29,7 @@ async function run() {
     console.log(`\n--------------------------------------------`);
     console.log(`Connecting to: ${url.split("@")[1].split("/")[0]}`);
     try {
-      const sql = neon(url);
+      const sql = postgres(url, { prepare: false, ssl: { rejectUnauthorized: false } });
       const res = await sql`SELECT id, username, email, role FROM accounts`;
       console.log("Current accounts:", res);
       

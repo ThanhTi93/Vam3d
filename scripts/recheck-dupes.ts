@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
@@ -13,7 +13,7 @@ if (!dbUrl) {
 }
 
 async function main() {
-  const sql = neon(dbUrl);
+  const sql = postgres(dbUrl, { prepare: false, ssl: { rejectUnauthorized: false } });
   console.log("🔍 Checking all galleries for duplicate records...");
   
   const galleries = await sql`SELECT id, name FROM "ai_galleries" ORDER BY id ASC`;

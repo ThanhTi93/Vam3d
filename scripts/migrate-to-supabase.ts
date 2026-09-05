@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 import postgres from "postgres";
 import * as schema from "../lib/db/schema";
 import dotenv from "dotenv";
@@ -33,7 +33,7 @@ async function migrate() {
   console.log("📡 Nguồn (Neon):", neonUrl.replace(/:[^:@]+@/, ":****@"));
   console.log("🎯 Đích (Supabase):", supabaseUrl.replace(/:[^:@]+@/, ":****@"));
 
-  const sqlSource = neon(neonUrl);
+  const sqlSource = postgres(neonUrl, { prepare: false, ssl: { rejectUnauthorized: false } });
   const sqlDest = postgres(supabaseUrl, {
     prepare: false,
     ssl: { rejectUnauthorized: false }

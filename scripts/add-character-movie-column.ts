@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 
 const envPath = path.join(process.cwd(), ".env");
 const envLocalPath = path.join(process.cwd(), ".env.local");
@@ -22,7 +22,7 @@ async function main() {
 
   for (const url of urls) {
     console.log(`⏳ Adding 'id_movie' column to characters table on DB: ${url.substring(0, 35)}...`);
-    const sql = neon(url);
+    const sql = postgres(url, { prepare: false, ssl: { rejectUnauthorized: false } });
     await sql.query(`
       ALTER TABLE "characters"
       ADD COLUMN IF NOT EXISTS id_movie INTEGER REFERENCES movies(id) ON DELETE SET NULL;

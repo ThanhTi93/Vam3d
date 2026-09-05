@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
 const { updateGallery } = require("../app/admin/actions");
-const { neon } = require("@neondatabase/serverless");
+const postgres = require("postgres");
 
 const dbUrl = process.env.DATABASE_URL;
 
@@ -12,7 +12,7 @@ if (!dbUrl) {
 }
 
 async function main() {
-  const sql = neon(dbUrl);
+  const sql = postgres(dbUrl, { prepare: false, ssl: { rejectUnauthorized: false } });
   
   // 1. Get count before
   const before = await sql.query('SELECT COUNT(*) FROM "ai_images" WHERE id_gallery = 44');

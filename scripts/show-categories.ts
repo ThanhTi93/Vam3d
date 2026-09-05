@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
-const { neon } = require("@neondatabase/serverless");
+const postgres = require("postgres");
 
 const dbUrl = process.env.DATABASE_URL;
 
@@ -10,7 +10,7 @@ if (!dbUrl) {
 }
 
 async function main() {
-  const sql = neon(dbUrl);
+  const sql = postgres(dbUrl, { prepare: false, ssl: { rejectUnauthorized: false } });
   console.log("🔍 Fetching categories from database:");
   const cats = await sql.query('SELECT * FROM "categories"');
   console.log(cats);

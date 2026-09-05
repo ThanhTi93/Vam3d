@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 
 // Parse .env and .env.local connection strings
 const envPath = path.join(process.cwd(), ".env");
@@ -139,7 +139,7 @@ async function main() {
 
   for (const url of urls) {
     console.log(`\n⏳ Processing database: ${url.substring(0, 35)}...`);
-    const sql = neon(url);
+    const sql = postgres(url, { prepare: false, ssl: { rejectUnauthorized: false } });
 
     const rows = await sql.query(`SELECT id, name, name_en, name_zh FROM characters ORDER BY id DESC;`);
     console.log(`📋 Found ${rows.length} character records.`);

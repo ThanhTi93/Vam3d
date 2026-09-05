@@ -1,6 +1,5 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "../lib/db/schema";
+import { db } from "../lib/db";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
@@ -39,8 +38,10 @@ const nameMap: Record<string, string> = {
   Van_Van: "Vân Vận"
 };
 
-const sql = neon(dbUrl);
-const db = drizzle(sql, { schema });
+if (!db) {
+  console.error("❌ Database connection is not available.");
+  process.exit(1);
+}
 
 async function listFolder(folderPath: string) {
   const url = `https://storage.bunnycdn.com/${storageZone}/${folderPath}/`;

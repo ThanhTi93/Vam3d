@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 dotenv.config({ path: ".env" });
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 
 const dbUrl = process.env.DATABASE_URL;
 
@@ -25,7 +25,7 @@ function slugify(str: string | null | undefined): string {
 }
 
 async function main() {
-  const sql = neon(dbUrl as string);
+  const sql = postgres(dbUrl as string, { prepare: false, ssl: { rejectUnauthorized: false } });
   console.log("⏳ Adding 'slug' column to tables if not exist...");
 
   const tables = [

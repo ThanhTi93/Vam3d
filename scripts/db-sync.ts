@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 import * as schema from "../lib/db/schema";
 import dotenv from "dotenv";
 import fs from "fs";
@@ -47,77 +47,64 @@ async function main() {
     process.exit(1);
   }
 
-  const sqlSource = neon(sourceUrl);
-  const sqlDest = neon(destUrl);
+  const sqlSource = postgres(sourceUrl, { prepare: false, ssl: { rejectUnauthorized: false } });
+  const sqlDest = postgres(destUrl, { prepare: false, ssl: { rejectUnauthorized: false } });
 
   const tables = [
-    { name: "payments", schemaTable: schema.payments },
-    { name: "collection_images", schemaTable: schema.collectionImages },
-    { name: "collections", schemaTable: schema.collections },
-    { name: "ai_images", schemaTable: schema.aiImages },
-    { name: "gallery_character", schemaTable: schema.galleryCharacter },
-    { name: "ai_galleries", schemaTable: schema.aiGalleries },
-    { name: "watch_history", schemaTable: schema.watchHistory },
-    { name: "favorites", schemaTable: schema.favorites },
-    { name: "like", schemaTable: schema.like },
-    { name: "accounts", schemaTable: schema.accounts },
-    { name: "episodes_character", schemaTable: schema.episodesCharacter },
-    { name: "episodes_actor", schemaTable: schema.episodesActor },
-    { name: "episodes", schemaTable: schema.episodes },
-    { name: "actors", schemaTable: schema.actors },
-    { name: "characters", schemaTable: schema.characters },
-    { name: "movie_category", schemaTable: schema.movieCategory },
-    { name: "categories", schemaTable: schema.categories },
-    { name: "movies", schemaTable: schema.movies },
-    { name: "packages", schemaTable: schema.packages },
-    { name: "features", schemaTable: schema.features },
-    { name: "plans", schemaTable: schema.plans },
-    { name: "authors", schemaTable: schema.authors }
+    "payments",
+    "collection_images",
+    "collections",
+    "ai_images",
+    "gallery_character",
+    "ai_galleries",
+    "watch_history",
+    "favorites",
+    "like",
+    "accounts",
+    "episodes_character",
+    "episodes_actor",
+    "episodes",
+    "actors",
+    "characters",
+    "movie_category",
+    "categories",
+    "movies",
+    "packages",
+    "features",
+    "plans",
+    "authors"
   ];
 
-  console.log("🧹 Wiping destination tables...");
-  for (const table of tables) {
-    console.log(`Clearing: ${table.name}`);
-    await sqlDest.query(`DELETE FROM "${table.name}"`);
-  }
-
-  console.log("\n🚀 Copying data...");
-  const copyOrder = [...tables].reverse();
-  for (const table of copyOrder) {
-    console.log(`Reading: ${table.name}`);
-    const res = await sqlSource.query(`SELECT * FROM "${table.name}"`);
-    const rows = Array.isArray(res) ? res : (res && (res as any).rows) || [];
-    
-    if (rows.length > 0) {
-      const chunkSize = 100;
-      for (let i = 0; i < rows.length; i += chunkSize) {
-        const chunk = rows.slice(i, i + chunkSize);
-        
-        const keys = Object.keys(chunk[0]);
-        const columns = keys.map(k => `"${k}"`).join(", ");
-        
-        let paramIndex = 1;
-        const valuePlaceholders: string[] = [];
-        const flatValues: any[] = [];
-        
-        for (const row of chunk) {
-          const placeholders = keys.map(() => `$${paramIndex++}`).join(", ");
-          valuePlaceholders.push(`(${placeholders})`);
-          for (const key of keys) {
-            flatValues.push(row[key]);
-          }
-        }
-        
-        const query = `INSERT INTO "${table.name}" (${columns}) VALUES ${valuePlaceholders.join(", ")}`;
-        await sqlDest.query(query, flatValues);
-      }
-      console.log(`✅ Copied ${rows.length} rows into ${table.name}`);
-    } else {
-      console.log(`ℹ️ Table ${table.name} is empty.`);
+  try {
+    console.log("🧹 Wiping destination tables...");
+    for (const table of tables) {
+      console.log(`Clearing: ${table}`);
+      await sqlDest.unsafe(`DELETE FROM "${table}"`);
     }
-  }
 
-  console.log("\n✨ Database synchronization completed successfully!\n");
+    console.log("\n🚀 Copying data...");
+    const copyOrder = [...tables].reverse();
+    for (const table of copyOrder) {
+      console.log(`Reading: ${table}`);
+      const rows = await sqlSource.unsafe(`SELECT * FROM "${table}"`);
+      
+      if (rows && rows.length > 0) {
+        const chunkSize = 100;
+        for (let i = 0; i < rows.length; i += chunkSize) {
+          const chunk = rows.slice(i, i + chunkSize);
+          await sqlDest`INSERT INTO ${sqlDest(table)} ${sqlDest(chunk)}`;
+        }
+        console.log(`✅ Copied ${rows.length} rows into ${table}`);
+      } else {
+        console.log(`ℹ️ Table ${table} is empty.`);
+      }
+    }
+
+    console.log("\n✨ Database synchronization completed successfully!\n");
+  } finally {
+    await sqlSource.end();
+    await sqlDest.end();
+  }
 }
 
 main().catch((err) => {

@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
@@ -9,7 +9,7 @@ if (!dbUrl) {
 }
 
 console.log("Connecting to:", dbUrl);
-const sql = neon(dbUrl);
+const sql = postgres(dbUrl, { prepare: false, ssl: { rejectUnauthorized: false } });
 
 async function main() {
   console.log("⏳ Adding 'created_at' column to 'episodes' table in .env.local database...");

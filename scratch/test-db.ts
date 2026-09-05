@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
@@ -8,7 +8,7 @@ if (!dbUrl) {
   process.exit(1);
 }
 
-const sql = neon(dbUrl);
+const sql = postgres(dbUrl, { prepare: false, ssl: { rejectUnauthorized: false } });
 
 async function test() {
   console.log("Checking episodes banners for movie 25...");

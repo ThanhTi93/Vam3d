@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "../lib/db/schema";
 import * as dotenv from "dotenv";
@@ -12,7 +12,7 @@ async function run() {
     return;
   }
   
-  const sql = neon(dbUrl);
+  const sql = postgres(dbUrl, { prepare: false, ssl: { rejectUnauthorized: false } });
   const db = drizzle(sql, { schema });
   
   console.log("=== PLANS ===");

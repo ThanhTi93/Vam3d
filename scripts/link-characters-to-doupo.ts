@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 
 const envPath = path.join(process.cwd(), ".env");
 const envLocalPath = path.join(process.cwd(), ".env.local");
@@ -22,7 +22,7 @@ async function main() {
 
   for (const url of urls) {
     console.log(`\n⏳ Processing database: ${url.substring(0, 35)}...`);
-    const sql = neon(url);
+    const sql = postgres(url, { prepare: false, ssl: { rejectUnauthorized: false } });
 
     // Find movie 'Đấu Phá Thương Khung'
     const movies = await sql.query(`SELECT id, name FROM movies WHERE name ILIKE '%Đấu Phá Thương Khung%' LIMIT 1;`);

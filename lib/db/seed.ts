@@ -1,6 +1,6 @@
 /**
  * Seed script: npx tsx lib/db/seed.ts
- * Imports static mock movie data into Neon PostgreSQL via Drizzle ORM.
+ * Imports static mock movie data into Supabase PostgreSQL via Drizzle ORM.
  */
 import "dotenv/config";
 import { db } from "./index";
