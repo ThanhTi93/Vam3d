@@ -16,18 +16,24 @@ export function getBunnyImageUrl(
     return "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?q=80&w=400";
   }
 
-  // Chuẩn hóa đường dẫn: Thay thế tên miền cũ bị nhà mạng chặn (b-cdn.net) bằng tên miền cdn riêng mới
-  let processedUrl = url;
-  const cdnUrl = process.env.NEXT_PUBLIC_BUNNY_CDN_URL || "https://cdn.vam3dhentai.online";
+  let processedUrl = url.trim();
+  const cdnUrl = (process.env.NEXT_PUBLIC_BUNNY_CDN_URL || "https://cdn.vam3dhentai.online").replace(/\/$/, "");
+
+  // Handle leading protocol-relative //
+  if (processedUrl.startsWith("//")) {
+    processedUrl = `https:${processedUrl}`;
+  }
+
+  // Replace any *.b-cdn.net hostnames with custom CDN domain
+  processedUrl = processedUrl.replace(/https?:\/\/[a-zA-Z0-9._-]*b-cdn\.net/gi, cdnUrl);
+  processedUrl = processedUrl.replace(/^[a-zA-Z0-9._-]*b-cdn\.net/gi, cdnUrl);
 
   if (!processedUrl.startsWith("http://") && !processedUrl.startsWith("https://")) {
     const cleanPath = processedUrl.startsWith("/") ? processedUrl : `/${processedUrl}`;
-    processedUrl = `${cdnUrl.replace(/\/$/, "")}${cleanPath}`;
-  } else if (cdnUrl) {
-    processedUrl = processedUrl.replace(/https?:\/\/vam3d\.b-cdn\.net/g, cdnUrl.replace(/\/$/, ""));
+    processedUrl = `${cdnUrl}${cleanPath}`;
   }
 
-  // If it's a Bunny CDN URL (ends with display.webp, thumb.webp, or original.png)
+  // If it's a Bunny CDN image URL (ends with display.webp, thumb.webp, or original.png)
   if (processedUrl.endsWith('display.webp') || processedUrl.endsWith('thumb.webp') || processedUrl.endsWith('original.png')) {
     const lastSlashIdx = processedUrl.lastIndexOf('/');
     if (lastSlashIdx !== -1) {
@@ -42,7 +48,7 @@ export function getBunnyImageUrl(
     }
   }
 
-  // Fallback to original URL
+  // Fallback to processed URL
   return processedUrl;
 }
 
