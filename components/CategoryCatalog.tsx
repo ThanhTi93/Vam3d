@@ -6,7 +6,6 @@ import { Film } from "lucide-react";
 import MovieCard from "@/components/MovieCard";
 import RankingsSidebar from "@/components/RankingsSidebar";
 import { Movie } from "@/types";
-import { getAdminCategories } from "@/app/admin/actions";
 
 const formatCategoryLabel = (name: string) => {
   if (name === "Tất cả") return "Tất cả";
@@ -33,10 +32,22 @@ function CategoryCatalogContent({
   const [dbGenres, setDbGenres] = useState<any[]>([{ id: 0, name: "Tất cả" }]);
 
   useEffect(() => {
-    getAdminCategories().then((cats) => {
-      if (cats && cats.length > 0) {
-        setDbGenres([{ id: 0, name: "Tất cả" }, ...cats]);
-      } else {
+    fetch("/api/categories")
+      .then((res) => res.json())
+      .then((cats) => {
+        if (cats && cats.length > 0) {
+          setDbGenres([{ id: 0, name: "Tất cả" }, ...cats]);
+        } else {
+          setDbGenres([
+            { id: 0, name: "Tất cả" },
+            { id: 1, name: "phim-le" },
+            { id: 2, name: "phim-bo" },
+            { id: 3, name: "chieu-rap" },
+            { id: 4, name: "hoat-hinh" },
+          ]);
+        }
+      })
+      .catch(() => {
         setDbGenres([
           { id: 0, name: "Tất cả" },
           { id: 1, name: "phim-le" },
@@ -44,8 +55,7 @@ function CategoryCatalogContent({
           { id: 3, name: "chieu-rap" },
           { id: 4, name: "hoat-hinh" },
         ]);
-      }
-    });
+      });
   }, []);
 
   const q = searchParams.get("q") || "";
