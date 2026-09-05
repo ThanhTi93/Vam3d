@@ -1,12 +1,24 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
 
 const databaseUrl =
   process.env.DATABASE_URL ||
-  "postgresql://neondb_owner:npg_qIf0e4SuGpEw@ep-fragrant-mouse-aih6znwj-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+  "postgresql://postgres.qgvklbzwwbzswpivvgsm:149162536Ti%40@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres";
 
-export const sql = neon(databaseUrl);
+// Configure postgres client for Supabase PgBouncer pooler on Cloudflare Workers
+export const sql = postgres(databaseUrl, {
+  prepare: false,
+  ssl: {
+    rejectUnauthorized: false,
+    servername: "aws-0-ap-southeast-1.pooler.supabase.com",
+  },
+  max: 1,
+  idle_timeout: 0,
+  connect_timeout: 10,
+});
+
 export const db = drizzle(sql, { schema });
 
 export { schema };
+
