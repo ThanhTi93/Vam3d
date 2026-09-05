@@ -2,65 +2,18 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
-let _client: any = null;
-let _db: any = null;
-let _lastUrl: string | null = null;
+const databaseUrl =
+  process.env.DATABASE_URL ||
+  "postgresql://postgres.qgvklbzwwbzswpivvgsm:149162536Ti%40@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres";
 
-function getDbInstance() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    return { db: null, sql: null };
-  }
-
-  if (_db && _lastUrl === databaseUrl) {
-    return { db: _db, sql: _client };
-  }
-
-  try {
-    _client = postgres(databaseUrl, {
-      prepare: false, // Required for Supabase Transaction Connection Pooler
-      max: 1,
-      idle_timeout: 5,
-      connect_timeout: 10,
-      ssl: { rejectUnauthorized: false },
-    });
-    _db = drizzle(_client, { schema });
-    _lastUrl = databaseUrl;
-    return { db: _db, sql: _client };
-  } catch (err) {
-    console.error("Error initializing postgres client:", err);
-    return { db: null, sql: null };
-  }
-}
-
-// Proxy export for db and sql so it always resolves with the live DATABASE_URL
-export const db: any = new Proxy({}, {
-  get(_target, prop) {
-    const instance = getDbInstance();
-    if (!instance.db) return undefined;
-    const val = instance.db[prop];
-    if (typeof val === "function") {
-      return val.bind(instance.db);
-    }
-    return val;
-  }
+export const sql = postgres(databaseUrl, {
+  prepare: false, // Required for Supabase Transaction Connection Pooler
+  max: 2,
+  idle_timeout: 10,
+  connect_timeout: 15,
+  ssl: { rejectUnauthorized: false },
 });
 
-export const sql: any = new Proxy(function() {}, {
-  apply(_target, _thisArg, argArray) {
-    const instance = getDbInstance();
-    if (!instance.sql) return Promise.resolve([]);
-    return instance.sql(...argArray);
-  },
-  get(_target, prop) {
-    const instance = getDbInstance();
-    if (!instance.sql) return undefined;
-    const val = instance.sql[prop];
-    if (typeof val === "function") {
-      return val.bind(instance.sql);
-    }
-    return val;
-  }
-});
+export const db = drizzle(sql, { schema });
 
 export { schema };
