@@ -343,7 +343,7 @@ export default async function MovieDetailPage({ params, searchParams }: MoviePag
               <p className="text-gray-400 text-sm">Đang chuẩn bị trình phát...</p>
             </div>
           }>
-            <MoviePageClient movie={formattedMovie} relatedEpisodes={relatedEpisodes} />
+            <MoviePageClient movie={formattedMovie} relatedEpisodes={relatedEpisodes} initialEp={epParam} />
           </Suspense>
         </div>
 

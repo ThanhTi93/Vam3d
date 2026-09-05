@@ -42,11 +42,13 @@ const defaultComments: Record<string, LocalComment[]> = {
 interface MoviePageClientProps {
   movie: any;
   relatedEpisodes?: any[];
+  initialEp?: string;
 }
 
 export default function MoviePageClient({ 
   movie, 
-  relatedEpisodes = [] 
+  relatedEpisodes = [],
+  initialEp,
 }: MoviePageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -55,9 +57,14 @@ export default function MoviePageClient({
   const { user, freeVipMode } = useAuth();
   const { toggleWatchlist, isInWatchlist } = useWatchlist();
 
-  const [showPlayer, setShowPlayer] = useState(false);
+  const activeEpFromParam = searchParams?.get("ep") ?? initialEp;
+  const initialEpIndex = activeEpFromParam ? Math.max(0, parseInt(activeEpFromParam, 10) - 1) : 0;
+  const hasEpisodes = Boolean(movie.episodes && movie.episodes.length > 0);
+  const isValidEp = Boolean(activeEpFromParam && hasEpisodes && initialEpIndex < (movie.episodes?.length || 0));
+
+  const [showPlayer, setShowPlayer] = useState(() => isValidEp);
   const [activeServer, setActiveServer] = useState("VIP");
-  const [activeEpisode, setActiveEpisode] = useState(0);
+  const [activeEpisode, setActiveEpisode] = useState(() => initialEpIndex);
   const [isPending, startTransition] = useTransition();
   const [selectedGallery, setSelectedGallery] = useState<any | null>(null);
 
@@ -89,7 +96,7 @@ export default function MoviePageClient({
         }
 
         // 2. Check episode level requirement
-        if (targetEp.plan && !checkAccess(targetEp.plan)) {
+        if (targetEp?.plan && !checkAccess(targetEp.plan)) {
           setRestrictedError(
             `Tập phim này yêu cầu gói cước từ ${targetEp.plan.name} trở lên và gói phải còn hạn dùng.`
           );
@@ -248,7 +255,7 @@ export default function MoviePageClient({
             )}
             <div className="absolute top-3 left-3 bg-black/70 backdrop-blur text-white text-xs px-2.5 py-1 rounded font-bold border border-white/10 flex items-center gap-1.5 z-10 pointer-events-none">
               <div className="w-2.5 h-2.5 rounded-full bg-green-500 pulse-glow-dot" />
-              Đang xem: {movie.title} {movie.episodes && movie.episodes.length > 0 && `– ${movie.episodes[activeEpisode].name}`}
+              Đang xem: {movie.title} {movie.episodes && movie.episodes.length > 0 && movie.episodes[activeEpisode] ? `– ${movie.episodes[activeEpisode].name}` : ""}
             </div>
           </div>
 
