@@ -1,54 +1,12 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 import * as schema from "./schema";
 
-let _sql: any = null;
-let _db: any = null;
+const databaseUrl =
+  process.env.DATABASE_URL ||
+  "postgresql://neondb_owner:npg_qIf0e4SuGpEw@ep-fragrant-mouse-aih6znwj-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
 
-export function getDb() {
-  if (_db) return { db: _db, sql: _sql };
-
-  const databaseUrl =
-    process.env.DATABASE_URL ||
-    "postgresql://postgres.qgvklbzwwbzswpivvgsm:149162536Ti%40@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres";
-
-  _sql = postgres(databaseUrl, {
-    prepare: false,
-    max: 1,
-    idle_timeout: 0,
-    connect_timeout: 10,
-    ssl: "require",
-  });
-
-  _db = drizzle(_sql, { schema });
-  return { db: _db, sql: _sql };
-}
-
-// Lazy proxy so no IO/timers run during Cloudflare Worker module initialization
-export const db = new Proxy({} as any, {
-  get(_target, prop) {
-    const { db: instance } = getDb();
-    const val = (instance as any)[prop];
-    if (typeof val === "function") {
-      return val.bind(instance);
-    }
-    return val;
-  },
-});
-
-export const sql = new Proxy(function () {} as any, {
-  apply(_target, _thisArg, argArray) {
-    const { sql: instance } = getDb();
-    return instance(...argArray);
-  },
-  get(_target, prop) {
-    const { sql: instance } = getDb();
-    const val = (instance as any)[prop];
-    if (typeof val === "function") {
-      return val.bind(instance);
-    }
-    return val;
-  },
-});
+export const sql = neon(databaseUrl);
+export const db = drizzle(sql, { schema });
 
 export { schema };

@@ -8,18 +8,23 @@ import { slugify } from "@/lib/utils";
 
 export default function Footer() {
   const pathname = usePathname();
-  const [categories, setCategories] = useState<{ id: number; name: string; slug?: string | null }[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string; slug?: string | null }[]>([
+    { id: 1, name: "Phim Lẻ", slug: "phim-le" },
+    { id: 2, name: "Phim Bộ", slug: "phim-bo" },
+    { id: 3, name: "Chiếu Rạp", slug: "chieu-rap" },
+    { id: 4, name: "Hoạt Hình", slug: "hoat-hinh" },
+  ]);
   const [topMovies, setTopMovies] = useState<{ id: number; name: string; slug?: string | null }[]>([]);
 
   useEffect(() => {
     getFooterData().then((res) => {
-      if (res.categories && res.categories.length > 0) {
+      if (res && res.categories && res.categories.length > 0) {
         setCategories(res.categories);
       }
-      if (res.topMovies && res.topMovies.length > 0) {
+      if (res && res.topMovies && res.topMovies.length > 0) {
         setTopMovies(res.topMovies);
       }
-    }).catch(err => console.error("Error fetching footer data:", err));
+    }).catch(err => console.warn("Error fetching footer data:", err));
   }, []);
 
   if (pathname?.startsWith("/admin")) {

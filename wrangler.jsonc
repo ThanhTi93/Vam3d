@@ -11,7 +11,7 @@
     "binding": "ASSETS"
   },
   "vars": {
-    "DATABASE_URL": "postgresql://postgres.qgvklbzwwbzswpivvgsm:149162536Ti%40@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres",
+    "DATABASE_URL": "postgresql://neondb_owner:npg_qIf0e4SuGpEw@ep-fragrant-mouse-aih6znwj-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
     "NEXT_PUBLIC_SITE_URL": "https://vam3dhentai.online",
     "JWT_SECRET": "default_super_secret_key_that_is_at_least_32_characters_long_for_safety",
     "REVALIDATE_SECRET": "change-me-in-production",
