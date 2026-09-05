@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { getMoviesByCategory, getAllMovies } from "@/lib/db/queries";
-import { getAdminCategories } from "@/app/admin/actions";
+import { getMoviesByCategory, getAllMovies, getAllCategories } from "@/lib/db/queries";
 import CategoryCatalog from "@/components/CategoryCatalog";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { notFound } from "next/navigation";
@@ -22,7 +21,7 @@ const formatCategoryLabel = (name: string) => {
 
 export async function generateStaticParams() {
   try {
-    const categories = await getAdminCategories();
+    const categories = await getAllCategories();
     const params: { categoryName: string }[] = [];
     (categories || []).forEach((c: any) => {
       if (c.name) params.push({ categoryName: c.name });
@@ -42,8 +41,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const decoded = decodeURIComponent(categoryName).trim();
   const inputSlug = slugify(decoded).toLowerCase();
   
-  const categories = await getAdminCategories();
-  const cat = categories.find((c: any) => {
+  const categories = await getAllCategories();
+  const cat = (categories || []).find((c: any) => {
     const catName = (c.name || "").trim().toLowerCase();
     const catSlug = (c.slug || slugify(c.name)).trim().toLowerCase();
     return catSlug === inputSlug || catName === decoded.toLowerCase() || catSlug === decoded.toLowerCase();
@@ -81,8 +80,8 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
   const inputSlug = slugify(decodedCategory).toLowerCase();
 
   // Check if this category exists in the database by slug or name
-  const allDbCategories = await getAdminCategories();
-  const targetCategory = allDbCategories.find((c: any) => {
+  const allDbCategories = await getAllCategories();
+  const targetCategory = (allDbCategories || []).find((c: any) => {
     const catName = (c.name || "").trim().toLowerCase();
     const catSlug = (c.slug || slugify(c.name)).trim().toLowerCase();
     return (
