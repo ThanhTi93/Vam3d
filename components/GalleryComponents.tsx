@@ -50,17 +50,17 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) =>
           </div>
         )}
 
-        <div className="absolute top-2 left-2 z-10">
+        <div className="absolute top-2 left-2 z-10" suppressHydrationWarning>
           {freeVipMode ? (
-            <span className="bg-green-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded shadow-md">
+            <span suppressHydrationWarning className="bg-green-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded shadow-md">
               MIỄN PHÍ
             </span>
           ) : g.plan ? (
-            <span className="bg-orange-500 text-white font-bold text-[9px] uppercase px-1.5 py-0.5 rounded tracking-wide shadow-md">
+            <span suppressHydrationWarning className="bg-orange-500 text-white font-bold text-[9px] uppercase px-1.5 py-0.5 rounded tracking-wide shadow-md">
               {g.plan.name}
             </span>
           ) : (
-            <span className="bg-green-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded shadow-md">
+            <span suppressHydrationWarning className="bg-green-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded shadow-md">
               MIỄN PHÍ
             </span>
           )}
@@ -94,11 +94,15 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) =>
           </div>
           <div className="flex flex-wrap gap-1 mt-1.5">
             {g.galleryCharacters && g.galleryCharacters.length > 0 ? (
-              g.galleryCharacters.slice(0, 2).map((gc: any) => (
-                <span key={gc.character.id} className="text-[8px] bg-white/5 text-gray-300 px-1.5 py-0.5 rounded-full border border-white/5">
-                  {gc.character.name}
-                </span>
-              ))
+              g.galleryCharacters.slice(0, 2).map((gc: any, idx: number) => {
+                const charName = gc.character?.name || gc.name;
+                if (!charName) return null;
+                return (
+                  <span key={gc.character?.id || gc.id || idx} className="text-[8px] bg-white/5 text-gray-300 px-1.5 py-0.5 rounded-full border border-white/5">
+                    {charName}
+                  </span>
+                );
+              })
             ) : (
               <span className="text-[8px] text-gray-600">—</span>
             )}
@@ -646,6 +650,11 @@ export function GalleryDetailModal({ gallery, onClose }: GalleryDetailModalProps
   const [galleryVisibleCount, setGalleryVisibleCount] = useState(24);
   const [activePreviewIndex, setActivePreviewIndex] = useState<number | null>(null);
   const [lightboxGallery, setLightboxGallery] = useState<any | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Check user subscription level access
   const checkAccess = (requiredPlan: any) => {
@@ -686,6 +695,8 @@ export function GalleryDetailModal({ gallery, onClose }: GalleryDetailModalProps
     setRestrictedError(null);
     setGalleryVisibleCount(24);
   }, [gallery?.id, user?.id, Boolean(freeVipMode)]);
+
+  if (!mounted) return null;
 
   return (
     <>
