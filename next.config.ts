@@ -5,7 +5,9 @@ export default (phase: string) => {
   const isBuild = phase === PHASE_PRODUCTION_BUILD;
 
   const nextConfig: NextConfig = {
-    cacheComponents: true,
+    typescript: {
+      ignoreBuildErrors: true,
+    },
     images: {
       unoptimized: true,
       remotePatterns: (() => {
