@@ -9,5 +9,21 @@
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
+  },
+  "vars": {
+    "DATABASE_URL": "postgresql://postgres.qgvklbzwwbzswpivvgsm:149162536Ti%40@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres",
+    "NEXT_PUBLIC_SITE_URL": "https://vam3dhentai.online",
+    "JWT_SECRET": "default_super_secret_key_that_is_at_least_32_characters_long_for_safety",
+    "REVALIDATE_SECRET": "change-me-in-production",
+    "NEXT_PUBLIC_BUNNY_LIBRARY_ID": "689414",
+    "BUNNY_API_KEY": "4cf705fa-23cf-4ff2-b8a6da5f7896-7c98-4a29",
+    "BUNNY_STORAGE_ZONE_NAME": "vam3d-gallery",
+    "BUNNY_STORAGE_ACCESS_KEY": "a645f8a9-a9e9-4387-ba173cd0f932-39a5-4e31",
+    "NEXT_PUBLIC_BUNNY_CDN_URL": "https://cdn.vam3dhentai.online",
+    "PAYOS_CLIENT_ID": "385d179f-a75b-4a81-9cfb-0fe91b53f057",
+    "PAYOS_API_KEY": "2ad62bb0-47ae-4894-80bc-eccb90cc03a9",
+    "PAYOS_CHECKSUM_KEY": "18784dfca6b63087c57842019071274f71622d801338bc522f330f8664b34f59",
+    "NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY": "3x00000000000000000000FF",
+    "CLOUDFLARE_TURNSTILE_SECRET_KEY": "1x0000000000000000000000000000000AA"
   }
 }
