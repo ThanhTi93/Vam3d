@@ -10,6 +10,12 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "afac387f98274ef4a2348873d615ee32"
+    }
+  ],
   "vars": {
     "DATABASE_URL": "postgresql://postgres.qgvklbzwwbzswpivvgsm:149162536Ti%40@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres",
     "NEXT_PUBLIC_SITE_URL": "https://vam3dhentai.online",
