@@ -1,16 +1,17 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+
+const cfSymbol = Symbol.for("__cloudflare-context__");
 
 function getConnectionString(): string {
   try {
-    const cf = getCloudflareContext();
-    if (cf?.env && (cf.env as Record<string, any>).HYPERDRIVE?.connectionString) {
-      return (cf.env as Record<string, any>).HYPERDRIVE.connectionString;
+    const cf = (globalThis as any)[cfSymbol];
+    if (cf?.env?.HYPERDRIVE?.connectionString) {
+      return cf.env.HYPERDRIVE.connectionString;
     }
   } catch {
-    // Fallback when called outside of request context or during build
+    // Ignore context extraction errors
   }
   return (
     process.env.DATABASE_URL ||
@@ -26,7 +27,10 @@ export function getDb() {
   const connStr = getConnectionString();
   if (!cachedDb || cachedConnStr !== connStr) {
     cachedConnStr = connStr;
+    const isHyperdrive = !connStr.includes("supabase.com");
     cachedClient = postgres(connStr, {
+      prepare: false,
+      ssl: isHyperdrive ? false : { rejectUnauthorized: false, servername: "aws-0-ap-southeast-1.pooler.supabase.com" },
       max: 5,
       idle_timeout: 10,
       connect_timeout: 10,
@@ -35,6 +39,7 @@ export function getDb() {
   }
   return cachedDb;
 }
+
 
 export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
   get(_target, prop) {
