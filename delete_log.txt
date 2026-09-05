@@ -1,0 +1,9 @@
+[2026-07-10T10:05:42.749Z] Starting deletion of gallery ID: 91
+[2026-07-10T10:05:43.927Z] Found gallery in DB: "TYT-‎‎‎‎‎AI绘图 小医仙 20" with 223 images.
+[2026-07-10T10:05:44.874Z] Successfully deleted gallery from DB (cascade deleted images & characters).
+[2026-07-10T10:05:44.876Z] Bunny Storage: Deleting parent gallery folder: ai_galleries/TYT-AI_20_Tieu_Y_Tien/
+[2026-07-10T10:05:48.016Z] Bunny Storage: Successfully deleted parent folder ai_galleries/TYT-AI_20_Tieu_Y_Tien/
+[2026-07-10T16:58:56.953Z] Starting deletion of gallery ID: 116
+[2026-07-10T16:58:57.681Z] Found gallery in DB: "Test Gallery 1783701384665" with 2 images.
+[2026-07-10T16:58:58.377Z] Successfully deleted gallery from DB (cascade deleted images & characters).
+[2026-07-10T16:58:59.049Z] Bunny Storage: Deleted 2 individual legacy assets.
