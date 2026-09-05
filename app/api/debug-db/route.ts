@@ -19,17 +19,17 @@ export async function GET() {
   };
 
   try {
-    const rawCount = await sql`SELECT count(*) FROM movies`;
-    diagnostics.rawCount = rawCount;
+    const tables = await sql`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`;
+    diagnostics.tables = tables.map((t: any) => t.table_name);
   } catch (err: any) {
-    diagnostics.rawCountError = { message: err.message, name: err.name, code: err.code };
+    diagnostics.tablesError = err.message;
   }
 
   try {
-    const drizzleMovies = await db.query.movies.findMany({ limit: 2 });
-    diagnostics.drizzleMoviesCount = drizzleMovies.length;
+    const rawCategories = await sql`SELECT * FROM categories LIMIT 10`;
+    diagnostics.rawCategories = rawCategories;
   } catch (err: any) {
-    diagnostics.drizzleMoviesError = { message: err.message, name: err.name, code: err.code };
+    diagnostics.rawCategoriesError = err.message;
   }
 
   return NextResponse.json(diagnostics);
