@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BUNNY_STREAM_HOST = "vz-df52fbd4-840.b-cdn.net";
+const BUNNY_STREAM_HOST = "vz-df52fbd4-040.b-cdn.net";
 
 export async function GET(
   request: NextRequest,
@@ -17,7 +17,9 @@ export async function GET(
 
     // Forward range header if present for byte-range streaming
     const headers: Record<string, string> = {
-      "User-Agent": "Mozilla/5.0 (compatible; Vam3dStreamProxy/1.0)",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "Referer": "https://iframe.mediadelivery.net/",
+      "Origin": "https://iframe.mediadelivery.net",
     };
 
     const rangeHeader = request.headers.get("range");

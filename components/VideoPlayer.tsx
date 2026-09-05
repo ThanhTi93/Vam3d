@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Hls from "hls.js";
 import { Settings, Play, RotateCcw, AlertCircle } from "lucide-react";
+import { getBunnyImageUrl } from "@/lib/utils";
 
 export interface VideoPlayerProps {
   src?: string | null;
@@ -263,7 +264,7 @@ export default function VideoPlayer({
             ref={videoRef}
             controls
             preload="metadata"
-            poster={poster}
+            poster={poster ? getBunnyImageUrl(poster, 'display') : undefined}
             onTimeUpdate={handleTimeUpdate}
             onEnded={onEnded}
             className="w-full h-full object-contain"
