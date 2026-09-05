@@ -14,6 +14,9 @@ if (!databaseUrl) {
 const client = databaseUrl
   ? postgres(databaseUrl, {
       prepare: false, // Required for Supabase Transaction Connection Pooler
+      max: 1,
+      idle_timeout: 5,
+      connect_timeout: 10,
       ssl: { rejectUnauthorized: false },
     })
   : null;

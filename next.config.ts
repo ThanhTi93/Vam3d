@@ -50,9 +50,5 @@ export default (phase: string) => {
     },
   };
 
-  if (!isBuild) {
-    nextConfig.cacheHandler = require.resolve("./cache-handler.js");
-  }
-
   return nextConfig;
 };
