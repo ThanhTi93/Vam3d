@@ -1,5 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { cache } from "react";
 import * as schema from "./schema";
 
 const cfSymbol = Symbol.for("__cloudflare-context__");
@@ -17,25 +18,23 @@ function getConnectionString(): { connStr: string; isHyperdrive: boolean } {
   return { connStr, isHyperdrive: !connStr.includes("supabase.com") };
 }
 
-function createClientInstance() {
+// React cache() guarantees 1 single client per request (no socket leak, no CPU limit exceeded)
+export const getDbSession = cache(() => {
   const { connStr, isHyperdrive } = getConnectionString();
-  return postgres(connStr, {
+  const client = postgres(connStr, {
     prepare: false,
     ssl: isHyperdrive ? false : { rejectUnauthorized: false, servername: "aws-0-ap-southeast-1.pooler.supabase.com" },
     max: 1,
-    idle_timeout: 1,
+    idle_timeout: 5,
     connect_timeout: 10,
   });
-}
-
-export function getDb() {
-  const client = createClientInstance();
-  return drizzle(client, { schema });
-}
+  const dbInstance = drizzle(client, { schema });
+  return { db: dbInstance, client };
+});
 
 export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
   get(_target, prop) {
-    const instance = getDb();
+    const { db: instance } = getDbSession();
     const val = (instance as any)[prop];
     if (typeof val === "function") {
       return val.bind(instance);
@@ -46,7 +45,7 @@ export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
 
 export const sql = new Proxy((() => {}) as unknown as ReturnType<typeof postgres>, {
   get(_target, prop) {
-    const client = createClientInstance();
+    const { client } = getDbSession();
     const val = (client as any)[prop];
     if (typeof val === "function") {
       return val.bind(client);
@@ -54,7 +53,7 @@ export const sql = new Proxy((() => {}) as unknown as ReturnType<typeof postgres
     return val;
   },
   apply(_target, _thisArg, argArray) {
-    const client = createClientInstance();
+    const { client } = getDbSession();
     return (client as any).apply(client, argArray);
   },
 });
