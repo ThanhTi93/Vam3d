@@ -14,7 +14,6 @@ import { getBunnyImageUrl, slugify } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 const AvatarUpload = React.lazy(() => import("@/app/components/AvatarUpload"));
-import { getAdminCategories } from "@/app/admin/actions";
 
 const formatCategoryLabel = (name: string) => {
   if (name === "phim-le") return "Phim Lẻ";
@@ -101,7 +100,8 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    getAdminCategories()
+    fetch("/api/categories")
+      .then((res) => res.json())
       .then((cats) => {
         if (cats && cats.length > 0) {
           setCategories(cats);

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { registerUser, loginUser, logoutUser, getCurrentUser } from "@/lib/auth/actions";
-import { getFreeVipModeAction } from "@/app/admin/actions";
+import { registerUser, loginUser, logoutUser } from "@/lib/auth/actions";
 
 interface UserType {
   id: number;
@@ -35,30 +34,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [freeVipMode, setFreeVipModeState] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
 
-  const refreshSettings = async () => {
+  const fetchAuthData = async () => {
     try {
-      const mode = await getFreeVipModeAction();
-      setFreeVipModeState(mode);
+      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user || null);
+        setFreeVipModeState(!!data.freeVipMode);
+      }
     } catch (err) {
-      console.error("Failed to load system settings:", err);
-    }
-  };
-
-  const refreshUser = async () => {
-    try {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-      await refreshSettings();
-    } catch (error) {
-      console.error("Failed to load auth user session:", error);
-      setUser(null);
+      console.warn("Auth check fallback:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  const refreshSettings = async () => {
+    await fetchAuthData();
+  };
+
+  const refreshUser = async () => {
+    await fetchAuthData();
+  };
+
   useEffect(() => {
-    refreshUser();
+    fetchAuthData();
   }, []);
 
   const login = async (formData: any) => {

@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { getFooterData } from "@/app/admin/actions";
 import { slugify } from "@/lib/utils";
 
 export default function Footer() {
@@ -17,14 +16,14 @@ export default function Footer() {
   const [topMovies, setTopMovies] = useState<{ id: number; name: string; slug?: string | null }[]>([]);
 
   useEffect(() => {
-    getFooterData().then((res) => {
-      if (res && res.categories && res.categories.length > 0) {
-        setCategories(res.categories);
-      }
-      if (res && res.topMovies && res.topMovies.length > 0) {
-        setTopMovies(res.topMovies);
-      }
-    }).catch(err => console.warn("Error fetching footer data:", err));
+    fetch("/api/categories")
+      .then((res) => res.json())
+      .then((cats) => {
+        if (cats && cats.length > 0) {
+          setCategories(cats);
+        }
+      })
+      .catch((err) => console.warn("Error fetching footer categories:", err));
   }, []);
 
   if (pathname?.startsWith("/admin")) {
