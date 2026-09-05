@@ -165,7 +165,7 @@ export async function logoutUser() {
 /**
  * Retrieves the current logged-in user profile by decrypting the session cookie.
  */
-export const getCurrentUser = cache(async () => {
+export async function getCurrentUser() {
   if (!db) return null;
 
   try {
@@ -257,7 +257,7 @@ export const getCurrentUser = cache(async () => {
     } catch (_) {}
     return null;
   }
-});
+}
 
 /**
  * Updates the current logged-in user's avatar image URL.

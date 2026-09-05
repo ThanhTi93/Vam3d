@@ -183,16 +183,21 @@ export async function deleteMovie(id: number) {
 // ─────────────────────────────────────────────────────────────────
 
 const getCached_getAdminCategories = async () => {
+  try {
     if (!db) return [];
-  return db.query.categories.findMany({ orderBy: (c, { asc }) => [asc(c.id)] });
-  };
+    return await db.query.categories.findMany({ orderBy: (c, { asc }) => [asc(c.id)] });
+  } catch (err) {
+    console.error("Error in getAdminCategories:", err);
+    return [];
+  }
+};
 
 export async function getAdminCategories() {
-  await verifyAdmin();
   return getCached_getAdminCategories();
 }
 
 const getCached_getFooterData = async () => {
+  try {
     if (!db) return { categories: [], topMovies: [] };
     const [categories, topMovies] = await Promise.all([
       db.query.categories.findMany({ orderBy: (c, { asc }) => [asc(c.id)] }),
@@ -203,8 +208,12 @@ const getCached_getFooterData = async () => {
         limit: 6,
       }),
     ]);
-    return { categories, topMovies };
-  };
+    return { categories: categories || [], topMovies: topMovies || [] };
+  } catch (err) {
+    console.error("Error in getFooterData:", err);
+    return { categories: [], topMovies: [] };
+  }
+};
 
 export async function getFooterData() {
   return getCached_getFooterData();
