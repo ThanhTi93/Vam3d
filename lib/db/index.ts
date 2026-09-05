@@ -31,8 +31,8 @@ export function getDb() {
     cachedClient = postgres(connStr, {
       prepare: false,
       ssl: isHyperdrive ? false : { rejectUnauthorized: false, servername: "aws-0-ap-southeast-1.pooler.supabase.com" },
-      max: 5,
-      idle_timeout: 10,
+      max: 1,
+      idle_timeout: 0,
       connect_timeout: 10,
     });
     cachedDb = drizzle(cachedClient, { schema });
@@ -40,13 +40,12 @@ export function getDb() {
   return cachedDb;
 }
 
-
 export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
   get(_target, prop) {
     const instance = getDb();
     const val = (instance as any)[prop];
     if (typeof val === "function") {
-      return val.bind(instance);
+      return (...args: any[]) => (getDb() as any)[prop](...args);
     }
     return val;
   },
