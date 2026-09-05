@@ -6,9 +6,6 @@ export default (phase: string) => {
 
   const nextConfig: NextConfig = {
     cacheComponents: true,
-    experimental: {
-      instantNavigationDevToolsToggle: true,
-    },
     images: {
       unoptimized: true,
       remotePatterns: (() => {

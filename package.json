@@ -16,8 +16,8 @@
     "db:prod:pull": "npx tsx scripts/db-sync.ts pull",
     "db:restore-bunny": "npx tsx scripts/restore-from-bunny.ts",
     "db:migrate-supabase": "npx tsx scripts/migrate-to-supabase.ts",
-    "build:cf": "opennextjs-cloudflare",
-    "preview:cf": "wrangler dev"
+    "build:cf": "opennextjs-cloudflare build",
+    "preview:cf": "opennextjs-cloudflare preview"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -32,7 +32,7 @@
     "ioredis": "^5.11.1",
     "jose": "^6.2.3",
     "lucide-react": "^1.21.0",
-    "next": "16.2.9",
+    "next": "^16.3.4",
     "postgres": "^3.4.9",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -53,7 +53,7 @@
     "@types/three": "^0.184.1",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
-    "eslint-config-next": "16.2.9",
+    "eslint-config-next": "^16.3.4",
     "tailwindcss": "^4",
     "typescript": "^5",
     "wrangler": "^4.129.0"

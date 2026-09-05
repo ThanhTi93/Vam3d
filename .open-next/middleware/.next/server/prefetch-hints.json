@@ -1,0 +1,305 @@
+{
+  "/_global-error": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16544,
+        "slots": null
+      }
+    }
+  },
+  "/_not-found": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/[categoryName]": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/admin": {
+    "hints": 64,
+    "slots": {
+      "children": {
+        "hints": 96,
+        "slots": {
+          "children": {
+            "hints": 160,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/challenge": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/chinh-sach-bao-mat": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/dien-vien": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/dieu-khoan-su-dung": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/gallery": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/gioi-thieu": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/khieu-nai-ban-quyen": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/lich-chieu": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/login": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/movie/[id]": {
+    "hints": 64,
+    "slots": {
+      "children": {
+        "hints": 96,
+        "slots": {
+          "children": {
+            "hints": 96,
+            "slots": {
+              "children": {
+                "hints": 160,
+                "slots": null
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/nhan-vat": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16544,
+        "slots": null
+      }
+    }
+  },
+  "/phim-hot": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/profile": {
+    "hints": 64,
+    "slots": {
+      "children": {
+        "hints": 96,
+        "slots": {
+          "children": {
+            "hints": 160,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/register": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/unauthorized": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/upgrade": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "/watchlist": {
+    "hints": 16448,
+    "slots": {
+      "children": {
+        "hints": 16480,
+        "slots": {
+          "children": {
+            "hints": 16544,
+            "slots": null
+          }
+        }
+      }
+    }
+  }
+}
