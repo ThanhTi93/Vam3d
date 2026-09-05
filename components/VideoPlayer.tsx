@@ -46,7 +46,7 @@ export default function VideoPlayer({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
 
-  const finalLibId = bunnyLibraryId || process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID || "";
+  const finalLibId = bunnyLibraryId || process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID || "689414";
   const progressKey = storageKey || (bunnyVideoId ? `progress_bunny_${bunnyVideoId}` : src ? `progress_src_${src}` : null);
 
   useEffect(() => {
