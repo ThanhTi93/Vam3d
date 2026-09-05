@@ -33,9 +33,9 @@ function CategoryCatalogContent({
 
   useEffect(() => {
     fetch("/api/categories")
-      .then((res) => res.json())
+      .then((res) => (res.ok ? res.json() : []))
       .then((cats) => {
-        if (cats && cats.length > 0) {
+        if (cats && Array.isArray(cats) && cats.length > 0) {
           setDbGenres([{ id: 0, name: "Tất cả" }, ...cats]);
         } else {
           setDbGenres([
