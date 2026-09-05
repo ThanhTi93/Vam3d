@@ -6,7 +6,7 @@ async function verifyAdmin() {
 }
 
 
-import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 function revalidateAdmin() {
   revalidateTag("admin-data", "default");
@@ -20,8 +20,7 @@ import { slugify } from "@/lib/utils";
 // MOVIES
 // ─────────────────────────────────────────────────────────────────
 
-const getCached_getAdminMovies = unstable_cache(
-  async () => {
+const getCached_getAdminMovies = async () => {
     if (!db) return [];
   const result = await db.query.movies.findMany({
     orderBy: (m, { desc }) => [desc(m.id)],
@@ -55,10 +54,7 @@ const getCached_getAdminMovies = unstable_cache(
       movieCharacters: Array.from(uniqueCharacters.values()).map(character => ({ character }))
     };
   });
-  },
-  ["admin-movies"],
-  { revalidate: 3600, tags: ["admin-data", "admin-movies", "movies"] }
-);
+  };
 
 export async function getAdminMovies() {
   await verifyAdmin();
@@ -186,22 +182,17 @@ export async function deleteMovie(id: number) {
 // CATEGORIES
 // ─────────────────────────────────────────────────────────────────
 
-const getCached_getAdminCategories = unstable_cache(
-  async () => {
+const getCached_getAdminCategories = async () => {
     if (!db) return [];
   return db.query.categories.findMany({ orderBy: (c, { asc }) => [asc(c.id)] });
-  },
-  ["admin-categories"],
-  { revalidate: 3600, tags: ["admin-data", "admin-categories", "categories"] }
-);
+  };
 
 export async function getAdminCategories() {
   await verifyAdmin();
   return getCached_getAdminCategories();
 }
 
-const getCached_getFooterData = unstable_cache(
-  async () => {
+const getCached_getFooterData = async () => {
     if (!db) return { categories: [], topMovies: [] };
     const [categories, topMovies] = await Promise.all([
       db.query.categories.findMany({ orderBy: (c, { asc }) => [asc(c.id)] }),
@@ -213,10 +204,7 @@ const getCached_getFooterData = unstable_cache(
       }),
     ]);
     return { categories, topMovies };
-  },
-  ["footer-data"],
-  { revalidate: 3600, tags: ["admin-data", "categories", "movies"] }
-);
+  };
 
 export async function getFooterData() {
   return getCached_getFooterData();
@@ -322,8 +310,7 @@ export async function syncProcessingEpisodes() {
   }
 }
 
-const getCachedAdminEpisodes = unstable_cache(
-  async (movieId?: number) => {
+const getCachedAdminEpisodes = async (movieId?: number) => {
     if (!db) return [];
     if (movieId) {
       return db.query.episodes.findMany({
@@ -343,10 +330,7 @@ const getCachedAdminEpisodes = unstable_cache(
         episodesCharacters: { columns: { idCharacter: true } },
       },
     });
-  },
-  ["admin-episodes"],
-  { revalidate: 3600, tags: ["admin-data", "admin-episodes", "episodes"] }
-);
+  };
 
 export async function getAdminEpisodes(movieId?: number) {
   await verifyAdmin();
@@ -561,14 +545,10 @@ export async function deleteEpisode(id: number) {
 // ACTORS
 // ─────────────────────────────────────────────────────────────────
 
-const getCached_getAdminActors = unstable_cache(
-  async () => {
+const getCached_getAdminActors = async () => {
     if (!db) return [];
   return db.query.actors.findMany({ orderBy: (a, { asc }) => [asc(a.name)] });
-  },
-  ["admin-actors"],
-  { revalidate: 3600, tags: ["admin-data", "admin-actors", "actors"] }
-);
+  };
 
 export async function getAdminActors() {
   await verifyAdmin();
@@ -628,14 +608,10 @@ export async function deleteActor(id: number) {
 // CHARACTERS
 // ─────────────────────────────────────────────────────────────────
 
-const getCached_getAdminCharacters = unstable_cache(
-  async () => {
+const getCached_getAdminCharacters = async () => {
     if (!db) return [];
   return db.query.characters.findMany({ orderBy: (c, { asc }) => [asc(c.name)], with: { movie: true } });
-  },
-  ["admin-characters"],
-  { revalidate: 3600, tags: ["admin-data", "admin-characters", "characters"] }
-);
+  };
 
 export async function getAdminCharacters() {
   await verifyAdmin();
@@ -698,17 +674,13 @@ export async function deleteCharacter(id: number) {
 // PLANS
 // ─────────────────────────────────────────────────────────────────
 
-const getCached_getAdminPlans = unstable_cache(
-  async () => {
+const getCached_getAdminPlans = async () => {
     if (!db) return [];
   return db.query.plans.findMany({
     with: { features: true },
     orderBy: (p, { asc }) => [asc(p.id)],
   });
-  },
-  ["admin-plans"],
-  { revalidate: 3600, tags: ["admin-data", "admin-plans", "plans"] }
-);
+  };
 
 export async function getAdminPlans() {
   await verifyAdmin();
@@ -766,17 +738,13 @@ export async function deletePlan(id: number) {
 // FEATURES
 // ─────────────────────────────────────────────────────────────────
 
-const getCached_getAdminFeatures = unstable_cache(
-  async () => {
+const getCached_getAdminFeatures = async () => {
     if (!db) return [];
   return db.query.features.findMany({
     with: { plan: { columns: { id: true, name: true } } },
     orderBy: (f, { asc }) => [asc(f.idPlan), asc(f.id)],
   });
-  },
-  ["admin-features"],
-  { revalidate: 3600, tags: ["admin-data", "admin-features", "features"] }
-);
+  };
 
 export async function getAdminFeatures() {
   await verifyAdmin();
@@ -811,17 +779,13 @@ export async function deleteFeature(id: number) {
 // PACKAGES
 // ─────────────────────────────────────────────────────────────────
 
-const getCached_getAdminPackages = unstable_cache(
-  async () => {
+const getCached_getAdminPackages = async () => {
     if (!db) return [];
   return db.query.packages.findMany({
     with: { plan: { columns: { id: true, name: true } } },
     orderBy: (p, { asc }) => [asc(p.idPlan), asc(p.time)],
   });
-  },
-  ["admin-packages"],
-  { revalidate: 3600, tags: ["admin-data", "admin-packages", "packages"] }
-);
+  };
 
 export async function getAdminPackages() {
   await verifyAdmin();
@@ -860,14 +824,10 @@ export async function deletePackage(id: number) {
 // AUTHORS
 // ─────────────────────────────────────────────────────────────────
 
-const getCached_getAdminAuthors = unstable_cache(
-  async () => {
+const getCached_getAdminAuthors = async () => {
     if (!db) return [];
   return db.query.authors.findMany({ orderBy: (a, { asc }) => [asc(a.name)] });
-  },
-  ["admin-authors"],
-  { revalidate: 3600, tags: ["admin-data", "admin-authors", "authors"] }
-);
+  };
 
 export async function getAdminAuthors() {
   await verifyAdmin();
@@ -902,17 +862,13 @@ export async function deleteAuthor(id: number) {
 // ACCOUNTS
 // ─────────────────────────────────────────────────────────────────
 
-const getCached_getAdminAccounts = unstable_cache(
-  async () => {
+const getCached_getAdminAccounts = async () => {
     if (!db) return [];
   return db.query.accounts.findMany({
     orderBy: (a, { desc }) => [desc(a.id)],
     columns: { password: false },
   });
-  },
-  ["admin-accounts"],
-  { revalidate: 3600, tags: ["admin-data", "admin-accounts", "accounts"] }
-);
+  };
 
 export async function getAdminAccounts() {
   await verifyAdmin();
@@ -953,8 +909,7 @@ export async function revalidateAllCache() {
 // AI GALLERIES
 // ─────────────────────────────────────────────────────────────────
 
-const getCached_getAdminGalleries = unstable_cache(
-  async () => {
+const getCached_getAdminGalleries = async () => {
     if (!db) return [];
   return db.query.aiGalleries.findMany({
     orderBy: (g, { desc }) => [desc(g.createdAt)],
@@ -972,10 +927,7 @@ const getCached_getAdminGalleries = unstable_cache(
       }
     }
   });
-  },
-  ["admin-galleries"],
-  { revalidate: 3600, tags: ["admin-data", "admin-galleries", "galleries"] }
-);
+  };
 
 export async function getAdminGalleries() {
   await verifyAdmin();
@@ -1351,8 +1303,7 @@ export async function deleteGallery(id: number) {
 // COLLECTIONS (grouping of AI Images)
 // ─────────────────────────────────────────────────────────────────
 
-const getCached_getAdminCollections = unstable_cache(
-  async () => {
+const getCached_getAdminCollections = async () => {
     if (!db) return [];
   return db.query.collections.findMany({
     orderBy: (c, { asc }) => [asc(c.name)],
@@ -1364,10 +1315,7 @@ const getCached_getAdminCollections = unstable_cache(
       },
     },
   });
-  },
-  ["admin-collections"],
-  { revalidate: 3600, tags: ["admin-data", "admin-collections", "collections"] }
-);
+  };
 
 export async function getAdminCollections() {
   await verifyAdmin();
@@ -1433,8 +1381,7 @@ export async function removeImageFromCollection(idCollection: number, idAiImage:
   revalidateAdmin();
 }
 
-const getCached_getAdminAiImages = unstable_cache(
-  async () => {
+const getCached_getAdminAiImages = async () => {
     if (!db) return [];
   return db.query.aiImages.findMany({
     orderBy: (img, { desc }) => [desc(img.createdAt)],
@@ -1445,18 +1392,14 @@ const getCached_getAdminAiImages = unstable_cache(
       },
     },
   });
-  },
-  ["admin-ai-images"],
-  { revalidate: 3600, tags: ["admin-data", "admin-ai-images", "ai-images"] }
-);
+  };
 
 export async function getAdminAiImages() {
   await verifyAdmin();
   return getCached_getAdminAiImages();
 }
 
-const getCached_getSubscriptionPlans = unstable_cache(
-  async () => {
+const getCached_getSubscriptionPlans = async () => {
     if (!db) return [];
     return db.query.plans.findMany({
       where: eq(schema.plans.status, 1),
@@ -1468,10 +1411,7 @@ const getCached_getSubscriptionPlans = unstable_cache(
         },
       },
     });
-  },
-  ["subscription-plans"],
-  { revalidate: 600, tags: ["plans:all"] }
-);
+  };
 
 export async function getSubscriptionPlans() {
   return getCached_getSubscriptionPlans();
@@ -1486,8 +1426,7 @@ export async function getUserPaymentHistory(userId?: number) {
   }
   if (!db) return [];
   
-  return unstable_cache(
-    async () => {
+  return (async () => {
       return db!.query.payments.findMany({
         where: eq(schema.payments.idAccount, targetUserId!),
         orderBy: (p, { desc }) => [desc(p.createdAt)],
@@ -1499,10 +1438,7 @@ export async function getUserPaymentHistory(userId?: number) {
           },
         },
       });
-    },
-    ["user-payment-history", targetUserId.toString()],
-    { revalidate: 300, tags: [`user:payments-${targetUserId}`] }
-  )();
+    })();
 }
 
 export async function getUserSubscriptions(userId?: number) {
@@ -1514,8 +1450,7 @@ export async function getUserSubscriptions(userId?: number) {
   }
   if (!db) return [];
   
-  return unstable_cache(
-    async () => {
+  return (async () => {
       return db!.query.userSubscriptions.findMany({
         where: eq(schema.userSubscriptions.idAccount, targetUserId!),
         orderBy: (s, { desc }) => [desc(s.updatedAt)],
@@ -1523,10 +1458,7 @@ export async function getUserSubscriptions(userId?: number) {
           plan: true,
         },
       });
-    },
-    ["user-subscriptions", targetUserId.toString()],
-    { revalidate: 300, tags: [`user:subscriptions-${targetUserId}`] }
-  )();
+    })();
 }
 
 export async function incrementGalleryViews(id: number) {

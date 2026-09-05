@@ -90,24 +90,26 @@ export default function Header() {
     return () => window.removeEventListener("click", closeMenu);
   }, []);
 
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([
+    { id: 1, name: "phim-le" },
+    { id: 2, name: "phim-bo" },
+    { id: 3, name: "chieu-rap" },
+    { id: 4, name: "hoat-hinh" },
+  ]);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    getAdminCategories().then((cats) => {
-      if (cats && cats.length > 0) {
-        setCategories(cats);
-      } else {
-        setCategories([
-          { id: 1, name: "phim-le" },
-          { id: 2, name: "phim-bo" },
-          { id: 3, name: "chieu-rap" },
-          { id: 4, name: "hoat-hinh" },
-        ]);
-      }
-    });
+    getAdminCategories()
+      .then((cats) => {
+        if (cats && cats.length > 0) {
+          setCategories(cats);
+        }
+      })
+      .catch((err) => {
+        console.warn("Header categories fetch fallback:", err);
+      });
 
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);

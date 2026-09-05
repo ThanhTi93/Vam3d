@@ -1,6 +1,6 @@
 import { db, schema, sql } from "./index";
 import { eq } from "drizzle-orm";
-import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 let tableEnsured = false;
 
@@ -20,24 +20,19 @@ async function ensureSettingsTableExists() {
   }
 }
 
-export const getCachedSystemSetting = (key: string, defaultValue: string = "") =>
-  unstable_cache(
-    async () => {
-      if (!db) return defaultValue;
-      try {
-        await ensureSettingsTableExists();
-        const setting = await db.query.systemSettings.findFirst({
-          where: eq(schema.systemSettings.key, key),
-        });
-        return setting?.value ?? defaultValue;
-      } catch (err) {
-        console.error(`Error fetching system setting '${key}':`, err);
-        return defaultValue;
-      }
-    },
-    [`system-setting-${key}`],
-    { revalidate: 60, tags: ["system-settings", `system-setting-${key}`] }
-  )();
+export async function getCachedSystemSetting(key: string, defaultValue: string = "") {
+  if (!db) return defaultValue;
+  try {
+    await ensureSettingsTableExists();
+    const setting = await db.query.systemSettings.findFirst({
+      where: eq(schema.systemSettings.key, key),
+    });
+    return setting?.value ?? defaultValue;
+  } catch (err) {
+    console.error(`Error fetching system setting '${key}':`, err);
+    return defaultValue;
+  }
+}
 
 export async function setSystemSetting(key: string, value: string) {
   if (!db) return;
@@ -96,4 +91,3 @@ export async function setTurnstileMode(enabled: boolean): Promise<void> {
   await setSystemSetting("turnstile_enabled", enabled ? "true" : "false");
   turnstileMemoryCache = { value: enabled, timestamp: Date.now() };
 }
-
