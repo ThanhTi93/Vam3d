@@ -1,5 +1,5 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -10,9 +10,15 @@ if (!databaseUrl) {
   );
 }
 
-// Export the Neon HTTP sql driver (client-side serverless)
-export const sql = databaseUrl ? neon(databaseUrl) : null;
+// Global connection client with prepare: false for Supabase Transaction Pooler compatibility
+const client = databaseUrl
+  ? postgres(databaseUrl, {
+      prepare: false, // Required for Supabase Transaction Connection Pooler
+      ssl: { rejectUnauthorized: false },
+    })
+  : null;
 
 // Export the Drizzle client initialized with schema
-export const db = sql ? drizzle(sql, { schema }) : null;
+export const db = client ? drizzle(client, { schema }) : null;
+export const sql = client;
 export { schema };
