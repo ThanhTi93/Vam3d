@@ -7,23 +7,34 @@ export const revalidate = 3600;
 export default async function Home() {
   let allMovies: any[] = [];
   let galleries: any[] = [];
-  let mostViewedEpisodes: any[] = [];
-  let latestEpisodes: any[] = [];
 
   try {
     const results = await Promise.all([
       getAllMovies(60).catch(() => []),
-      getLatestGalleries().catch(() => []),
-      getMostViewedEpisodes(12).catch(() => []),
-      getLatestEpisodes(12).catch(() => []),
+      getLatestGalleries(12).catch(() => []),
     ]);
     allMovies = results[0] || [];
     galleries = results[1] || [];
-    mostViewedEpisodes = results[2] || [];
-    latestEpisodes = results[3] || [];
   } catch (err) {
     console.error("Error loading home page data:", err);
   }
+
+  // Derive latest and most viewed episodes directly from movies to eliminate extra DB queries
+  const allEps = allMovies.flatMap((m: any) =>
+    (m.episodes || []).map((ep: any) => ({
+      ...ep,
+      idMovie: m.id,
+      movie: {
+        id: m.id,
+        name: m.name,
+        imgUrl: m.imgUrl,
+        bannerUrl: m.banner,
+        episodes: m.episodes,
+      },
+    }))
+  );
+  const latestEpisodes = allEps.slice(0, 8);
+  const mostViewedEpisodes = [...allEps].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 8);
 
   const hotMoviesList = (allMovies || []).filter((m: any) => m?.isHot);
   const hotMovies = hotMoviesList.length > 0 ? hotMoviesList.slice(0, 6) : (allMovies || []).slice(0, 6);
