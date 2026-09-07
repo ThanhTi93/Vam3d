@@ -8,9 +8,15 @@ export const metadata: Metadata = {
   description: "Nâng cấp gói thành viên VIP tại Vam3D để trải nghiệm xem phim chất lượng cao HD/4K không có quảng cáo, truyền phát siêu mượt và mở khóa bộ sưu tập ảnh AI đặc quyền.",
 };
 
+export const revalidate = 300;
+
 export default async function UpgradePage() {
   await connection();
-  const plans = await getSubscriptionPlans();
-  
-  return <UpgradePageClient initialPlans={plans || []} />;
+  try {
+    const plans = await getSubscriptionPlans();
+    return <UpgradePageClient initialPlans={plans || []} />;
+  } catch (err) {
+    console.error("Error in UpgradePage:", err);
+    return <UpgradePageClient initialPlans={[]} />;
+  }
 }
