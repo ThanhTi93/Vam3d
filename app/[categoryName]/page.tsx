@@ -22,13 +22,20 @@ const formatCategoryLabel = (name: string) => {
 
 // Generate dynamic metadata
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  await connection();
+  try {
+    await connection();
+  } catch {}
+  
   const { categoryName } = await params;
   const decoded = decodeURIComponent(categoryName).trim();
   const inputSlug = slugify(decoded).toLowerCase();
   
-  const categories = await getAllCategories();
-  const cat = (categories || []).find((c: any) => {
+  let categories: any[] = [];
+  try {
+    categories = (await getAllCategories()) || [];
+  } catch {}
+
+  const cat = categories.find((c: any) => {
     const catName = (c.name || "").trim().toLowerCase();
     const catSlug = (c.slug || slugify(c.name)).trim().toLowerCase();
     return catSlug === inputSlug || catName === decoded.toLowerCase() || catSlug === decoded.toLowerCase();
@@ -63,14 +70,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export const revalidate = 120;
 
 export default async function DynamicCategoryPage({ params }: PageProps) {
-  await connection();
+  try {
+    await connection();
+  } catch {}
+  
   const { categoryName } = await params;
   const decodedCategory = decodeURIComponent(categoryName).trim();
   const inputSlug = slugify(decodedCategory).toLowerCase();
 
-  // Check if this category exists in the database by slug or name
-  const allDbCategories = await getAllCategories();
-  const targetCategory = (allDbCategories || []).find((c: any) => {
+  let allDbCategories: any[] = [];
+  try {
+    allDbCategories = (await getAllCategories()) || [];
+  } catch {}
+
+  const targetCategory = allDbCategories.find((c: any) => {
     const catName = (c.name || "").trim().toLowerCase();
     const catSlug = (c.slug || slugify(c.name)).trim().toLowerCase();
     return (
@@ -80,104 +93,91 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
     );
   });
 
-  if (!targetCategory) {
+  if (!targetCategory && allDbCategories.length > 0) {
     notFound();
   }
 
-  const [movies, allMovies] = await Promise.all([
-    getMoviesByCategory(targetCategory.slug || targetCategory.name),
-    getAllMovies(),
-  ]);
+  let movies: any[] = [];
+  let allMovies: any[] = [];
+  try {
+    const results = await Promise.all([
+      targetCategory ? getMoviesByCategory(targetCategory.slug || targetCategory.name) : Promise.resolve([]),
+      getAllMovies(60),
+    ]);
+    movies = results[0] || [];
+    allMovies = results[1] || [];
+  } catch (err) {
+    console.error("Error loading category movies:", err);
+  }
 
   // Format to expected Movie model shape
-  const formattedMovies = movies.map((m: any) => ({
-    id: m.id.toString(),
-    title: m.name,
-    originalTitle: m.originalTitle || "",
-    thumbnail: m.imgUrl || "",
-    banner: m.banner || m.imgUrl || "",
-    category: (m.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
-              m.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :
-              m.movieCategories?.[0]?.category?.name === "chieu-rap" ? "chieu-rap" : "phim-le") as any,
-    genres: m.movieCategories?.map((mc: any) => mc.category?.name).filter(Boolean) || [],
-    rating: typeof m.rating === "string" ? parseFloat(m.rating) : m.rating || 0.0,
-    votes: m.likeCount || 0,
-    year: m.year || 2026,
-    duration: m.duration ? `${m.duration} phút` : "—",
-    quality: m.quality || "HD",
-    sub: m.sub || "Vietsub",
-    director: m.author?.name || "—",
-    cast: m.movieActors?.map((ma: any) => ma.actor?.name) || [],
-    description: m.description || "",
-    videoUrl: m.episodes?.[0]?.url || "",
-    views: m.viewCount || 0,
-    isHot: m.isHot || false,
-    episodes: m.episodes?.map((ep: any) => ({
-      id: ep.id,
-      name: ep.name || `Tập ${ep.id}`,
-      url: ep.url || "",
-      banner: ep.banner || "",
-      bunnyVideoId: ep.bunnyVideoId,
-      bunnyStatus: ep.bunnyStatus,
-      duration: ep.duration || 0,
+  const formattedMovies = (movies || []).map((m: any) => ({
+    id: m?.id?.toString() || "",
+    title: m?.name || "",
+    originalTitle: m?.originalTitle || "",
+    thumbnail: m?.imgUrl || "",
+    banner: m?.banner || m?.imgUrl || "",
+    category: (m?.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
+              m?.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :
+              m?.movieCategories?.[0]?.category?.name === "chieu-rap" ? "chieu-rap" : "phim-le") as any,
+    genres: m?.movieCategories?.map((mc: any) => mc?.category?.name).filter(Boolean) || [],
+    rating: typeof m?.rating === "string" ? parseFloat(m?.rating) : m?.rating || 0.0,
+    votes: m?.likeCount || 0,
+    year: m?.year || 2026,
+    duration: m?.duration ? `${m.duration} phút` : "—",
+    quality: m?.quality || "HD",
+    sub: m?.sub || "Vietsub",
+    director: m?.author?.name || "—",
+    cast: m?.movieActors?.map((ma: any) => ma?.actor?.name) || [],
+    description: m?.description || "",
+    videoUrl: m?.episodes?.[0]?.url || "",
+    views: m?.viewCount || 0,
+    isHot: m?.isHot || false,
+    episodes: m?.episodes?.map((ep: any) => ({
+      id: ep?.id,
+      name: ep?.name || `Tập ${ep?.id}`,
+      url: ep?.url || "",
+      banner: ep?.banner || "",
+      bunnyVideoId: ep?.bunnyVideoId,
+      bunnyStatus: ep?.bunnyStatus,
+      duration: ep?.duration || 0,
     })) || [],
   }));
 
-  const formattedAllMovies = allMovies.map((m: any) => ({
-    id: m.id.toString(),
-    title: m.name,
-    originalTitle: m.originalTitle || "",
-    thumbnail: m.imgUrl || "",
-    banner: m.banner || m.imgUrl || "",
-    category: (m.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
-              m.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :
-              m.movieCategories?.[0]?.category?.name === "chieu-rap" ? "chieu-rap" : "phim-le") as any,
-    genres: m.movieCategories?.map((mc: any) => mc.category?.name).filter(Boolean) || [],
-    rating: typeof m.rating === "string" ? parseFloat(m.rating) : m.rating || 0.0,
-    votes: m.likeCount || 0,
-    year: m.year || 2026,
-    duration: m.duration ? `${m.duration} phút` : "—",
-    quality: m.quality || "HD",
-    sub: m.sub || "Vietsub",
-    director: m.author?.name || "—",
-    cast: m.movieActors?.map((ma: any) => ma.actor?.name) || [],
-    description: m.description || "",
-    videoUrl: m.episodes?.[0]?.url || "",
-    views: m.viewCount || 0,
-    isHot: m.isHot || false,
-    episodes: m.episodes?.map((ep: any) => ({
-      id: ep.id,
-      name: ep.name || `Tập ${ep.id}`,
-      url: ep.url || "",
-      banner: ep.banner || "",
-      bunnyVideoId: ep.bunnyVideoId,
-      bunnyStatus: ep.bunnyStatus,
-      duration: ep.duration || 0,
+  const formattedAllMovies = (allMovies || []).map((m: any) => ({
+    id: m?.id?.toString() || "",
+    title: m?.name || "",
+    originalTitle: m?.originalTitle || "",
+    thumbnail: m?.imgUrl || "",
+    banner: m?.banner || m?.imgUrl || "",
+    category: (m?.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
+              m?.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :
+              m?.movieCategories?.[0]?.category?.name === "chieu-rap" ? "chieu-rap" : "phim-le") as any,
+    genres: m?.movieCategories?.map((mc: any) => mc?.category?.name).filter(Boolean) || [],
+    rating: typeof m?.rating === "string" ? parseFloat(m?.rating) : m?.rating || 0.0,
+    votes: m?.likeCount || 0,
+    year: m?.year || 2026,
+    duration: m?.duration ? `${m.duration} phút` : "—",
+    quality: m?.quality || "HD",
+    sub: m?.sub || "Vietsub",
+    director: m?.author?.name || "—",
+    cast: m?.movieActors?.map((ma: any) => ma?.actor?.name) || [],
+    description: m?.description || "",
+    videoUrl: m?.episodes?.[0]?.url || "",
+    views: m?.viewCount || 0,
+    isHot: m?.isHot || false,
+    episodes: m?.episodes?.map((ep: any) => ({
+      id: ep?.id,
+      name: ep?.name || `Tập ${ep?.id}`,
+      url: ep?.url || "",
+      banner: ep?.banner || "",
+      bunnyVideoId: ep?.bunnyVideoId,
+      bunnyStatus: ep?.bunnyStatus,
+      duration: ep?.duration || 0,
     })) || [],
   }));
 
   const titleName = targetCategory?.name || formatCategoryLabel(decodedCategory);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
-  const categoryUrl = `${siteUrl}/${encodeURIComponent(decodedCategory)}`;
-
-  const categoryBreadcrumb = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Trang chủ",
-        item: siteUrl,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: titleName,
-        item: categoryUrl,
-      },
-    ],
-  };
 
   return (
     <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-4">
