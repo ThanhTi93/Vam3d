@@ -328,7 +328,7 @@ export async function getRecommendedEpisodes(currentEpisodeId: number, currentMo
 }
 
 // ─── Get AI Galleries ────────────────────────────────────────────────────────
-export async function getLatestGalleries(limit = 24) {
+export const getLatestGalleries = cache(async (limit = 24) => {
   try {
     if (!db) return [];
 
@@ -343,9 +343,6 @@ export async function getLatestGalleries(limit = 24) {
         },
         images: {
           columns: { id: true, imgUrl: true },
-          with: {
-            collectionImages: true,
-          },
         },
       },
     });
@@ -353,7 +350,7 @@ export async function getLatestGalleries(limit = 24) {
     console.error("Error in getLatestGalleries:", err);
     return [];
   }
-}
+});
 
 // ─── Get AI Galleries Paginated (Public Client View) ─────────────────────────
 export async function getGalleriesPublicPaginated(params: {
@@ -411,36 +408,33 @@ export async function getGalleriesPublicPaginated(params: {
       orderByClause = (g: any, { desc }: any) => [desc(g.views)];
     }
 
-    const items = await db.query.aiGalleries.findMany({
-      where: whereClause,
-      orderBy: orderByClause,
-      limit,
-      offset,
-      with: {
-        movie: { columns: { id: true, name: true } },
-        plan: { columns: { id: true, name: true, level: true } },
-        galleryCharacters: {
-          with: { character: { columns: { id: true, name: true } } },
-        },
-        images: {
-          columns: { id: true, imgUrl: true },
-          with: {
-            collectionImages: true,
+    const [items, countResult] = await Promise.all([
+      db.query.aiGalleries.findMany({
+        where: whereClause,
+        orderBy: orderByClause,
+        limit,
+        offset,
+        with: {
+          movie: { columns: { id: true, name: true } },
+          plan: { columns: { id: true, name: true, level: true } },
+          galleryCharacters: {
+            with: { character: { columns: { id: true, name: true } } },
+          },
+          images: {
+            columns: { id: true, imgUrl: true },
           },
         },
-      },
-    });
-
-    // Count total matching
-    const countResult = await db
-      .select({ count: count() })
-      .from(schema.aiGalleries)
-      .where(whereClause);
+      }),
+      db
+        .select({ count: count() })
+        .from(schema.aiGalleries)
+        .where(whereClause),
+    ]);
 
     const totalCount = Number(countResult[0]?.count || 0);
 
     return {
-      galleries: items,
+      galleries: items || [],
       totalCount,
     };
   } catch (err) {
@@ -450,7 +444,7 @@ export async function getGalleriesPublicPaginated(params: {
 }
 
 // ─── Get Gallery Filter Options (Active Movies & Characters) ──────────────────
-export async function getGalleryFilterOptions() {
+export const getGalleryFilterOptions = cache(async () => {
   try {
     if (!db) return { movies: [], characters: [] };
 
@@ -474,11 +468,12 @@ export async function getGalleryFilterOptions() {
       .where(eq(schema.aiGalleries.status, 1));
 
     return {
-      movies: moviesList.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)),
-      characters: charactersList.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)),
+      movies: (moviesList || []).sort((a, b) => ((a?.name || "") < (b?.name || "") ? -1 : (a?.name || "") > (b?.name || "") ? 1 : 0)),
+      characters: (charactersList || []).sort((a, b) => ((a?.name || "") < (b?.name || "") ? -1 : (a?.name || "") > (b?.name || "") ? 1 : 0)),
     };
   } catch (err) {
     console.error("Error in getGalleryFilterOptions:", err);
     return { movies: [], characters: [] };
   }
-}
+});
+
