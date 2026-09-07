@@ -127,6 +127,7 @@ export function HomeGallerySection({
   onViewAll?: () => void;
   onSelectGallery: (g: any) => void;
 }) {
+  const safeGalleries = galleries || [];
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between border-b border-white/5 pb-3">
@@ -140,8 +141,8 @@ export function HomeGallerySection({
         )}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        {galleries.map((g) => (
-          <HomeGalleryCard key={g.id} g={g} onSelect={onSelectGallery} />
+        {safeGalleries.map((g) => (
+          <HomeGalleryCard key={g?.id} g={g} onSelect={onSelectGallery} />
         ))}
       </div>
     </div>
@@ -172,6 +173,7 @@ export function HomeGalleryGrid({
   activeSortBy?: string;
   onFilterChange?: (filters: { plan: string; movie: string; character: string; sortBy: string }) => void;
 }) {
+  const safeGalleries = galleries || [];
   const [localPlan, setLocalPlan] = useState("all");
   const [localMovie, setLocalMovie] = useState("all");
   const [localCharacter, setLocalCharacter] = useState("all");
@@ -217,26 +219,26 @@ export function HomeGalleryGrid({
   };
 
   // Extract unique movies present in galleries
-  const uniqueMovies = filterMovies || Array.from(
+  const uniqueMovies = (filterMovies && filterMovies.length > 0) ? filterMovies : Array.from(
     new Map(
-      galleries
-        .filter((g) => g.movie && g.movie.id && g.movie.name)
+      safeGalleries
+        .filter((g) => g?.movie && g.movie.id && g.movie.name)
         .map((g) => [g.movie.id, { id: g.movie.id, name: g.movie.name }])
     ).values()
-  ).sort((a: any, b: any) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  ).sort((a: any, b: any) => ((a?.name || "") < (b?.name || "") ? -1 : (a?.name || "") > (b?.name || "") ? 1 : 0));
 
   // Extract unique characters present in galleries
-  const uniqueCharacters = filterCharacters || Array.from(
+  const uniqueCharacters = (filterCharacters && filterCharacters.length > 0) ? filterCharacters : Array.from(
     new Map(
-      galleries
-        .flatMap((g) => g.galleryCharacters || [])
-        .filter((gc) => gc.character && gc.character.id && gc.character.name)
+      safeGalleries
+        .flatMap((g) => g?.galleryCharacters || [])
+        .filter((gc) => gc?.character && gc.character.id && gc.character.name)
         .map((gc) => [gc.character.id, { id: gc.character.id, name: gc.character.name }])
     ).values()
-  ).sort((a: any, b: any) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  ).sort((a: any, b: any) => ((a?.name || "") < (b?.name || "") ? -1 : (a?.name || "") > (b?.name || "") ? 1 : 0));
 
   // Filter & Sort
-  let displayGalleries = [...galleries];
+  let displayGalleries = [...safeGalleries];
 
   if (!isControlled) {
     // Plan filter
@@ -382,7 +384,7 @@ export function HomeGalleryGrid({
 
 // ─── Sub-component: Home Gallery Lightbox ────────────────────────────────────
 function HomeGalleryLightbox({
-  images, activeIndex, galleryName, onClose, onPrev, onNext
+  images: rawImages, activeIndex, galleryName, onClose, onPrev, onNext
 }: {
   images: any[];
   activeIndex: number;
@@ -391,6 +393,7 @@ function HomeGalleryLightbox({
   onPrev: () => void;
   onNext: () => void;
 }) {
+  const images = rawImages || [];
   const [zoom, setZoom] = useState(1);
   const [panX, setPanX] = useState(0);
   const [panY, setPanY] = useState(0);
@@ -398,7 +401,7 @@ function HomeGalleryLightbox({
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
-  const image = images[activeIndex];
+  const image = images && images[activeIndex] ? images[activeIndex] : null;
 
   useEffect(() => {
     setZoom(1);
@@ -408,6 +411,7 @@ function HomeGalleryLightbox({
   }, [activeIndex]);
 
   useEffect(() => {
+    if (images.length === 0) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") { onNext(); }
       else if (e.key === "ArrowLeft") { onPrev(); }
@@ -423,7 +427,9 @@ function HomeGalleryLightbox({
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [onNext, onPrev, onClose]);
+  }, [onNext, onPrev, onClose, images.length]);
+
+  if (images.length === 0 || !image) return null;
 
   const clampPan = (z: number, nx: number, ny: number) => {
     if (!containerRef.current) return { nx, ny };
