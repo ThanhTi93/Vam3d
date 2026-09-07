@@ -225,135 +225,152 @@ export const revalidate = 60;
 
 export default async function MovieDetailPage({ params, searchParams }: MoviePageProps) {
   await connection();
-  const { id } = await params;
-  const [movie, allMovies, resolvedSearchParams] = await Promise.all([
-    getMovieById(id),
-    getAllMovies(),
-    searchParams,
-  ]);
+  try {
+    const { id } = await params;
+    const [movie, allMovies, resolvedSearchParams] = await Promise.all([
+      getMovieById(id),
+      getAllMovies(20),
+      searchParams,
+    ]);
 
-  if (!movie) {
+    if (!movie) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center py-20 text-center px-4">
+          <h2 className="text-2xl font-black text-red-500 mb-2">404 - Không Tìm Thấy Phim</h2>
+          <p className="text-gray-400 text-sm max-w-md">
+            Bộ phim bạn yêu cầu không tồn tại hoặc đã được gỡ bỏ khỏi website.
+          </p>
+        </div>
+      );
+    }
+
+    const movieData = movie as any;
+    const epParam = resolvedSearchParams?.ep;
+    const epIndex = epParam ? Math.max(0, parseInt(epParam, 10) - 1) : 0;
+    const currentEpisode = movieData.episodes?.[epIndex] || movieData.episodes?.[0];
+    const currentEpisodeId = currentEpisode ? currentEpisode.id : 0;
+
+    let relatedEpisodes: any[] = [];
+    try {
+      relatedEpisodes = await getRecommendedEpisodes(currentEpisodeId, movieData.id);
+    } catch (_) {
+      relatedEpisodes = [];
+    }
+
+    // Format to standard Client model shape
+    const formattedMovie = {
+      id: movieData.id.toString(),
+      title: movieData.name,
+      originalTitle: movieData.originalTitle || "",
+      thumbnail: movieData.imgUrl || "",
+      banner: movieData.banner || movieData.imgUrl || "",
+      category: (movieData.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
+                movieData.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :
+                movieData.movieCategories?.[0]?.category?.name === "chieu-rap" ? "chieu-rap" : "phim-le") as any,
+      genres: movieData.movieCategories?.map((mc: any) => mc.category?.name).filter(Boolean) || movieData.genres || [],
+      rating: typeof movieData.rating === "string" ? parseFloat(movieData.rating) : movieData.rating || 0.0,
+      votes: movieData.votes || movieData.likeCount || 0,
+      year: movieData.year || 2026,
+      duration: movieData.duration ? (movieData.duration.toString().includes("phút") ? movieData.duration : `${movieData.duration} phút`) : "—",
+      quality: movieData.quality || "HD",
+      sub: movieData.sub || "Vietsub",
+      director: movieData.author?.name || movieData.director || "—",
+      cast: movieData.movieActors?.map((ma: any) => ma.actor?.name) || movieData.cast || [],
+      description: movieData.description || "",
+      videoUrl: movieData.episodes?.[0]?.url || movieData.videoUrl || "",
+      views: movieData.views || movieData.viewCount || 0,
+      isHot: movieData.isHot || false,
+      episodes: movieData.episodes?.map((ep: any) => ({
+        id: ep.id,
+        name: ep.name || `Tập ${ep.id}`,
+        url: ep.url || "",
+        banner: ep.banner || "",
+        duration: ep.duration || 0,
+        bunnyVideoId: ep.bunnyVideoId,
+        bunnyStatus: ep.bunnyStatus,
+        plan: ep.plan || null,
+      })) || [],
+      aiGalleries: movieData.aiGalleries?.map((g: any) => ({
+        ...g,
+        movie: { id: movieData.id, name: movieData.name }
+      })) || [],
+      plan: movieData.aiGalleries?.[0]?.plan || movieData.plan || null,
+    };
+
+    const formattedAllMovies = (allMovies || []).map((m: any) => ({
+      id: m.id.toString(),
+      title: m.name,
+      originalTitle: m.originalTitle || "",
+      thumbnail: m.imgUrl || "",
+      banner: m.banner || m.imgUrl || "",
+      category: (m.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
+                m.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :
+                m.movieCategories?.[0]?.category?.name === "chieu-rap" ? "chieu-rap" : "phim-le") as any,
+      genres: m.movieCategories?.map((mc: any) => mc.category?.name).filter(Boolean) || m.genres || [],
+      rating: typeof m.rating === "string" ? parseFloat(m.rating) : m.rating || 0.0,
+      votes: m.votes || m.likeCount || 0,
+      year: m.year || 2026,
+      duration: m.duration ? (m.duration.toString().includes("phút") ? m.duration : `${m.duration} phút`) : "—",
+      quality: m.quality || "HD",
+      sub: m.sub || "Vietsub",
+      director: m.author?.name || m.director || "—",
+      cast: m.movieActors?.map((ma: any) => ma.actor?.name) || m.cast || [],
+      description: m.description || "",
+      videoUrl: m.episodes?.[0]?.url || m.videoUrl || "",
+      views: m.views || m.viewCount || 0,
+      isHot: m.isHot || false,
+      episodes: m.episodes?.map((ep: any) => ({
+        id: ep.id,
+        name: ep.name || `Tập ${ep.id}`,
+        url: ep.url || "",
+        duration: ep.duration || 0,
+        bunnyVideoId: ep.bunnyVideoId,
+        bunnyStatus: ep.bunnyStatus,
+      })) || [],
+    }));
+
+    const categoryLabel = formattedMovie.category === "phim-bo" ? "Phim Bộ" : formattedMovie.category === "hoat-hinh" ? "Hoạt Hình 3D" : formattedMovie.category === "chieu-rap" ? "Chiếu Rạp" : "Phim Lẻ";
+    const breadcrumbItems = [
+      { label: categoryLabel, href: `/${formattedMovie.category || "hoat-hinh"}` },
+      { label: formattedMovie.title, href: `/movie/${formattedMovie.id}` },
+      ...(epParam ? [{ label: `Tập ${epParam}` }] : []),
+    ];
+
+    return (
+      <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6">
+        <MovieSchemaScript movie={formattedMovie} currentEp={epParam} />
+
+        <Breadcrumbs items={breadcrumbItems} />
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Left col: Movie Player and Info */}
+          <div className="lg:col-span-3">
+            <Suspense fallback={
+              <div className="w-full bg-[#131520] border border-white/10 rounded-2xl p-20 flex flex-col items-center justify-center space-y-4">
+                <div className="w-10 h-10 rounded-full border-2 border-t-orange-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+                <p className="text-gray-400 text-sm">Đang chuẩn bị trình phát...</p>
+              </div>
+            }>
+              <MoviePageClient movie={formattedMovie} relatedEpisodes={relatedEpisodes} initialEp={epParam} />
+            </Suspense>
+          </div>
+
+          {/* Right col: Rankings Sidebar */}
+          <div>
+            <RankingsSidebar movies={formattedAllMovies} />
+          </div>
+        </div>
+      </main>
+    );
+  } catch (err) {
+    console.error("Error in MovieDetailPage:", err);
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-20 text-center px-4">
-        <h2 className="text-2xl font-black text-red-500 mb-2">404 - Không Tìm Thấy Phim</h2>
+        <h2 className="text-2xl font-black text-red-500 mb-2">Đang tải dữ liệu phim...</h2>
         <p className="text-gray-400 text-sm max-w-md">
-          Bộ phim bạn yêu cầu không tồn tại hoặc đã được gỡ bỏ khỏi website.
+          Vui lòng thử lại sau giây lát hoặc quay lại trang chủ.
         </p>
       </div>
     );
   }
-
-  const movieData = movie as any;
-  const epParam = resolvedSearchParams?.ep;
-  const epIndex = epParam ? Math.max(0, parseInt(epParam, 10) - 1) : 0;
-  const currentEpisode = movieData.episodes?.[epIndex] || movieData.episodes?.[0];
-  const currentEpisodeId = currentEpisode ? currentEpisode.id : 0;
-
-  const relatedEpisodes = await getRecommendedEpisodes(currentEpisodeId, movieData.id);
-
-  // Format to standard Client model shape
-  const formattedMovie = {
-    id: movieData.id.toString(),
-    title: movieData.name,
-    originalTitle: movieData.originalTitle || "",
-    thumbnail: movieData.imgUrl || "",
-    banner: movieData.banner || movieData.imgUrl || "",
-    category: (movieData.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
-              movieData.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :
-              movieData.movieCategories?.[0]?.category?.name === "chieu-rap" ? "chieu-rap" : "phim-le") as any,
-    genres: movieData.movieCategories?.map((mc: any) => mc.category?.name).filter(Boolean) || movieData.genres || [],
-    rating: typeof movieData.rating === "string" ? parseFloat(movieData.rating) : movieData.rating || 0.0,
-    votes: movieData.votes || movieData.likeCount || 0,
-    year: movieData.year || 2026,
-    duration: movieData.duration ? (movieData.duration.toString().includes("phút") ? movieData.duration : `${movieData.duration} phút`) : "—",
-    quality: movieData.quality || "HD",
-    sub: movieData.sub || "Vietsub",
-    director: movieData.author?.name || movieData.director || "—",
-    cast: movieData.movieActors?.map((ma: any) => ma.actor?.name) || movieData.cast || [],
-    description: movieData.description || "",
-    videoUrl: movieData.episodes?.[0]?.url || movieData.videoUrl || "",
-    views: movieData.views || movieData.viewCount || 0,
-    isHot: movieData.isHot || false,
-    episodes: movieData.episodes?.map((ep: any) => ({
-      id: ep.id,
-      name: ep.name || `Tập ${ep.id}`,
-      url: ep.url || "",
-      banner: ep.banner || "",
-      duration: ep.duration || 0,
-      bunnyVideoId: ep.bunnyVideoId,
-      bunnyStatus: ep.bunnyStatus,
-      plan: ep.plan || null,
-    })) || [],
-    aiGalleries: movieData.aiGalleries?.map((g: any) => ({
-      ...g,
-      movie: { id: movieData.id, name: movieData.name }
-    })) || [],
-    plan: movieData.aiGalleries?.[0]?.plan || movieData.plan || null, // Check dynamic VIP access plan if nested
-  };
-
-  const formattedAllMovies = allMovies.map((m: any) => ({
-    id: m.id.toString(),
-    title: m.name,
-    originalTitle: m.originalTitle || "",
-    thumbnail: m.imgUrl || "",
-    banner: m.banner || m.imgUrl || "",
-    category: (m.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
-              m.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :
-              m.movieCategories?.[0]?.category?.name === "chieu-rap" ? "chieu-rap" : "phim-le") as any,
-    genres: m.movieCategories?.map((mc: any) => mc.category?.name).filter(Boolean) || m.genres || [],
-    rating: typeof m.rating === "string" ? parseFloat(m.rating) : m.rating || 0.0,
-    votes: m.votes || m.likeCount || 0,
-    year: m.year || 2026,
-    duration: m.duration ? (m.duration.toString().includes("phút") ? m.duration : `${m.duration} phút`) : "—",
-    quality: m.quality || "HD",
-    sub: m.sub || "Vietsub",
-    director: m.author?.name || m.director || "—",
-    cast: m.movieActors?.map((ma: any) => ma.actor?.name) || m.cast || [],
-    description: m.description || "",
-    videoUrl: m.episodes?.[0]?.url || m.videoUrl || "",
-    views: m.views || m.viewCount || 0,
-    isHot: m.isHot || false,
-    episodes: m.episodes?.map((ep: any) => ({
-      id: ep.id,
-      name: ep.name || `Tập ${ep.id}`,
-      url: ep.url || "",
-      duration: ep.duration || 0,
-      bunnyVideoId: ep.bunnyVideoId,
-      bunnyStatus: ep.bunnyStatus,
-    })) || [],
-  }));
-
-  const categoryLabel = formattedMovie.category === "phim-bo" ? "Phim Bộ" : formattedMovie.category === "hoat-hinh" ? "Hoạt Hình 3D" : formattedMovie.category === "chieu-rap" ? "Chiếu Rạp" : "Phim Lẻ";
-  const breadcrumbItems = [
-    { label: categoryLabel, href: `/${formattedMovie.category || "hoat-hinh"}` },
-    { label: formattedMovie.title, href: `/movie/${formattedMovie.id}` },
-    ...(epParam ? [{ label: `Tập ${epParam}` }] : []),
-  ];
-
-  return (
-    <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6">
-      <MovieSchemaScript movie={formattedMovie} currentEp={epParam} />
-
-      <Breadcrumbs items={breadcrumbItems} />
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Left col: Movie Player and Info */}
-        <div className="lg:col-span-3">
-          <Suspense fallback={
-            <div className="w-full bg-[#131520] border border-white/10 rounded-2xl p-20 flex flex-col items-center justify-center space-y-4">
-              <div className="w-10 h-10 rounded-full border-2 border-t-orange-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
-              <p className="text-gray-400 text-sm">Đang chuẩn bị trình phát...</p>
-            </div>
-          }>
-            <MoviePageClient movie={formattedMovie} relatedEpisodes={relatedEpisodes} initialEp={epParam} />
-          </Suspense>
-        </div>
-
-        {/* Right col: Rankings Sidebar */}
-        <div>
-          <RankingsSidebar movies={formattedAllMovies} />
-        </div>
-      </div>
-    </main>
-  );
 }

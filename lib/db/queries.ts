@@ -275,20 +275,20 @@ export async function getMostViewedEpisodes(limit = 12) {
   }
 }
 
-// ─── Get Recommended Episodes (Same Movie or Same Character) ─────────────────
+// ─── Get Recommended Episodes (Same Movie or Latest) ───────────────────────
 export async function getRecommendedEpisodes(currentEpisodeId: number, currentMovieId: number, limit = 8) {
   try {
     if (!db) return [];
 
-    // 1. Fetch other episodes of the same movie
+    // 1. Fetch other episodes of the same movie first
     const sameMovieEps = await db.query.episodes.findMany({
       where: (ep, { eq, and, ne }) =>
         and(eq(ep.status, 1), eq(ep.idMovie, currentMovieId), ne(ep.id, currentEpisodeId)),
       orderBy: (ep, { asc }) => [asc(ep.id)],
+      limit,
       with: {
         movie: {
           with: {
-            episodes: { orderBy: (e, { asc }) => [asc(e.id)] },
             movieCategories: { with: { category: true } },
           },
         },
@@ -301,87 +301,25 @@ export async function getRecommendedEpisodes(currentEpisodeId: number, currentMo
     }
 
     const remainingSlots = limit - sameMovieEps.length;
+    const excludeIds = [currentEpisodeId, ...sameMovieEps.map((e: any) => e.id)];
 
-    // 2. Fetch characters of the current episode
-    const currentEpChars = await db.query.episodesCharacter.findMany({
-      where: (ec, { eq }) => eq(ec.idEpisodes, currentEpisodeId),
-      columns: { idCharacter: true },
-    });
-    const charIds = currentEpChars.map((ec: any) => ec.idCharacter).filter((id): id is number => id !== null);
-
-    let sameCharEps: any[] = [];
-    if (charIds.length > 0) {
-      const matchingJunctions = await db.query.episodesCharacter.findMany({
-        where: (ec, { inArray, and, ne }) =>
-          and(inArray(ec.idCharacter, charIds), ne(ec.idEpisodes, currentEpisodeId)),
-        columns: { idEpisodes: true },
-      });
-
-      const candidateEpIds = matchingJunctions
-        .map((mj: any) => mj.idEpisodes)
-        .filter((id): id is number => id !== null && id !== currentEpisodeId);
-
-      if (candidateEpIds.length > 0) {
-        sameCharEps = await db.query.episodes.findMany({
-          where: (ep, { inArray, eq, and, ne }) =>
-            and(eq(ep.status, 1), inArray(ep.id, candidateEpIds), ne(ep.idMovie, currentMovieId)),
-          limit: remainingSlots,
-          orderBy: (ep, { desc }) => [desc(ep.id)],
+    // 2. Fetch latest episodes to fill remaining slots
+    const fallbackEps = await db.query.episodes.findMany({
+      where: (ep, { eq, and, notInArray }) =>
+        and(eq(ep.status, 1), notInArray(ep.id, excludeIds)),
+      limit: remainingSlots,
+      orderBy: (ep, { desc }) => [desc(ep.id)],
+      with: {
+        movie: {
           with: {
-            movie: {
-              with: {
-                episodes: { orderBy: (e, { asc }) => [asc(e.id)] },
-                movieCategories: { with: { category: true } },
-              },
-            },
-            plan: true,
+            movieCategories: { with: { category: true } },
           },
-        });
-      }
-    }
+        },
+        plan: true,
+      },
+    });
 
-    const finalEps = [...sameMovieEps, ...sameCharEps];
-    if (finalEps.length < limit) {
-      const fillLimit = limit - finalEps.length;
-
-      const movieCats = await db.query.movieCategory.findMany({
-        where: (mc, { eq }) => eq(mc.idMovie, currentMovieId),
-        with: { category: true },
-      });
-      const catName = movieCats?.[0]?.category?.name || "phim-le";
-      const cat = await db.query.categories.findFirst({ where: (c, { eq }) => eq(c.name, catName) });
-
-      if (cat) {
-        const mcs = await db.query.movieCategory.findMany({
-          where: (mc, { eq }) => eq(mc.idCategory, cat.id),
-          columns: { idMovie: true },
-        });
-        const movieIds = mcs.map((mc: any) => mc.idMovie).filter((id): id is number => id !== null && id !== currentMovieId);
-
-        const excludeEpIds = finalEps.map((fe: any) => fe.id).concat(currentEpisodeId);
-
-        if (movieIds.length > 0) {
-          const fallbackEps = await db.query.episodes.findMany({
-            where: (ep, { inArray, eq, and, notInArray }) =>
-              and(eq(ep.status, 1), inArray(ep.idMovie, movieIds), notInArray(ep.id, excludeEpIds)),
-            limit: fillLimit,
-            orderBy: (ep, { desc }) => [desc(ep.id)],
-            with: {
-              movie: {
-                with: {
-                  episodes: { orderBy: (e, { asc }) => [asc(e.id)] },
-                  movieCategories: { with: { category: true } },
-                },
-              },
-              plan: true,
-            },
-          });
-          finalEps.push(...fallbackEps);
-        }
-      }
-    }
-
-    return finalEps;
+    return [...sameMovieEps, ...fallbackEps];
   } catch (err) {
     console.error("Error in getRecommendedEpisodes:", err);
     return [];
