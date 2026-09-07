@@ -4,73 +4,43 @@ import * as schema from "./schema";
 
 const cfSymbol = Symbol.for("__cloudflare-context__");
 
-// Store database session per Request's Cloudflare context to guarantee:
-// 1) Exactly 1 single DB connection per request (no Error 1102 CPU limit)
-// 2) Fresh clean connection per navigation request (no Error 1101 dead socket)
-const requestDbCache = new WeakMap<
-  object,
-  { db: ReturnType<typeof drizzle<typeof schema>>; client: ReturnType<typeof postgres> }
->();
+let cachedClient: ReturnType<typeof postgres> | null = null;
+let cachedDb: ReturnType<typeof drizzle<typeof schema>> | null = null;
+let cachedConnStr: string = "";
 
-// Fallback for environments without Cloudflare ctx (build time, CLI scripts)
-let fallbackClient: ReturnType<typeof postgres> | null = null;
-let fallbackDb: ReturnType<typeof drizzle<typeof schema>> | null = null;
-
-export function getDb(): {
-  db: ReturnType<typeof drizzle<typeof schema>>;
-  client: ReturnType<typeof postgres>;
-} {
-  let cf: any = null;
+function getDbConfig(): { connStr: string; isHyperdrive: boolean } {
   try {
-    cf = (globalThis as any)[cfSymbol];
+    const cf = (globalThis as any)[cfSymbol];
+    if (cf?.env?.HYPERDRIVE?.connectionString) {
+      return { connStr: cf.env.HYPERDRIVE.connectionString, isHyperdrive: true };
+    }
   } catch {}
 
-  // In Cloudflare Worker runtime with ExecutionContext / RequestContext per request
-  const contextKey = (cf?.ctx && typeof cf.ctx === "object") ? cf.ctx : (cf && typeof cf === "object") ? cf : null;
-  if (contextKey) {
-    const cached = requestDbCache.get(contextKey);
-    if (cached) {
-      return cached;
-    }
+  const connStr =
+    process.env.DATABASE_URL ||
+    "postgresql://postgres.qgvklbzwwbzswpivvgsm:149162536Ti%40@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres";
+  return { connStr, isHyperdrive: !connStr.includes("supabase.com") };
+}
 
-    const connStr =
-      cf.env?.HYPERDRIVE?.connectionString ||
-      process.env.DATABASE_URL ||
-      "postgresql://postgres.qgvklbzwwbzswpivvgsm:149162536Ti%40@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres";
-    const isHyperdrive = !connStr.includes("supabase.com");
-
-    const client = postgres(connStr, {
+export function getDb() {
+  const { connStr, isHyperdrive } = getDbConfig();
+  if (!cachedDb || cachedConnStr !== connStr) {
+    cachedConnStr = connStr;
+    cachedClient = postgres(connStr, {
       prepare: false,
+      fetch_types: false, // CRITICAL: Disables heavy pg_type startup queries (eliminates Error 1102 CPU limit)
       ssl: isHyperdrive ? false : { rejectUnauthorized: false, servername: "aws-0-ap-southeast-1.pooler.supabase.com" },
       max: 1,
       idle_timeout: isHyperdrive ? 15 : 5,
       connect_timeout: 10,
+      onclose: () => {
+        cachedClient = null;
+        cachedDb = null;
+      },
     });
-    const dbInstance = drizzle(client, { schema });
-    const session = { db: dbInstance, client };
-    requestDbCache.set(contextKey, session);
-    return session;
+    cachedDb = drizzle(cachedClient, { schema });
   }
-
-  // Fallback for environments without Cloudflare ctx (build time / local scripts)
-  if (!fallbackDb) {
-    const connStr =
-      cf?.env?.HYPERDRIVE?.connectionString ||
-      process.env.DATABASE_URL ||
-      "postgresql://postgres.qgvklbzwwbzswpivvgsm:149162536Ti%40@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres";
-    const isHyperdrive = !connStr.includes("supabase.com");
-
-    fallbackClient = postgres(connStr, {
-      prepare: false,
-      ssl: isHyperdrive ? false : { rejectUnauthorized: false, servername: "aws-0-ap-southeast-1.pooler.supabase.com" },
-      max: 1,
-      idle_timeout: 5,
-      connect_timeout: 10,
-    });
-    fallbackDb = drizzle(fallbackClient, { schema });
-  }
-
-  return { db: fallbackDb, client: fallbackClient! };
+  return { db: cachedDb, client: cachedClient! };
 }
 
 export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
@@ -100,5 +70,6 @@ export const sql = new Proxy((() => {}) as unknown as ReturnType<typeof postgres
 });
 
 export { schema };
+
 
 
