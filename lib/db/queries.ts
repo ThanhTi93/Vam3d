@@ -62,8 +62,31 @@ export async function getMoviesByCategory(categoryIdentifier: string) {
   try {
     if (!db) return [];
 
+    const decoded = decodeURIComponent(categoryIdentifier).trim();
+    const inputSlug = slugify(decoded);
+
+    // Find category ID first
+    const cat = await db.query.categories.findFirst({
+      where: (c, { eq, or, ilike }) =>
+        or(eq(c.slug, inputSlug), ilike(c.name, decoded), eq(c.slug, decoded)),
+      columns: { id: true },
+    });
+
+    if (!cat) return [];
+
+    // Query movies associated with this category
+    const movieCategoryLinks = await db
+      .select({ idMovie: schema.movieCategory.idMovie })
+      .from(schema.movieCategory)
+      .where(eq(schema.movieCategory.idCategory, cat.id));
+
+    const movieIds = movieCategoryLinks.map((mc) => mc.idMovie).filter(Boolean);
+    if (movieIds.length === 0) return [];
+
     const result = await db.query.movies.findMany({
-      where: (movies, { eq }) => eq(movies.status, 1),
+      where: (movies, { and, eq, inArray }) =>
+        and(eq(movies.status, 1), inArray(movies.id, movieIds)),
+      orderBy: (movies, { desc }) => [desc(movies.id)],
       with: {
         movieCategories: {
           with: { category: true },
@@ -72,21 +95,7 @@ export async function getMoviesByCategory(categoryIdentifier: string) {
       },
     });
 
-    const decoded = decodeURIComponent(categoryIdentifier).trim();
-    const inputSlug = slugify(decoded);
-
-    return result.filter((movie: any) =>
-      movie.movieCategories.some((mc: any) => {
-        if (!mc.category) return false;
-        const catName = mc.category.name.trim();
-        const catSlug = mc.category.slug || slugify(catName);
-        return (
-          catSlug.toLowerCase() === inputSlug.toLowerCase() ||
-          catName.toLowerCase() === decoded.toLowerCase() ||
-          catSlug.toLowerCase() === decoded.toLowerCase()
-        );
-      })
-    );
+    return result;
   } catch (err) {
     console.error("Error in getMoviesByCategory:", err);
     return [];
@@ -105,12 +114,12 @@ export async function getMovieById(id: string) {
     const numericId = isNumeric ? parseInt(trimmedId, 10) : -1;
     const targetSlug = slugify(trimmedId);
 
-    let result = await db.query.movies.findFirst({
-      where: (movies, { eq, or }) => {
+    const result = await db.query.movies.findFirst({
+      where: (movies, { eq, or, ilike }) => {
         if (isNumeric) {
-          return or(eq(movies.id, numericId), eq(movies.slug, trimmedId), eq(movies.slug, targetSlug));
+          return or(eq(movies.id, numericId), eq(movies.slug, trimmedId), eq(movies.slug, targetSlug), ilike(movies.name, `%${trimmedId}%`));
         }
-        return or(eq(movies.slug, trimmedId), eq(movies.slug, targetSlug));
+        return or(eq(movies.slug, trimmedId), eq(movies.slug, targetSlug), ilike(movies.name, `%${trimmedId}%`));
       },
       with: {
         author: true,
@@ -141,48 +150,6 @@ export async function getMovieById(id: string) {
         },
       },
     });
-
-    if (!result) {
-      const all = await db.query.movies.findMany({
-        where: (movies, { eq }) => eq(movies.status, 1),
-        with: {
-          author: true,
-          movieCategories: { with: { category: true } },
-          episodes: {
-            orderBy: (ep, { asc }) => [asc(ep.id)],
-            with: {
-              episodesActors: { with: { actor: true } },
-              episodesCharacters: { with: { character: true } },
-              plan: true,
-            },
-          },
-          aiGalleries: {
-            where: (g, { eq }) => eq(g.status, 1),
-            orderBy: (g, { desc }) => [desc(g.id)],
-            with: {
-              galleryCharacters: {
-                with: { character: { columns: { id: true, name: true } } },
-              },
-              images: {
-                columns: { id: true, imgUrl: true },
-                with: {
-                  collectionImages: true,
-                },
-              },
-              plan: true,
-            },
-          },
-        },
-      });
-
-      result = all.find(
-        (m: any) =>
-          m.id.toString() === trimmedId ||
-          m.slug === trimmedId ||
-          m.slug === targetSlug ||
-          slugify(m.name) === targetSlug
-      );
-    }
 
     if (!result) return null;
 
