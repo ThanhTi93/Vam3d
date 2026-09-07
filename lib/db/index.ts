@@ -1,12 +1,9 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { cache } from "react";
 import * as schema from "./schema";
 
 const cfSymbol = Symbol.for("__cloudflare-context__");
-
-let cachedClient: ReturnType<typeof postgres> | null = null;
-let cachedDb: ReturnType<typeof drizzle<typeof schema>> | null = null;
-let cachedConnStr: string = "";
 
 function getDbConfig(): { connStr: string; isHyperdrive: boolean } {
   try {
@@ -22,27 +19,21 @@ function getDbConfig(): { connStr: string; isHyperdrive: boolean } {
   return { connStr, isHyperdrive: !connStr.includes("supabase.com") };
 }
 
-export function getDb() {
+// React cache() guarantees 1 single client per request (no cross-request socket reuse, no socket leak, no background timers in Cloudflare Workers)
+export const getDb = cache(() => {
   const { connStr, isHyperdrive } = getDbConfig();
-  if (!cachedDb || cachedConnStr !== connStr) {
-    cachedConnStr = connStr;
-    cachedClient = postgres(connStr, {
-      prepare: false,
-      fetch_types: false, // Disables pg_type queries on connection startup to keep CPU < 0.5ms
-      ssl: isHyperdrive ? false : { rejectUnauthorized: false },
-      max: 1,
-      idle_timeout: isHyperdrive ? 30 : 10,
-      connect_timeout: 10,
-      onnotice: () => {},
-      onclose: () => {
-        cachedClient = null;
-        cachedDb = null;
-      },
-    });
-    cachedDb = drizzle(cachedClient, { schema });
-  }
-  return { db: cachedDb, client: cachedClient! };
-}
+  const client = postgres(connStr, {
+    prepare: false,
+    fetch_types: false, // Disables pg_type queries on connection startup to keep CPU < 0.5ms
+    ssl: isHyperdrive ? false : { rejectUnauthorized: false },
+    max: 1,
+    idle_timeout: null, // CRITICAL: Disable background timer in Cloudflare Workers to eliminate Error 1101
+    connect_timeout: 10,
+    onnotice: () => {},
+  });
+  const db = drizzle(client, { schema });
+  return { db, client };
+});
 
 export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
   get(_target, prop) {

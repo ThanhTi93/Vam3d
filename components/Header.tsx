@@ -47,14 +47,31 @@ function SearchInput() {
 
     // Determine target page for search
     const isSearchablePage = ["/", "/phim-le", "/phim-bo", "/chieu-rap", "/hoat-hinh", "/watchlist"].includes(pathname);
-    const targetPath = isSearchablePage ? pathname : "/";
-    startTransition(() => {
-      router.replace(`${targetPath}?${params.toString()}`, { scroll: false });
-    });
+    if (isSearchablePage) {
+      startTransition(() => {
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      });
+    }
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = searchQuery.trim();
+    const isSearchablePage = ["/", "/phim-le", "/phim-bo", "/chieu-rap", "/hoat-hinh", "/watchlist"].includes(pathname);
+    if (!isSearchablePage) {
+      router.push(trimmed ? `/?q=${encodeURIComponent(trimmed)}` : "/");
+    } else {
+      const params = new URLSearchParams(window.location.search);
+      if (trimmed) params.set("q", trimmed);
+      else params.delete("q");
+      startTransition(() => {
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      });
+    }
   };
 
   return (
-    <div className="relative flex-1 md:w-64">
+    <form onSubmit={handleSearchSubmit} className="relative flex-1 md:w-64">
       <input
         type="text"
         id="movie-search"
@@ -65,8 +82,14 @@ function SearchInput() {
         className="w-full bg-[#161925] border border-white/5 rounded-full py-2 pl-4 pr-10 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors"
         suppressHydrationWarning
       />
-      <Search className="absolute right-3.5 top-2.5 w-4 h-4 text-gray-500" />
-    </div>
+      <button
+        type="submit"
+        aria-label="Tìm kiếm"
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-orange-500 transition-colors cursor-pointer"
+      >
+        <Search className="w-4 h-4" />
+      </button>
+    </form>
   );
 }
 
@@ -158,13 +181,15 @@ export default function Header() {
               onMouseLeave={() => setIsCategoryOpen(false)}
             >
               <button
+                type="button"
+                onClick={() => setIsCategoryOpen((prev) => !prev)}
                 suppressHydrationWarning
                 className={`text-sm font-semibold tracking-wide transition-colors duration-200 flex items-center gap-1 cursor-pointer h-full py-2 ${categories.some(cat => pathname.startsWith(`/${cat.name}`))
                     ? "text-orange-500"
                     : "text-gray-400 hover:text-white"
                   }`}
               >
-                Thể loại <ChevronDown className="w-4 h-4" />
+                Thể loại <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isCategoryOpen ? "rotate-180 text-orange-500" : ""}`} />
               </button>
 
               {isCategoryOpen && (

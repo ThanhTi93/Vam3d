@@ -250,6 +250,28 @@ export default function VideoPlayer({
     );
   }
 
+  // 2.5 Iframe Embed fallback for embed URLs (e.g. iframe.mediadelivery.net or external embeds)
+  const isIframeEmbed =
+    typeof effectiveSrc === "string" &&
+    (effectiveSrc.includes("iframe.mediadelivery.net") ||
+      effectiveSrc.includes("/embed/") ||
+      effectiveSrc.includes("youtube.com/embed") ||
+      effectiveSrc.includes("player.vimeo.com"));
+
+  if (isIframeEmbed) {
+    return (
+      <div className={`group relative w-full aspect-video bg-black rounded-xl overflow-hidden ${className}`}>
+        <iframe
+          src={effectiveSrc}
+          loading="lazy"
+          className="w-full h-full border-0"
+          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+
   // 3. Custom HLS / Native Video Player with Cost-Saving Buffer Capping & Quality Switcher
   return (
     <div className={`group relative w-full aspect-video bg-black rounded-xl overflow-hidden ${className}`}>
