@@ -4,7 +4,6 @@ import { getMovieById, getAllMovies, getRecommendedEpisodes } from "@/lib/db/que
 import MoviePageClient from "./MoviePageClient";
 import RankingsSidebar from "@/components/RankingsSidebar";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { connection } from "next/server";
 
 interface MoviePageProps {
   params: Promise<{ id: string }>;
@@ -13,7 +12,6 @@ interface MoviePageProps {
 
 // Generate dynamic metadata for SEO crawling with per-episode support
 export async function generateMetadata({ params, searchParams }: MoviePageProps): Promise<Metadata> {
-  await connection();
   const { id } = await params;
   const resolvedSearchParams = await searchParams;
   const ep = resolvedSearchParams?.ep;
@@ -224,7 +222,6 @@ function MovieSchemaScript({ movie, currentEp }: { movie: any; currentEp?: strin
 export const revalidate = 60;
 
 export default async function MovieDetailPage({ params, searchParams }: MoviePageProps) {
-  await connection();
   try {
     const { id } = await params;
     const [movie, allMovies, resolvedSearchParams] = await Promise.all([

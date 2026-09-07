@@ -1,7 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
 import { getAllMovies } from "@/lib/db/queries";
-import { connection } from "next/server";
 import SchedulePageClient from "./SchedulePageClient";
 
 export const metadata: Metadata = {
@@ -30,8 +29,12 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function SchedulePage() {
-  await connection();
-  const allMovies = await getAllMovies();
+  let allMovies: any[] = [];
+  try {
+    allMovies = (await getAllMovies(60)) || [];
+  } catch (err) {
+    console.error("Error loading schedule:", err);
+  }
 
   // Map movies to days of week based on ID hash or day attribute for structured schedule display
   const moviesWithDay = (allMovies || []).map((m: any, index: number) => {

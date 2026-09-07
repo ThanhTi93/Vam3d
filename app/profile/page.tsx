@@ -2,19 +2,16 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth/actions";
 import { redirect } from "next/navigation";
-import { connection } from "next/server";
 import ProfileContentWrapper from "./ProfileContentWrapper";
 import ProfileSkeleton from "./ProfileSkeleton";
 
 export const metadata: Metadata = {
-  title: "Thông Tin Tài Khoản & Lịch Sử VIP",
+  title: "Thông Tin Tài Khoản & Lịch Sử VIP | Vam3D",
   description: "Quản lý thông tin tài khoản thành viên, kiểm tra thời hạn gói VIP và lịch sử thanh toán đăng ký gói dịch vụ.",
 };
 
 export default async function ProfilePage() {
-  await connection();
   const user = await getCurrentUser();
-  console.log("Server side user in /profile:", user);
   if (!user) {
     redirect("/login?redirect=/profile");
   }

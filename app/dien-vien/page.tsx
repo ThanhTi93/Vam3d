@@ -1,19 +1,17 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { connection } from "next/server";
 import { desc, eq } from "drizzle-orm";
 import { actors as actorsTable } from "@/lib/db/schema";
 import ActorsPageClient from "./ActorsPageClient";
 
 export const metadata: Metadata = {
-  title: "Danh Sách Diễn Viên, Mỹ Nhân Cosplay Nóng Bỏng Nhất",
-  description: "Trang tổng hợp danh sách các diễn viên, người mẫu, hot girl cosplay nóng bỏng, gợi cảm nhất tại RoPhim.",
+  title: "Danh Sách Diễn Viên, Mỹ Nhân Cosplay Nóng Bỏng Nhất | Vam3D",
+  description: "Trang tổng hợp danh sách các diễn viên, người mẫu, hot girl cosplay nóng bỏng, gợi cảm nhất tại Vam3D.",
 };
 
 export const revalidate = 300;
 
 export default async function ActorsPage() {
-  await connection();
   try {
     if (!db) {
       return <ActorsPageClient actors={[]} />;

@@ -1,15 +1,10 @@
 import { getHotMovies, getAllMovies, getMostViewedEpisodes, getLatestEpisodes, getLatestGalleries } from "@/lib/db/queries";
-import { connection } from "next/server";
 import HeroCarousel from "@/components/HeroCarousel";
 import HomeCatalog from "@/components/HomeCatalog";
 
 export const revalidate = 60;
 
 export default async function Home() {
-  try {
-    await connection();
-  } catch {}
-
   let allMovies: any[] = [];
   let galleries: any[] = [];
   let mostViewedEpisodes: any[] = [];

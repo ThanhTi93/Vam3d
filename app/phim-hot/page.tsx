@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { getAllMovies } from "@/lib/db/queries";
-import { connection } from "next/server";
 import CategoryCatalog from "@/components/CategoryCatalog";
 
 export const metadata: Metadata = {
@@ -11,10 +10,6 @@ export const metadata: Metadata = {
 export const revalidate = 120;
 
 export default async function PhimHotPage() {
-  try {
-    await connection();
-  } catch {}
-
   let allMovies: any[] = [];
   try {
     allMovies = (await getAllMovies(60)) || [];

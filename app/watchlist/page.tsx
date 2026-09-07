@@ -1,17 +1,15 @@
 import type { Metadata } from "next";
 import { getAllMovies } from "@/lib/db/queries";
-import { connection } from "next/server";
 import WatchlistPageClient from "./WatchlistPageClient";
 
 export const metadata: Metadata = {
-  title: "Tủ Phim Yêu Thích Của Bạn",
+  title: "Tủ Phim Yêu Thích Của Bạn | Vam3D",
   description: "Xem lại danh sách các bộ phim chiếu rạp, phim bộ, phim lẻ và anime yêu thích đã được lưu trữ trong tủ phim cá nhân của bạn tại Vam3D.",
 };
 
 export const revalidate = 60;
 
 export default async function WatchlistPage() {
-  await connection();
   try {
     const allMovies = await getAllMovies(50);
 
@@ -41,6 +39,7 @@ export default async function WatchlistPage() {
       episodes: m.episodes?.map((ep: any) => ({
         name: ep.name || `Tập ${ep.id}`,
         url: ep.url || "",
+        banner: ep.banner || "",
         bunnyVideoId: ep.bunnyVideoId,
         bunnyStatus: ep.bunnyStatus,
         duration: ep.duration || 0,

@@ -3,7 +3,6 @@ import { getMoviesByCategory, getAllMovies, getAllCategories } from "@/lib/db/qu
 import CategoryCatalog from "@/components/CategoryCatalog";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { notFound } from "next/navigation";
-import { connection } from "next/server";
 import { slugify } from "@/lib/utils";
 
 interface PageProps {
@@ -22,10 +21,6 @@ const formatCategoryLabel = (name: string) => {
 
 // Generate dynamic metadata
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  try {
-    await connection();
-  } catch {}
-  
   const { categoryName } = await params;
   const decoded = decodeURIComponent(categoryName).trim();
   const inputSlug = slugify(decoded).toLowerCase();
@@ -70,10 +65,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export const revalidate = 120;
 
 export default async function DynamicCategoryPage({ params }: PageProps) {
-  try {
-    await connection();
-  } catch {}
-  
   const { categoryName } = await params;
   const decodedCategory = decodeURIComponent(categoryName).trim();
   const inputSlug = slugify(decodedCategory).toLowerCase();

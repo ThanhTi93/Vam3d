@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { getGalleriesPublicPaginated, getGalleryFilterOptions } from "@/lib/db/queries";
-import { connection } from "next/server";
 import GalleryPageClient from "./GalleryPageClient";
 
 export const metadata: Metadata = {
@@ -11,10 +10,6 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function GalleryPage() {
-  try {
-    await connection();
-  } catch {}
-
   let initialData: any = { galleries: [], totalCount: 0 };
   let filterOptions: any = { movies: [], characters: [] };
 

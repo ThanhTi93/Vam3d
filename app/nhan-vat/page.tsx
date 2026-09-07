@@ -1,19 +1,17 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { connection } from "next/server";
 import { desc, eq } from "drizzle-orm";
 import { characters as charactersTable } from "@/lib/db/schema";
 import CharactersPageClient from "./CharactersPageClient";
 
 export const metadata: Metadata = {
-  title: "Danh Sách Nhân Vật Anime, Cosplay Hot Nhất",
+  title: "Danh Sách Nhân Vật Anime, Cosplay Hot Nhất | Vam3D",
   description: "Bộ sưu tập danh sách nhân vật Anime, Cosplay, Waifu xinh đẹp nóng bỏng nhất tại Vam3D.",
 };
 
 export const revalidate = 300;
 
 export default async function CharactersPage() {
-  await connection();
   try {
     if (!db) {
       return <CharactersPageClient characters={[]} />;
