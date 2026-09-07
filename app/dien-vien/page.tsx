@@ -12,19 +12,24 @@ export const metadata: Metadata = {
 
 export default async function ActorsPage() {
   await connection();
-  if (!db) {
+  try {
+    if (!db) {
+      return <ActorsPageClient actors={[]} />;
+    }
+
+    // Fetch all actors where status = 1
+    const actors = await db.select({
+      id: actorsTable.id,
+      name: actorsTable.name,
+      imgUrl: actorsTable.imgUrl,
+    })
+    .from(actorsTable)
+    .where(eq(actorsTable.status, 1))
+    .orderBy(desc(actorsTable.id));
+
+    return <ActorsPageClient actors={actors || []} />;
+  } catch (err) {
+    console.error("Error loading actors page:", err);
     return <ActorsPageClient actors={[]} />;
   }
-
-  // Fetch all actors where status = 1
-  const actors = await db.select({
-    id: actorsTable.id,
-    name: actorsTable.name,
-    imgUrl: actorsTable.imgUrl,
-  })
-  .from(actorsTable)
-  .where(eq(actorsTable.status, 1))
-  .orderBy(desc(actorsTable.id));
-
-  return <ActorsPageClient actors={actors} />;
 }

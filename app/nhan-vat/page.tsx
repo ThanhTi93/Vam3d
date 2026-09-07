@@ -12,23 +12,28 @@ export const metadata: Metadata = {
 
 export default async function CharactersPage() {
   await connection();
-  if (!db) {
-    return <CharactersPageClient characters={[]} />;
-  }
+  try {
+    if (!db) {
+      return <CharactersPageClient characters={[]} />;
+    }
 
-  // Fetch all characters where status = 1 with movie relation
-  const characters = await db.query.characters.findMany({
-    where: eq(charactersTable.status, 1),
-    with: {
-      movie: {
-        columns: {
-          id: true,
-          name: true,
+    // Fetch all characters where status = 1 with movie relation
+    const characters = await db.query.characters.findMany({
+      where: eq(charactersTable.status, 1),
+      with: {
+        movie: {
+          columns: {
+            id: true,
+            name: true,
+          },
         },
       },
-    },
-    orderBy: [desc(charactersTable.id)],
-  });
+      orderBy: [desc(charactersTable.id)],
+    });
 
-  return <CharactersPageClient characters={characters} />;
+    return <CharactersPageClient characters={characters || []} />;
+  } catch (err) {
+    console.error("Error loading characters page:", err);
+    return <CharactersPageClient characters={[]} />;
+  }
 }
