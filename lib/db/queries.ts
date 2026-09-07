@@ -136,11 +136,13 @@ export const getMovieById = cache(async (id: string) => {
         aiGalleries: {
           where: (g, { eq }) => eq(g.status, 1),
           orderBy: (g, { desc }) => [desc(g.id)],
+          limit: 6,
           with: {
             galleryCharacters: {
               with: { character: { columns: { id: true, name: true } } },
             },
             images: {
+              limit: 2,
               columns: { id: true, imgUrl: true },
             },
             plan: true,
@@ -345,6 +347,7 @@ export const getLatestGalleries = cache(async (limit = 24) => {
           with: { character: { columns: { id: true, name: true } } },
         },
         images: {
+          limit: 2,
           columns: { id: true, imgUrl: true },
         },
       },
@@ -424,6 +427,7 @@ export async function getGalleriesPublicPaginated(params: {
             with: { character: { columns: { id: true, name: true } } },
           },
           images: {
+            limit: 4,
             columns: { id: true, imgUrl: true },
           },
         },

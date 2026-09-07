@@ -144,6 +144,7 @@ export default function HeroCarousel({ hotMovies }: HeroCarouselProps) {
           style={{
             opacity: idx === heroIndex ? 1 : 0,
             zIndex: idx === heroIndex ? 10 : 0,
+            visibility: idx === heroIndex ? "visible" : "hidden",
             pointerEvents: idx === heroIndex ? "auto" : "none",
           }}
         >
@@ -179,6 +180,7 @@ export default function HeroCarousel({ hotMovies }: HeroCarouselProps) {
             opacity: idx === heroIndex ? 1 : 0,
             transform: idx === heroIndex ? "translateY(0)" : "translateY(16px)",
             zIndex: idx === heroIndex ? 30 : 0,
+            visibility: idx === heroIndex ? "visible" : "hidden",
             pointerEvents: idx === heroIndex ? "auto" : "none",
           }}
         >

@@ -9,7 +9,7 @@ import RankingsSidebar from "@/components/RankingsSidebar";
 import { HomeGallerySection, GalleryDetailModal } from "@/components/GalleryComponents";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { getBunnyImageUrl, formatRelativeTime, formatDuration } from "@/lib/utils";
+import { getBunnyImageUrl, formatRelativeTime, formatDuration, slugify } from "@/lib/utils";
 import { Movie } from "@/types";
 import { incrementGalleryViews } from "@/app/admin/actions";
 
@@ -68,11 +68,14 @@ function HomeCatalogContent({
     }
 
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+      const rawQuery = searchQuery.toLowerCase().trim();
+      const slugQuery = slugify(searchQuery);
       list = list.filter(
         (m) =>
-          m.title.toLowerCase().includes(query) ||
-          (m.originalTitle && m.originalTitle.toLowerCase().includes(query))
+          m.title.toLowerCase().includes(rawQuery) ||
+          (m.originalTitle && m.originalTitle.toLowerCase().includes(rawQuery)) ||
+          slugify(m.title).includes(slugQuery) ||
+          (m.originalTitle && slugify(m.originalTitle).includes(slugQuery))
       );
     }
 

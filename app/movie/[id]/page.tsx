@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
-import { getMovieById, getAllMovies, getRecommendedEpisodes } from "@/lib/db/queries";
+import { notFound } from "next/navigation";
+import { getMovieById, getAllMovies } from "@/lib/db/queries";
 import MoviePageClient from "./MoviePageClient";
 import RankingsSidebar from "@/components/RankingsSidebar";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -228,31 +229,46 @@ export async function generateStaticParams() {
 export default async function MovieDetailPage({ params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const [movie, allMovies] = await Promise.all([
-      getMovieById(id),
-      getAllMovies(20),
-    ]);
+    const movie = await getMovieById(id);
 
     if (!movie) {
-      return (
-        <div className="flex-1 flex flex-col items-center justify-center py-20 text-center px-4">
-          <h2 className="text-2xl font-black text-red-500 mb-2">404 - Không Tìm Thấy Phim</h2>
-          <p className="text-gray-400 text-sm max-w-md">
-            Bộ phim bạn yêu cầu không tồn tại hoặc đã được gỡ bỏ khỏi website.
-          </p>
-        </div>
-      );
+      notFound();
     }
+
+    const allMovies = await getAllMovies(6);
 
     const movieData = movie as any;
     const currentEpisode = movieData.episodes?.[0];
     const currentEpisodeId = currentEpisode ? currentEpisode.id : 0;
 
-    let relatedEpisodes: any[] = [];
-    try {
-      relatedEpisodes = await getRecommendedEpisodes(currentEpisodeId, movieData.id);
-    } catch (_) {
-      relatedEpisodes = [];
+    // Derive related episodes from movie's episodes or other movies without extra DB queries
+    let relatedEpisodes: any[] = (movieData.episodes || [])
+      .filter((ep: any) => ep.id !== currentEpisodeId)
+      .map((ep: any) => ({
+        ...ep,
+        idMovie: movieData.id,
+        movie: {
+          id: movieData.id,
+          name: movieData.name,
+          imgUrl: movieData.imgUrl,
+          bannerUrl: movieData.banner,
+        },
+      }));
+
+    if (relatedEpisodes.length === 0 && allMovies && allMovies.length > 0) {
+      relatedEpisodes = allMovies
+        .filter((m: any) => m.id !== movieData.id && m.episodes && m.episodes.length > 0)
+        .slice(0, 6)
+        .map((m: any) => ({
+          ...m.episodes[0],
+          idMovie: m.id,
+          movie: {
+            id: m.id,
+            name: m.name,
+            imgUrl: m.imgUrl,
+            bannerUrl: m.banner,
+          },
+        }));
     }
 
     // Format to standard Client model shape
