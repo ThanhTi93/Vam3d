@@ -42,7 +42,7 @@ export default function Footer() {
               const href = `/${cat.slug || slugify(cat.name) || encodeURIComponent(cat.name)}`;
               return (
                 <li key={cat.id}>
-                  <Link href={href} className="hover:text-orange-500 transition-colors flex items-center gap-1.5 line-clamp-1">
+                  <Link href={href} prefetch={false} className="hover:text-orange-500 transition-colors flex items-center gap-1.5 line-clamp-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-orange-500/60 shrink-0" />
                     {cat.name}
                   </Link>
@@ -61,7 +61,7 @@ export default function Footer() {
                 const href = `/movie/${m.slug || m.id}`;
                 return (
                   <li key={m.id}>
-                    <Link href={href} className="hover:text-orange-500 transition-colors line-clamp-1 flex items-center gap-1.5">
+                    <Link href={href} prefetch={false} className="hover:text-orange-500 transition-colors line-clamp-1 flex items-center gap-1.5">
                       <span className="w-1 h-1 rounded-full bg-amber-400/60 shrink-0" />
                       {m.name}
                     </Link>
@@ -70,9 +70,9 @@ export default function Footer() {
               })
             ) : (
               <>
-                <li><Link href="/phim-hot" className="hover:text-orange-500 transition-colors">Phim Hot Đang Chiếu</Link></li>
-                <li><Link href="/nhan-vat" className="hover:text-orange-500 transition-colors">Kho Nhân Vật 3D</Link></li>
-                <li><Link href="/gallery" className="hover:text-orange-500 transition-colors">Bộ Sưu Tập AI</Link></li>
+                <li><Link href="/phim-hot" prefetch={false} className="hover:text-orange-500 transition-colors">Phim Hot Đang Chiếu</Link></li>
+                <li><Link href="/nhan-vat" prefetch={false} className="hover:text-orange-500 transition-colors">Kho Nhân Vật 3D</Link></li>
+                <li><Link href="/gallery" prefetch={false} className="hover:text-orange-500 transition-colors">Bộ Sưu Tập AI</Link></li>
               </>
             )}
           </ul>
@@ -82,11 +82,11 @@ export default function Footer() {
         <div>
           <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Thông Tin &amp; Liên Hệ</h3>
           <ul className="space-y-2 text-xs mb-4">
-            <li><Link href="/lich-chieu" className="hover:text-orange-500 transition-colors font-semibold text-orange-400">📅 Lịch Chiếu Phim 3D</Link></li>
-            <li><Link href="/gioi-thieu" className="hover:text-orange-500 transition-colors">Giới thiệu</Link></li>
-            <li><Link href="/dieu-khoan-su-dung" className="hover:text-orange-500 transition-colors">Điều khoản sử dụng</Link></li>
-            <li><Link href="/chinh-sach-bao-mat" className="hover:text-orange-500 transition-colors">Chính sách bảo mật</Link></li>
-            <li><Link href="/khieu-nai-ban-quyen" className="hover:text-orange-500 transition-colors">Khiếu nại bản quyền</Link></li>
+            <li><Link href="/lich-chieu" prefetch={false} className="hover:text-orange-500 transition-colors font-semibold text-orange-400">📅 Lịch Chiếu Phim 3D</Link></li>
+            <li><Link href="/gioi-thieu" prefetch={false} className="hover:text-orange-500 transition-colors">Giới thiệu</Link></li>
+            <li><Link href="/dieu-khoan-su-dung" prefetch={false} className="hover:text-orange-500 transition-colors">Điều khoản sử dụng</Link></li>
+            <li><Link href="/chinh-sach-bao-mat" prefetch={false} className="hover:text-orange-500 transition-colors">Chính sách bảo mật</Link></li>
+            <li><Link href="/khieu-nai-ban-quyen" prefetch={false} className="hover:text-orange-500 transition-colors">Khiếu nại bản quyền</Link></li>
             <li><a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors text-amber-400/80">📡 RSS Feed (Google Index)</a></li>
             <li><a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors">🗺️ XML Sitemap</a></li>
           </ul>

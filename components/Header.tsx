@@ -114,7 +114,7 @@ export default function Header() {
 
         {/* Logo + Desktop Nav */}
         <div className="flex items-center justify-between md:justify-start gap-8">
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href="/" prefetch={false} className="flex items-center gap-2 group">
             <Image
               src="/logo.png"
               alt="Vam3D Logo"
@@ -128,6 +128,7 @@ export default function Header() {
           <nav className="hidden lg:flex items-center gap-6">
             <Link
               href="/"
+              prefetch={false}
               className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative group ${pathname === "/" ? "text-orange-500" : "text-gray-400 hover:text-white"
                 }`}
             >
@@ -139,6 +140,7 @@ export default function Header() {
 
             <Link
               href="/phim-hot"
+              prefetch={false}
               className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative flex items-center gap-1 group ${pathname.startsWith("/phim-hot") ? "text-orange-500" : "text-gray-400 hover:text-white"
                 }`}
             >
@@ -175,6 +177,7 @@ export default function Header() {
                         <Link
                           key={cat.id}
                           href={catPath}
+                          prefetch={false}
                           onClick={() => setIsCategoryOpen(false)}
                           className={`px-2.5 py-2 text-xs font-bold rounded-lg hover:bg-orange-500/10 hover:text-orange-400 transition-all flex items-center gap-1.5 ${isActive ? "text-orange-500 bg-orange-500/10" : "text-gray-300"
                             }`}
@@ -191,6 +194,7 @@ export default function Header() {
 
             <Link
               href="/nhan-vat"
+              prefetch={false}
               className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative group ${pathname.startsWith("/nhan-vat") ? "text-orange-500" : "text-gray-400 hover:text-white"
                 }`}
             >
@@ -202,6 +206,7 @@ export default function Header() {
 
             <Link
               href="/dien-vien"
+              prefetch={false}
               className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative group ${pathname.startsWith("/dien-vien") ? "text-orange-500" : "text-gray-400 hover:text-white"
                 }`}
             >
@@ -213,6 +218,7 @@ export default function Header() {
 
             <Link
               href="/lich-chieu"
+              prefetch={false}
               className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative group ${pathname.startsWith("/lich-chieu") ? "text-orange-500" : "text-gray-400 hover:text-white"
                 }`}
             >
@@ -224,6 +230,7 @@ export default function Header() {
 
             <Link
               href="/gallery"
+              prefetch={false}
               className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative group ${pathname.startsWith("/gallery") ? "text-orange-500" : "text-gray-400 hover:text-white"
                 }`}
             >
@@ -236,6 +243,7 @@ export default function Header() {
             {mounted && !freeVipMode && (
               <Link
                 href="/upgrade"
+                prefetch={false}
                 className={`relative px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all duration-300 border border-yellow-500/50 overflow-hidden group flex items-center justify-center gap-1 ${pathname === "/upgrade"
                     ? "bg-gradient-to-r from-yellow-500 via-orange-500 to-red-600 border-transparent text-white shadow-lg shadow-orange-500/40"
                     : "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 hover:from-yellow-500/20 hover:to-orange-500/20 border-yellow-500/30 text-yellow-400 hover:text-white shadow-sm hover:shadow-yellow-500/20"
@@ -267,6 +275,7 @@ export default function Header() {
 
           <Link
             href="/watchlist"
+            prefetch={false}
             className={`relative p-2.5 rounded-full bg-[#161925] hover:bg-orange-500/10 border border-white/5 transition-colors group ${pathname === "/watchlist" ? "text-orange-500 border-orange-500/30" : "text-gray-400"
               }`}
             title="Tủ phim yêu thích"
@@ -283,10 +292,10 @@ export default function Header() {
           {/* User Profile / Login Action Section */}
           {!mounted ? (
             <div className="flex items-center gap-2" suppressHydrationWarning>
-              <Link href="/login" className="text-xs font-bold text-gray-300 hover:text-white px-3.5 py-2 rounded-xl border border-white/5 bg-[#161925] hover:bg-[#1f2334] transition-all">
+              <Link href="/login" prefetch={false} className="text-xs font-bold text-gray-300 hover:text-white px-3.5 py-2 rounded-xl border border-white/5 bg-[#161925] hover:bg-[#1f2334] transition-all">
                 Đăng Nhập
               </Link>
-              <Link href="/register" className="text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-3.5 py-2 rounded-xl shadow-lg shadow-orange-500/15 transition-all">
+              <Link href="/register" prefetch={false} className="text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-3.5 py-2 rounded-xl shadow-lg shadow-orange-500/15 transition-all">
                 Đăng Ký
               </Link>
             </div>
@@ -294,10 +303,10 @@ export default function Header() {
             <div className="w-8 h-8 rounded-full bg-white/5 animate-pulse" />
           ) : !user ? (
             <div className="flex items-center gap-2">
-              <Link href="/login" className="text-xs font-bold text-gray-300 hover:text-white px-3.5 py-2 rounded-xl border border-white/5 bg-[#161925] hover:bg-[#1f2334] transition-all">
+              <Link href="/login" prefetch={false} className="text-xs font-bold text-gray-300 hover:text-white px-3.5 py-2 rounded-xl border border-white/5 bg-[#161925] hover:bg-[#1f2334] transition-all">
                 Đăng Nhập
               </Link>
-              <Link href="/register" className="text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-3.5 py-2 rounded-xl shadow-lg shadow-orange-500/15 transition-all">
+              <Link href="/register" prefetch={false} className="text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-3.5 py-2 rounded-xl shadow-lg shadow-orange-500/15 transition-all">
                 Đăng Ký
               </Link>
             </div>
@@ -307,6 +316,7 @@ export default function Header() {
               {user.role === "admin" && (
                 <Link
                   href="/admin"
+                  prefetch={false}
                   className="p-2.5 rounded-full bg-[#161925] hover:bg-orange-500/10 border border-white/5 transition-colors group text-gray-400 hover:text-orange-500 hover:border-orange-500/30"
                   title="Quản trị viên"
                 >
@@ -358,6 +368,7 @@ export default function Header() {
                     <div className="space-y-1">
                       <Link
                         href="/profile"
+                        prefetch={false}
                         onClick={() => setShowProfileMenu(false)}
                         className="w-full text-left text-xs text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-all flex items-center gap-2"
                       >
@@ -376,6 +387,7 @@ export default function Header() {
                       {user.role === "admin" && (
                         <Link
                           href="/admin"
+                          prefetch={false}
                           onClick={() => setShowProfileMenu(false)}
                           className="w-full text-left text-xs text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-all flex items-center gap-2"
                         >
@@ -437,6 +449,7 @@ export default function Header() {
         <div className="lg:hidden mt-4 pt-4 border-t border-white/5 flex flex-col gap-3.5 animate-in fade-in duration-200">
           <Link
             href="/"
+            prefetch={false}
             onClick={() => setShowMobileMenu(false)}
             className={`text-sm font-bold py-1 ${pathname === "/" ? "text-orange-500" : "text-gray-400"
               }`}
@@ -445,6 +458,7 @@ export default function Header() {
           </Link>
           <Link
             href="/phim-hot"
+            prefetch={false}
             onClick={() => setShowMobileMenu(false)}
             className={`text-sm font-bold py-1 flex items-center gap-1.5 ${pathname === "/phim-hot" ? "text-orange-500" : "text-gray-400"
               }`}
@@ -475,6 +489,7 @@ export default function Header() {
                   <Link
                     key={cat.id}
                     href={`/${cat.name}`}
+                    prefetch={false}
                     onClick={() => setShowMobileMenu(false)}
                     className={`text-xs font-semibold py-1 transition-colors ${
                       pathname === `/${cat.name}` ? "text-orange-500 font-bold" : "text-gray-400 hover:text-white"
@@ -489,6 +504,7 @@ export default function Header() {
 
           <Link
             href="/nhan-vat"
+            prefetch={false}
             onClick={() => setShowMobileMenu(false)}
             className={`text-sm font-bold py-1 ${pathname === "/nhan-vat" ? "text-orange-500" : "text-gray-400"
               }`}
@@ -497,6 +513,7 @@ export default function Header() {
           </Link>
           <Link
             href="/dien-vien"
+            prefetch={false}
             onClick={() => setShowMobileMenu(false)}
             className={`text-sm font-bold py-1 ${pathname === "/dien-vien" ? "text-orange-500" : "text-gray-400"
               }`}
@@ -505,6 +522,7 @@ export default function Header() {
           </Link>
           <Link
             href="/lich-chieu"
+            prefetch={false}
             onClick={() => setShowMobileMenu(false)}
             className={`text-sm font-bold py-1 ${pathname === "/lich-chieu" ? "text-orange-500" : "text-gray-400"
               }`}
@@ -513,6 +531,7 @@ export default function Header() {
           </Link>
           <Link
             href="/gallery"
+            prefetch={false}
             onClick={() => setShowMobileMenu(false)}
             className={`text-sm font-bold py-1 ${pathname === "/gallery" ? "text-orange-500" : "text-gray-400"
               }`}
@@ -521,6 +540,7 @@ export default function Header() {
           </Link>
           <Link
             href="/upgrade"
+            prefetch={false}
             onClick={() => setShowMobileMenu(false)}
             className="w-full text-center mt-1 bg-gradient-to-r from-yellow-500 via-orange-500 to-red-600 text-white font-extrabold text-xs py-2 rounded-xl hover:from-yellow-400 hover:via-orange-400 hover:to-red-500 transition-all shadow-lg active:scale-[0.98]"
           >
