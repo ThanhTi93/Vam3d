@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import { Film } from "lucide-react";
 import MovieCard from "@/components/MovieCard";
 import RankingsSidebar from "@/components/RankingsSidebar";
@@ -31,11 +30,19 @@ function CategoryCatalogContent({
   movies,
   allMovies,
 }: CategoryCatalogProps) {
-  const searchParams = useSearchParams();
   const [selectedGenre, setSelectedGenre] = useState<string>("Tất cả");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [dbGenres] = useState<any[]>(STATIC_GENRES);
 
-  const q = searchParams.get("q") || "";
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const qParam = params.get("q") || "";
+      const genreParam = params.get("genre");
+      if (qParam) setSearchQuery(qParam);
+      if (genreParam) setSelectedGenre(genreParam);
+    }
+  }, []);
 
   const getFilteredMovies = () => {
     let list = movies;
@@ -48,8 +55,8 @@ function CategoryCatalogContent({
     }
 
     // Filter by search query
-    if (q.trim()) {
-      const query = q.toLowerCase();
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
       list = list.filter(
         (m) =>
           m.title.toLowerCase().includes(query) ||
@@ -90,7 +97,7 @@ function CategoryCatalogContent({
           <div className="flex items-center justify-between border-b border-white/5 pb-3">
             <h1 className="text-xl font-bold flex items-center gap-2 text-white uppercase tracking-wider">
               <Film className="w-5 h-5 text-orange-500" />
-              {q.trim() ? `Kết quả tìm kiếm: "${q}"` : categoryTitle}
+              {searchQuery.trim() ? `Kết quả tìm kiếm: "${searchQuery}"` : categoryTitle}
             </h1>
             <span className="text-gray-400 text-xs font-semibold bg-[#131520] border border-white/5 px-2.5 py-1 rounded">
               {filteredMovies.length} phim
@@ -125,14 +132,4 @@ function CategoryCatalogContent({
   );
 }
 
-export default function CategoryCatalog(props: CategoryCatalogProps) {
-  return (
-    <Suspense fallback={
-      <div className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-20 flex items-center justify-center">
-        <div className="w-10 h-10 rounded-full border-2 border-t-orange-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
-      </div>
-    }>
-      <CategoryCatalogContent {...props} />
-    </Suspense>
-  );
-}
+export default CategoryCatalogContent;
