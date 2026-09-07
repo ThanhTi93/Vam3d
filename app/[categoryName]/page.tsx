@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { getMoviesByCategory, getAllMovies, getAllCategories } from "@/lib/db/queries";
 import CategoryCatalog from "@/components/CategoryCatalog";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { notFound } from "next/navigation";
 import { slugify } from "@/lib/utils";
 
 interface PageProps {
@@ -84,19 +83,26 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
     );
   });
 
-  if (!targetCategory && allDbCategories.length > 0) {
-    notFound();
-  }
-
   let movies: any[] = [];
   let allMovies: any[] = [];
   try {
     const results = await Promise.all([
-      targetCategory ? getMoviesByCategory(targetCategory.slug || targetCategory.name) : Promise.resolve([]),
+      getMoviesByCategory(targetCategory?.slug || targetCategory?.name || decodedCategory),
       getAllMovies(60),
     ]);
     movies = results[0] || [];
     allMovies = results[1] || [];
+
+    // Fallback: match by title, category string or originalTitle
+    if (movies.length === 0 && allMovies.length > 0) {
+      const matched = allMovies.filter((m: any) =>
+        m?.movieCategories?.some((mc: any) =>
+          mc?.category?.name?.toLowerCase().includes(inputSlug) ||
+          slugify(mc?.category?.name || "").includes(inputSlug)
+        )
+      );
+      movies = matched.length > 0 ? matched : allMovies;
+    }
   } catch (err) {
     console.error("Error loading category movies:", err);
   }
