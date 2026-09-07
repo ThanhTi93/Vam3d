@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Nâng cấp gói thành viên VIP tại Vam3D để trải nghiệm xem phim chất lượng cao HD/4K không có quảng cáo, truyền phát siêu mượt và mở khóa bộ sưu tập ảnh AI đặc quyền.",
 };
 
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export default async function UpgradePage() {
   try {

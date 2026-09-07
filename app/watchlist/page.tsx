@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Xem lại danh sách các bộ phim chiếu rạp, phim bộ, phim lẻ và anime yêu thích đã được lưu trữ trong tủ phim cá nhân của bạn tại Vam3D.",
 };
 
-export const revalidate = 60;
+export const revalidate = 3600;
 
 export default async function WatchlistPage() {
   try {

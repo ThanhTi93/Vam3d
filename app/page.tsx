@@ -2,7 +2,7 @@ import { getHotMovies, getAllMovies, getMostViewedEpisodes, getLatestEpisodes, g
 import HeroCarousel from "@/components/HeroCarousel";
 import HomeCatalog from "@/components/HomeCatalog";
 
-export const revalidate = 60;
+export const revalidate = 3600;
 
 export default async function Home() {
   let allMovies: any[] = [];

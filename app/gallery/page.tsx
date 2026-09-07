@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Khám phá kho bộ sưu tập ảnh nhân vật AI, Cosplay chất lượng cao từ các bộ phim bom tấn độc quyền chỉ có tại Vam3D.",
 };
 
-export const revalidate = 60;
+export const revalidate = 3600;
 
 export default async function GalleryPage() {
   let initialData: any = { galleries: [], totalCount: 0 };

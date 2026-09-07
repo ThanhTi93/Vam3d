@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Trang tổng hợp danh sách các diễn viên, người mẫu, hot girl cosplay nóng bỏng, gợi cảm nhất tại Vam3D.",
 };
 
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export default async function ActorsPage() {
   try {

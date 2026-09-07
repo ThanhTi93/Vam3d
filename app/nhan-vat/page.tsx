@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Bộ sưu tập danh sách nhân vật Anime, Cosplay, Waifu xinh đẹp nóng bỏng nhất tại Vam3D.",
 };
 
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export default async function CharactersPage() {
   try {

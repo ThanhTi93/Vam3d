@@ -7,15 +7,11 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 
 interface MoviePageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ep?: string }>;
 }
 
-// Generate dynamic metadata for SEO crawling with per-episode support
-export async function generateMetadata({ params, searchParams }: MoviePageProps): Promise<Metadata> {
+// Generate dynamic metadata for SEO crawling
+export async function generateMetadata({ params }: MoviePageProps): Promise<Metadata> {
   const { id } = await params;
-  const resolvedSearchParams = await searchParams;
-  const ep = resolvedSearchParams?.ep;
-
   const movie = await getMovieById(id);
   
   if (!movie) {
@@ -26,14 +22,11 @@ export async function generateMetadata({ params, searchParams }: MoviePageProps)
   }
 
   const movieData = movie as any;
-  const epSuffix = ep ? ` Tập ${ep}` : "";
-  const title = `${movieData.name}${epSuffix} (${movieData.originalTitle || ""}) [${movieData.year || 2026}] – Vietsub Thuyết Minh Full HD | Vam3D`;
-  const description = ep
-    ? `Xem phim ${movieData.name} Tập ${ep} chất lượng cao Full HD Vietsub, Thuyết minh mới nhất tại Vam3D. ${movieData.description || ""}`.substring(0, 160)
-    : (movieData.description || `Xem phim ${movieData.name} chất lượng cao Full HD Vietsub, Thuyết minh cập nhật nhanh nhất tại Vam3D.`).substring(0, 160);
+  const title = `${movieData.name} (${movieData.originalTitle || ""}) [${movieData.year || 2026}] – Vietsub Thuyết Minh Full HD | Vam3D`;
+  const description = (movieData.description || `Xem phim ${movieData.name} chất lượng cao Full HD Vietsub, Thuyết minh cập nhật nhanh nhất tại Vam3D.`).substring(0, 160);
   
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
-  const movieUrl = ep ? `${siteUrl}/movie/${movieData.id}?ep=${ep}` : `${siteUrl}/movie/${movieData.id}`;
+  const movieUrl = `${siteUrl}/movie/${movieData.id}`;
   const posterUrl = movieData.imgUrl || `${siteUrl}/og-image.jpg`;
 
   return {
@@ -43,7 +36,7 @@ export async function generateMetadata({ params, searchParams }: MoviePageProps)
       movieData.name,
       `${movieData.name} vietsub`,
       `${movieData.name} thuyết minh`,
-      ep ? `${movieData.name} tap ${ep}` : `${movieData.name} full hd`,
+      `${movieData.name} full hd`,
       "hoat hinh 3d trung quoc",
       "hh3d",
       "vam3d",
@@ -59,7 +52,7 @@ export async function generateMetadata({ params, searchParams }: MoviePageProps)
       images: [
         {
           url: posterUrl,
-          alt: `${movieData.name}${epSuffix} Vietsub HD`,
+          alt: `${movieData.name} Vietsub HD`,
         },
       ],
     },
@@ -219,15 +212,25 @@ function MovieSchemaScript({ movie, currentEp }: { movie: any; currentEp?: strin
   );
 }
 
-export const revalidate = 60;
+export const revalidate = 3600;
 
-export default async function MovieDetailPage({ params, searchParams }: MoviePageProps) {
+export async function generateStaticParams() {
+  try {
+    const movies = await getAllMovies(100);
+    return (movies || []).map((m: any) => ({
+      id: m.id.toString(),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export default async function MovieDetailPage({ params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const [movie, allMovies, resolvedSearchParams] = await Promise.all([
+    const [movie, allMovies] = await Promise.all([
       getMovieById(id),
       getAllMovies(20),
-      searchParams,
     ]);
 
     if (!movie) {
@@ -242,9 +245,7 @@ export default async function MovieDetailPage({ params, searchParams }: MoviePag
     }
 
     const movieData = movie as any;
-    const epParam = resolvedSearchParams?.ep;
-    const epIndex = epParam ? Math.max(0, parseInt(epParam, 10) - 1) : 0;
-    const currentEpisode = movieData.episodes?.[epIndex] || movieData.episodes?.[0];
+    const currentEpisode = movieData.episodes?.[0];
     const currentEpisodeId = currentEpisode ? currentEpisode.id : 0;
 
     let relatedEpisodes: any[] = [];
@@ -330,12 +331,11 @@ export default async function MovieDetailPage({ params, searchParams }: MoviePag
     const breadcrumbItems = [
       { label: categoryLabel, href: `/${formattedMovie.category || "hoat-hinh"}` },
       { label: formattedMovie.title, href: `/movie/${formattedMovie.id}` },
-      ...(epParam ? [{ label: `Tập ${epParam}` }] : []),
     ];
 
     return (
       <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6">
-        <MovieSchemaScript movie={formattedMovie} currentEp={epParam} />
+        <MovieSchemaScript movie={formattedMovie} />
 
         <Breadcrumbs items={breadcrumbItems} />
 
@@ -348,7 +348,7 @@ export default async function MovieDetailPage({ params, searchParams }: MoviePag
                 <p className="text-gray-400 text-sm">Đang chuẩn bị trình phát...</p>
               </div>
             }>
-              <MoviePageClient movie={formattedMovie} relatedEpisodes={relatedEpisodes} initialEp={epParam} />
+              <MoviePageClient movie={formattedMovie} relatedEpisodes={relatedEpisodes} />
             </Suspense>
           </div>
 

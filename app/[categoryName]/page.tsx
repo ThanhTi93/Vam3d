@@ -61,7 +61,28 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export const revalidate = 120;
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  try {
+    const categories = (await getAllCategories()) || [];
+    const baseCategories = ["phim-le", "phim-bo", "chieu-rap", "hoat-hinh"];
+    const allSlugs = new Set([
+      ...baseCategories,
+      ...categories.map((c: any) => c.slug || slugify(c.name)).filter(Boolean),
+    ]);
+    return Array.from(allSlugs).map((categoryName) => ({
+      categoryName,
+    }));
+  } catch {
+    return [
+      { categoryName: "phim-le" },
+      { categoryName: "phim-bo" },
+      { categoryName: "chieu-rap" },
+      { categoryName: "hoat-hinh" },
+    ];
+  }
+}
 
 export default async function DynamicCategoryPage({ params }: PageProps) {
   const { categoryName } = await params;

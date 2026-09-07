@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Danh sách phim hot, phim bộ phim lẻ hay được đề cử xem nhiều nhất tại Vam3D.",
 };
 
-export const revalidate = 120;
+export const revalidate = 3600;
 
 export default async function PhimHotPage() {
   let allMovies: any[] = [];
