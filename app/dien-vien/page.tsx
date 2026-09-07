@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { db } from "@/lib/db";
-import { desc, eq } from "drizzle-orm";
-import { actors as actorsTable } from "@/lib/db/schema";
+import { getAllActors } from "@/lib/db/queries";
 import ActorsPageClient from "./ActorsPageClient";
 
 export const metadata: Metadata = {
@@ -13,20 +11,7 @@ export const revalidate = 300;
 
 export default async function ActorsPage() {
   try {
-    if (!db) {
-      return <ActorsPageClient actors={[]} />;
-    }
-
-    // Fetch all actors where status = 1
-    const actors = await db.select({
-      id: actorsTable.id,
-      name: actorsTable.name,
-      imgUrl: actorsTable.imgUrl,
-    })
-    .from(actorsTable)
-    .where(eq(actorsTable.status, 1))
-    .orderBy(desc(actorsTable.id));
-
+    const actors = await getAllActors();
     return <ActorsPageClient actors={actors || []} />;
   } catch (err) {
     console.error("Error loading actors page:", err);

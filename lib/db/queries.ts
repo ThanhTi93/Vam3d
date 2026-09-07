@@ -477,3 +477,44 @@ export const getGalleryFilterOptions = cache(async () => {
   }
 });
 
+// ─── Get All Characters ───────────────────────────────────────────────────────
+export const getAllCharacters = cache(async () => {
+  try {
+    if (!db) return [];
+    return await db.query.characters.findMany({
+      where: eq(schema.characters.status, 1),
+      with: {
+        movie: {
+          columns: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: [desc(schema.characters.id)],
+    });
+  } catch (err) {
+    console.error("Error in getAllCharacters:", err);
+    return [];
+  }
+});
+
+// ─── Get All Actors ───────────────────────────────────────────────────────────
+export const getAllActors = cache(async () => {
+  try {
+    if (!db) return [];
+    return await db
+      .select({
+        id: schema.actors.id,
+        name: schema.actors.name,
+        imgUrl: schema.actors.imgUrl,
+      })
+      .from(schema.actors)
+      .where(eq(schema.actors.status, 1))
+      .orderBy(desc(schema.actors.id));
+  } catch (err) {
+    console.error("Error in getAllActors:", err);
+    return [];
+  }
+});
+

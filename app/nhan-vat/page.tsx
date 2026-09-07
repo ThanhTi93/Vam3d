@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { db } from "@/lib/db";
-import { desc, eq } from "drizzle-orm";
-import { characters as charactersTable } from "@/lib/db/schema";
+import { getAllCharacters } from "@/lib/db/queries";
 import CharactersPageClient from "./CharactersPageClient";
 
 export const metadata: Metadata = {
@@ -13,24 +11,7 @@ export const revalidate = 300;
 
 export default async function CharactersPage() {
   try {
-    if (!db) {
-      return <CharactersPageClient characters={[]} />;
-    }
-
-    // Fetch all characters where status = 1 with movie relation
-    const characters = await db.query.characters.findMany({
-      where: eq(charactersTable.status, 1),
-      with: {
-        movie: {
-          columns: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-      orderBy: [desc(charactersTable.id)],
-    });
-
+    const characters = await getAllCharacters();
     return <CharactersPageClient characters={characters || []} />;
   } catch (err) {
     console.error("Error loading characters page:", err);
