@@ -1,9 +1,12 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { cache } from "react";
 import * as schema from "./schema";
 
 const cfSymbol = Symbol.for("__cloudflare-context__");
+
+let cachedClient: ReturnType<typeof postgres> | null = null;
+let cachedDb: ReturnType<typeof drizzle<typeof schema>> | null = null;
+let cachedConnStr: string = "";
 
 function getDbConfig(): { connStr: string; isHyperdrive: boolean } {
   try {
@@ -19,25 +22,31 @@ function getDbConfig(): { connStr: string; isHyperdrive: boolean } {
   return { connStr, isHyperdrive: !connStr.includes("supabase.com") };
 }
 
-// React cache() guarantees 1 single client per request (no cross-request socket reuse, no socket leak, no CPU limit exceeded)
-export const getDbSession = cache(() => {
+export function getDb() {
   const { connStr, isHyperdrive } = getDbConfig();
-  const client = postgres(connStr, {
-    prepare: false,
-    fetch_types: false, // Disables pg_type queries on connection startup to keep CPU < 0.5ms
-    ssl: isHyperdrive ? false : { rejectUnauthorized: false, servername: "aws-0-ap-southeast-1.pooler.supabase.com" },
-    max: 1,
-    idle_timeout: isHyperdrive ? 15 : 5,
-    connect_timeout: 10,
-    onnotice: () => {},
-  });
-  const dbInstance = drizzle(client, { schema });
-  return { db: dbInstance, client };
-});
+  if (!cachedDb || cachedConnStr !== connStr) {
+    cachedConnStr = connStr;
+    cachedClient = postgres(connStr, {
+      prepare: false,
+      fetch_types: false, // Disables pg_type queries on connection startup to keep CPU < 0.5ms
+      ssl: isHyperdrive ? false : { rejectUnauthorized: false, servername: "aws-0-ap-southeast-1.pooler.supabase.com" },
+      max: 1,
+      idle_timeout: isHyperdrive ? 30 : 10,
+      connect_timeout: 10,
+      onnotice: () => {},
+      onclose: () => {
+        cachedClient = null;
+        cachedDb = null;
+      },
+    });
+    cachedDb = drizzle(cachedClient, { schema });
+  }
+  return { db: cachedDb, client: cachedClient! };
+}
 
 export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
   get(_target, prop) {
-    const { db: instance } = getDbSession();
+    const { db: instance } = getDb();
     const val = (instance as any)[prop];
     if (typeof val === "function") {
       return val.bind(instance);
@@ -48,7 +57,7 @@ export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
 
 export const sql = new Proxy((() => {}) as unknown as ReturnType<typeof postgres>, {
   get(_target, prop) {
-    const { client } = getDbSession();
+    const { client } = getDb();
     const val = (client as any)[prop];
     if (typeof val === "function") {
       return val.bind(client);
@@ -56,12 +65,13 @@ export const sql = new Proxy((() => {}) as unknown as ReturnType<typeof postgres
     return val;
   },
   apply(_target, _thisArg, argArray) {
-    const { client } = getDbSession();
+    const { client } = getDb();
     return (client as any).apply(client, argArray);
   },
 });
 
 export { schema };
+
 
 
 

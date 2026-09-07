@@ -1,9 +1,10 @@
 import { db, schema } from "./index";
 import { eq, and, or, ilike, inArray, count, isNull, desc, asc, notInArray } from "drizzle-orm";
 import { slugify } from "@/lib/utils";
+import { cache } from "react";
 
 // ─── Get All Movies ─────────────────────────────────────────────────────────
-export async function getAllMovies(limit = 100) {
+export const getAllMovies = cache(async (limit = 100) => {
   try {
     if (!db) return [];
 
@@ -29,10 +30,10 @@ export async function getAllMovies(limit = 100) {
     console.error("Error in getAllMovies:", err);
     return [];
   }
-}
+});
 
 // ─── Get Hot Movies ──────────────────────────────────────────────────────────
-export async function getHotMovies() {
+export const getHotMovies = cache(async () => {
   try {
     if (!db) return [];
 
@@ -55,10 +56,10 @@ export async function getHotMovies() {
     console.error("Error in getHotMovies:", err);
     return [];
   }
-}
+});
 
 // ─── Get Movies by Category slug or name ────────────────────────────────────
-export async function getMoviesByCategory(categoryIdentifier: string) {
+export const getMoviesByCategory = cache(async (categoryIdentifier: string) => {
   try {
     if (!db) return [];
 
@@ -100,10 +101,10 @@ export async function getMoviesByCategory(categoryIdentifier: string) {
     console.error("Error in getMoviesByCategory:", err);
     return [];
   }
-}
+});
 
 // ─── Get Single Movie by ID or Slug ─────────────────────────────────────────
-export async function getMovieById(id: string) {
+export const getMovieById = cache(async (id: string) => {
   try {
     if (!db) return null;
 
@@ -173,10 +174,10 @@ export async function getMovieById(id: string) {
     console.error("Error in getMovieById:", err);
     return null;
   }
-}
+});
 
 // ─── Get Top Ranked Movies ───────────────────────────────────────────────────
-export async function getTopMovies(limit = 6) {
+export const getTopMovies = cache(async (limit = 6) => {
   try {
     if (!db) return [];
 
@@ -192,10 +193,10 @@ export async function getTopMovies(limit = 6) {
     console.error("Error in getTopMovies:", err);
     return [];
   }
-}
+});
 
 // ─── Get All Categories ──────────────────────────────────────────────────────
-export async function getAllCategories() {
+export const getAllCategories = cache(async () => {
   try {
     if (!db) return [];
 
@@ -206,10 +207,10 @@ export async function getAllCategories() {
     console.error("Error in getAllCategories:", err);
     return [];
   }
-}
+});
 
 // ─── Get All Plans (Subscription tiers) ─────────────────────────────────────
-export async function getAllPlans() {
+export const getAllPlans = cache(async () => {
   try {
     if (!db) return [];
 
@@ -221,7 +222,7 @@ export async function getAllPlans() {
     console.error("Error in getAllPlans:", err);
     return [];
   }
-}
+});
 
 // ─── Get Latest Episodes ─────────────────────────────────────────────────────
 export async function getLatestEpisodes(limit = 12) {
