@@ -29,7 +29,7 @@ export function getDb() {
     cachedClient = postgres(connStr, {
       prepare: false,
       fetch_types: false, // Disables pg_type queries on connection startup to keep CPU < 0.5ms
-      ssl: isHyperdrive ? false : { rejectUnauthorized: false, servername: "aws-0-ap-southeast-1.pooler.supabase.com" },
+      ssl: isHyperdrive ? false : { rejectUnauthorized: false },
       max: 1,
       idle_timeout: isHyperdrive ? 30 : 10,
       connect_timeout: 10,

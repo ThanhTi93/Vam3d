@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getSubscriptionPlans } from "@/app/admin/actions";
+import { getAllPlans } from "@/lib/db/queries";
 import UpgradePageClient from "./UpgradePageClient";
 
 export const metadata: Metadata = {
@@ -11,7 +11,7 @@ export const revalidate = 300;
 
 export default async function UpgradePage() {
   try {
-    const plans = await getSubscriptionPlans();
+    const plans = await getAllPlans();
     return <UpgradePageClient initialPlans={plans || []} />;
   } catch (err) {
     console.error("Error in UpgradePage:", err);

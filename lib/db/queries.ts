@@ -142,9 +142,6 @@ export const getMovieById = cache(async (id: string) => {
             },
             images: {
               columns: { id: true, imgUrl: true },
-              with: {
-                collectionImages: true,
-              },
             },
             plan: true,
           },
@@ -216,7 +213,13 @@ export const getAllPlans = cache(async () => {
 
     return await db.query.plans.findMany({
       where: (plans, { eq }) => eq(plans.status, 1),
-      with: { features: true, packages: true },
+      orderBy: (plans, { asc }) => [asc(plans.level)],
+      with: {
+        features: true,
+        packages: {
+          orderBy: (p, { asc }) => [asc(p.time)],
+        },
+      },
     });
   } catch (err) {
     console.error("Error in getAllPlans:", err);
