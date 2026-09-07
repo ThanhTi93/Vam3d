@@ -7,13 +7,15 @@ export const revalidate = 60;
 
 export default async function Home() {
   await connection();
-  const [hotMovies, allMovies, galleries, mostViewedEpisodes, latestEpisodes] = await Promise.all([
-    getHotMovies(),
-    getAllMovies(),
+  const [allMovies, galleries, mostViewedEpisodes, latestEpisodes] = await Promise.all([
+    getAllMovies(60),
     getLatestGalleries(),
     getMostViewedEpisodes(12),
     getLatestEpisodes(12),
   ]);
+
+  const hotMoviesList = (allMovies || []).filter((m: any) => m.isHot);
+  const hotMovies = hotMoviesList.length > 0 ? hotMoviesList.slice(0, 6) : (allMovies || []).slice(0, 6);
 
   // Format to standard Client Movie model shape
   const formattedHotMovies = hotMovies.map((m: any) => ({
