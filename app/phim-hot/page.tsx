@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import CategoryCatalog from "@/components/CategoryCatalog";
 
 export const metadata: Metadata = {
-  title: "Phim Hot Mới Nhất - Phim Hay Đề Cử",
+  title: "Phim Hot Mới Nhất - Phim Hay Đề Cử | Vam3D",
   description: "Danh sách phim hot, phim bộ phim lẻ hay được đề cử xem nhiều nhất tại Vam3D.",
 };
 
@@ -17,7 +17,7 @@ export default async function PhimHotPage() {
 
   let allMovies: any[] = [];
   try {
-    allMovies = (await getAllMovies()) || [];
+    allMovies = (await getAllMovies(60)) || [];
   } catch (err) {
     console.error("Error loading hot movies page:", err);
   }

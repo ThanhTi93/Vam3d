@@ -48,6 +48,7 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isInWatchlist = (movieId: string) => {
+    if (!mounted) return false;
     return watchlist.includes(movieId);
   };
 

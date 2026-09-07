@@ -37,8 +37,9 @@ export default function MovieCard({ movie }: { movie: Movie }) {
           </span>
         </div>
 
-        <div className="absolute top-2 right-2 z-10">
+        <div className="absolute top-2 right-2 z-10" suppressHydrationWarning>
           <div
+            suppressHydrationWarning
             role="button"
             tabIndex={0}
             onClick={(e) => {
