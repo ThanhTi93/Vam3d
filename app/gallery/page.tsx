@@ -12,17 +12,29 @@ export const revalidate = 60;
 
 export default async function GalleryPage() {
   await connection();
-  const [initialData, filterOptions] = await Promise.all([
-    getGalleriesPublicPaginated({ page: 1, limit: 12 }),
-    getGalleryFilterOptions()
-  ]);
-  
-  return (
-    <GalleryPageClient 
-      initialGalleries={initialData.galleries || []} 
-      initialTotalCount={initialData.totalCount || 0}
-      filterMovies={filterOptions.movies || []}
-      filterCharacters={filterOptions.characters || []}
-    />
-  );
+  try {
+    const [initialData, filterOptions] = await Promise.all([
+      getGalleriesPublicPaginated({ page: 1, limit: 12 }),
+      getGalleryFilterOptions()
+    ]);
+    
+    return (
+      <GalleryPageClient 
+        initialGalleries={initialData?.galleries || []} 
+        initialTotalCount={initialData?.totalCount || 0}
+        filterMovies={filterOptions?.movies || []}
+        filterCharacters={filterOptions?.characters || []}
+      />
+    );
+  } catch (err) {
+    console.error("Error in GalleryPage:", err);
+    return (
+      <GalleryPageClient 
+        initialGalleries={[]} 
+        initialTotalCount={0}
+        filterMovies={[]}
+        filterCharacters={[]}
+      />
+    );
+  }
 }
