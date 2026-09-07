@@ -228,6 +228,7 @@ function LatestEpisodesSection({
             <Link
               key={ep.id}
               href={playUrl}
+              prefetch={false}
               className="group bg-[#131520] border border-white/5 rounded-xl overflow-hidden flex flex-col hover:border-orange-500/30 transition-all duration-300 shadow-md shadow-black/40 h-full"
             >
               <div className="relative aspect-video w-full bg-[#090a0f] overflow-hidden flex-shrink-0">

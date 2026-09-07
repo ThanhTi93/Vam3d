@@ -25,6 +25,7 @@ export default function MovieSection({
         {viewAllHref && (
           <Link
             href={viewAllHref}
+            prefetch={false}
             className="text-xs font-bold text-orange-500 hover:text-orange-400 hover:underline cursor-pointer"
           >
             Xem tất cả →

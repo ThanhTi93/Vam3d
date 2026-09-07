@@ -15,6 +15,7 @@ export default function MovieCard({ movie }: { movie: Movie }) {
   return (
     <Link
       href={`/movie/${(movie as any).slug || movie.id}`}
+      prefetch={false}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className="relative rounded-xl overflow-hidden border border-white/5 group cursor-pointer hover:border-orange-500/50 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300 flex flex-col h-full bg-[#131520] p-0 py-0 gap-0"
