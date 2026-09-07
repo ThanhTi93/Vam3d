@@ -60,6 +60,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+export const revalidate = 120;
+
 export default async function DynamicCategoryPage({ params }: PageProps) {
   await connection();
   const { categoryName } = await params;

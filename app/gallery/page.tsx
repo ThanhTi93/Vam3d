@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: "Khám phá kho bộ sưu tập ảnh nhân vật AI, Cosplay chất lượng cao từ các bộ phim bom tấn độc quyền chỉ có tại RoPhim.",
 };
 
+export const revalidate = 60;
+
 export default async function GalleryPage() {
   await connection();
   const [initialData, filterOptions] = await Promise.all([

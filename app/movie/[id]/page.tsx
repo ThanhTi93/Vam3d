@@ -221,6 +221,8 @@ function MovieSchemaScript({ movie, currentEp }: { movie: any; currentEp?: strin
   );
 }
 
+export const revalidate = 60;
+
 export default async function MovieDetailPage({ params, searchParams }: MoviePageProps) {
   await connection();
   const { id } = await params;

@@ -27,6 +27,8 @@ export const metadata: Metadata = {
   },
 };
 
+export const revalidate = 300;
+
 export default async function SchedulePage() {
   await connection();
   const allMovies = await getAllMovies();

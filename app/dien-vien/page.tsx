@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   description: "Trang tổng hợp danh sách các diễn viên, người mẫu, hot girl cosplay nóng bỏng, gợi cảm nhất tại RoPhim.",
 };
 
+export const revalidate = 300;
+
 export default async function ActorsPage() {
   await connection();
   try {
