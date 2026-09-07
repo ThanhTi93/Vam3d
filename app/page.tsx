@@ -7,34 +7,42 @@ export const revalidate = 3600;
 export default async function Home() {
   let allMovies: any[] = [];
   let galleries: any[] = [];
+  let latestEpisodes: any[] = [];
+  let mostViewedEpisodes: any[] = [];
 
   try {
     const results = await Promise.all([
       getAllMovies(60).catch(() => []),
       getLatestGalleries(12).catch(() => []),
+      getLatestEpisodes(4).catch(() => []),
+      getMostViewedEpisodes(4).catch(() => []),
     ]);
     allMovies = results[0] || [];
     galleries = results[1] || [];
+    latestEpisodes = results[2] || [];
+    mostViewedEpisodes = results[3] || [];
   } catch (err) {
     console.error("Error loading home page data:", err);
   }
 
-  // Derive latest and most viewed episodes directly from movies to eliminate extra DB queries
-  const allEps = allMovies.flatMap((m: any) =>
-    (m.episodes || []).map((ep: any) => ({
-      ...ep,
-      idMovie: m.id,
-      movie: {
-        id: m.id,
-        name: m.name,
-        imgUrl: m.imgUrl,
-        bannerUrl: m.banner,
-        episodes: m.episodes,
-      },
-    }))
-  );
-  const latestEpisodes = allEps.slice(0, 8);
-  const mostViewedEpisodes = [...allEps].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 8);
+  // If direct queries returned empty, fallback to deriving from allMovies
+  if (latestEpisodes.length === 0 || mostViewedEpisodes.length === 0) {
+    const allEps = allMovies.flatMap((m: any) =>
+      (m.episodes || []).map((ep: any) => ({
+        ...ep,
+        idMovie: m.id,
+        movie: {
+          id: m.id,
+          name: m.name,
+          imgUrl: m.imgUrl,
+          bannerUrl: m.banner,
+          episodes: m.episodes,
+        },
+      }))
+    );
+    if (latestEpisodes.length === 0) latestEpisodes = allEps.slice(0, 4);
+    if (mostViewedEpisodes.length === 0) mostViewedEpisodes = [...allEps].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 4);
+  }
 
   const hotMoviesList = (allMovies || []).filter((m: any) => m?.isHot);
   const hotMovies = hotMoviesList.length > 0 ? hotMoviesList.slice(0, 6) : (allMovies || []).slice(0, 6);

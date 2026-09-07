@@ -58,9 +58,21 @@ export default function MoviePageClient({
   const { toggleWatchlist, isInWatchlist } = useWatchlist();
 
   const activeEpFromParam = searchParams?.get("ep") ?? initialEp;
-  const initialEpIndex = activeEpFromParam ? Math.max(0, parseInt(activeEpFromParam, 10) - 1) : 0;
+
+  const resolveEpisodeIndex = (paramVal?: string | null) => {
+    if (!paramVal || !movie.episodes || movie.episodes.length === 0) return 0;
+    // 1. Try matching by episode ID
+    const byId = movie.episodes.findIndex((e: any) => e.id?.toString() === paramVal);
+    if (byId !== -1) return byId;
+    // 2. Try matching by 1-based index
+    const byIdx = parseInt(paramVal, 10) - 1;
+    if (byIdx >= 0 && byIdx < movie.episodes.length) return byIdx;
+    return 0;
+  };
+
+  const initialEpIndex = resolveEpisodeIndex(activeEpFromParam);
   const hasEpisodes = Boolean(movie.episodes && movie.episodes.length > 0);
-  const isValidEp = Boolean(activeEpFromParam && hasEpisodes && initialEpIndex < (movie.episodes?.length || 0));
+  const isValidEp = Boolean(activeEpFromParam && hasEpisodes);
 
   const [showPlayer, setShowPlayer] = useState(() => isValidEp);
   const [activeServer, setActiveServer] = useState("VIP");
@@ -78,11 +90,11 @@ export default function MoviePageClient({
   // Sync episode selection with URL query parameter '?ep=...' and perform VIP access check
   useEffect(() => {
     const epParam = searchParams.get("ep");
-    if (epParam) {
-      const epIndex = parseInt(epParam, 10) - 1;
-      if (epIndex >= 0 && movie.episodes && epIndex < movie.episodes.length) {
-        const targetEp = movie.episodes[epIndex];
+    if (epParam && movie.episodes && movie.episodes.length > 0) {
+      const epIndex = resolveEpisodeIndex(epParam);
+      const targetEp = movie.episodes[epIndex];
 
+      if (targetEp) {
         // 1. Check movie level requirement
         if (movie.plan && !checkAccess(movie.plan)) {
           setRestrictedError(

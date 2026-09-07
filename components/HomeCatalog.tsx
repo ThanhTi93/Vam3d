@@ -224,9 +224,8 @@ function LatestEpisodesSection({
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
         {episodes.map((ep) => {
-          const epIndex = ep.movie?.episodes?.findIndex((x: any) => x.id === ep.id);
-          const epParamVal = epIndex !== undefined && epIndex !== -1 ? epIndex + 1 : 1;
-          const playUrl = `/movie/${ep.idMovie}?ep=${epParamVal}`;
+          const movieId = ep.idMovie || ep.movie?.id;
+          const playUrl = `/movie/${movieId}?ep=${ep.id}`;
           
           const displayImage = ep.banner || ep.movie?.imgUrl || ep.movie?.bannerUrl || "";
 
