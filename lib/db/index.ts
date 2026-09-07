@@ -25,9 +25,10 @@ export function getDb(): {
     cf = (globalThis as any)[cfSymbol];
   } catch {}
 
-  // In Cloudflare Worker runtime with ExecutionContext per request
-  if (cf?.ctx && typeof cf.ctx === "object") {
-    const cached = requestDbCache.get(cf.ctx);
+  // In Cloudflare Worker runtime with ExecutionContext / RequestContext per request
+  const contextKey = (cf?.ctx && typeof cf.ctx === "object") ? cf.ctx : (cf && typeof cf === "object") ? cf : null;
+  if (contextKey) {
+    const cached = requestDbCache.get(contextKey);
     if (cached) {
       return cached;
     }
@@ -47,7 +48,7 @@ export function getDb(): {
     });
     const dbInstance = drizzle(client, { schema });
     const session = { db: dbInstance, client };
-    requestDbCache.set(cf.ctx, session);
+    requestDbCache.set(contextKey, session);
     return session;
   }
 
