@@ -4,10 +4,10 @@ import React, { useState, useEffect, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Play, Heart, Star, Tv, MessageSquare, Clock, Info, Award, Camera } from "lucide-react";
+import { Play, Heart, Star, Tv, MessageSquare, Clock, Info, Award, Camera, Eye } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useWatchlist } from "@/app/context/watchlistContext";
-import { getBunnyImageUrl, formatRelativeTime, formatDuration } from "@/lib/utils";
+import { getBunnyImageUrl, formatRelativeTime, formatDuration, formatNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -53,7 +53,7 @@ export default function MoviePageClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const isCurrentRoute = pathname === `/movie/${movie.id}`;
+  const isCurrentRoute = pathname === `/movie/${movie.id}` || (movie.slug && pathname === `/movie/${movie.slug}`) || pathname.includes(`/movie/`);
   const { user, freeVipMode } = useAuth();
   const { toggleWatchlist, isInWatchlist } = useWatchlist();
 
@@ -142,6 +142,28 @@ export default function MoviePageClient({
     startTransition(() => {
       router.replace(`${window.location.pathname}?${params.toString()}`, { scroll: false });
     });
+  };
+
+  const handlePlayEpisodeItem = (e: React.MouseEvent, ep: any, targetIdx?: number) => {
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return; // allow standard browser new-tab behavior
+    e.preventDefault();
+
+    const isSameMovie = String(ep.idMovie || movie.id) === String(movie.id);
+    const resolvedIdx = targetIdx !== undefined 
+      ? targetIdx 
+      : movie.episodes?.findIndex((x: any) => x.id === ep.id);
+
+    if (isSameMovie && resolvedIdx !== undefined && resolvedIdx !== -1) {
+      handleEpisodeChange(resolvedIdx);
+      setShowPlayer(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    // Navigating to a different movie
+    const movieIdentifier = ep.movie?.slug || ep.idMovie;
+    router.push(`/movie/${movieIdentifier}?ep=${ep.id}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
@@ -292,90 +314,113 @@ export default function MoviePageClient({
               </div>
             </div>
 
-            {relatedEpisodes && relatedEpisodes.length > 0 && (
-              <div className="space-y-4 pt-4 border-t border-white/5">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Play className="w-4 h-4 text-orange-500 fill-orange-500/20" /> 
-                  Tập phim liên quan (Cùng phim hoặc nhân vật):
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {relatedEpisodes.slice(0, 12).map((ep: any) => {
-                    const epIndex = ep.movie?.episodes?.findIndex((x: any) => x.id === ep.id);
-                    const epParamVal = epIndex !== undefined && epIndex !== -1 ? epIndex + 1 : 1;
-                    const playUrl = `/movie/${ep.idMovie}?ep=${epParamVal}`;
-                    const displayImage = ep.banner || ep.movie?.imgUrl || ep.movie?.bannerUrl || "";
+            {/* ── RELATED EPISODES ── */}
+            {(() => {
+              const currentActiveEpId = movie.episodes?.[activeEpisode]?.id;
+              // Filter out the currently active episode so user sees other episodes
+              const otherEpisodes = (relatedEpisodes || []).filter(
+                (ep: any) => !currentActiveEpId || ep.id !== currentActiveEpId
+              );
 
-                    return (
-                      <Link
-                        key={ep.id}
-                        href={playUrl}
-                        className="group bg-[#131520] border border-white/5 rounded-xl overflow-hidden flex flex-col hover:border-orange-500/30 transition-all duration-300 shadow-md shadow-black/40 h-full"
-                      >
-                        <div className="relative aspect-video w-full bg-[#090a0f] overflow-hidden flex-shrink-0">
-                          {displayImage ? (
-                            <img
-                              src={getBunnyImageUrl(displayImage, 'thumb')}
-                              alt={`${ep.movie?.name} - ${ep.name}`}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-700">
-                              <Play className="w-6 h-6" />
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
+              if (otherEpisodes.length === 0) return null;
 
-                          <div className="absolute top-2 left-2 z-20 max-w-[55%]">
-                            <span className="bg-orange-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-sm shadow-md truncate block w-full text-center select-none">
-                              {ep.name || "Tập mới"}
-                            </span>
-                          </div>
-                          {ep.plan && (
-                            <div className="absolute top-2 right-2 z-20 max-w-[40%]">
-                              <span className="bg-amber-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-sm shadow-md truncate block w-full text-center select-none">
-                                {ep.plan.name}
+              return (
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Play className="w-4 h-4 text-orange-500 fill-orange-500/20" /> 
+                    Tập phim liên quan (Cùng phim hoặc nhân vật):
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {otherEpisodes.slice(0, 12).map((ep: any) => {
+                      const isSameMovie = String(ep.idMovie || movie.id) === String(movie.id);
+                      const targetIdx = isSameMovie
+                        ? movie.episodes?.findIndex((x: any) => x.id === ep.id)
+                        : -1;
+                      const epParamVal = targetIdx !== -1 && targetIdx !== undefined ? targetIdx + 1 : ep.id;
+                      const movieIdentifier = isSameMovie
+                        ? (movie.slug || movie.id)
+                        : (ep.movie?.slug || ep.idMovie);
+                      const playUrl = `/movie/${movieIdentifier}?ep=${epParamVal}`;
+                      const displayImage = ep.banner || ep.movie?.imgUrl || ep.movie?.bannerUrl || "";
+
+                      return (
+                        <Link
+                          key={ep.id}
+                          href={playUrl}
+                          onClick={(e) => handlePlayEpisodeItem(e, ep, targetIdx)}
+                          className="group bg-[#131520] border border-white/5 rounded-xl overflow-hidden flex flex-col hover:border-orange-500/30 transition-all duration-300 shadow-md shadow-black/40 h-full cursor-pointer"
+                        >
+                          <div className="relative aspect-video w-full bg-[#090a0f] overflow-hidden flex-shrink-0">
+                            {displayImage ? (
+                              <img
+                                src={getBunnyImageUrl(displayImage, 'thumb')}
+                                alt={`${ep.movie?.name || movie.title} - ${ep.name}`}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-700">
+                                <Play className="w-6 h-6" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
+
+                            <div className="absolute top-2 left-2 z-20 max-w-[55%]">
+                              <span className="bg-orange-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-sm shadow-md truncate block w-full text-center select-none">
+                                {ep.name || "Tập mới"}
                               </span>
                             </div>
-                          )}
+                            {ep.plan && (
+                              <div className="absolute top-2 right-2 z-20 max-w-[40%]">
+                                <span className="bg-amber-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-sm shadow-md truncate block w-full text-center select-none">
+                                  {ep.plan.name}
+                                </span>
+                              </div>
+                            )}
 
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-15">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-lg scale-75 group-hover:scale-100 transition-transform duration-300">
-                              <Play className="w-4 h-4 fill-white ml-0.5" />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-15">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-lg scale-75 group-hover:scale-100 transition-transform duration-300">
+                                <Play className="w-4 h-4 fill-white ml-0.5" />
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="p-2.5 flex-grow flex flex-col justify-between">
-                          <div className="min-w-0">
-                            <h3 className="text-xs font-bold text-gray-100 line-clamp-1 group-hover:text-orange-400 transition-colors">
-                              {ep.movie?.name || "Phim"}
-                            </h3>
-                            <div className="text-[9px] text-gray-400 font-medium mt-1.5 line-clamp-1 flex items-center gap-1 flex-wrap">
-                              <span className="text-gray-300 bg-white/5 border border-white/10 px-1 rounded-sm text-[8px] max-w-[80px] truncate">{ep.name}</span>
-                              {ep.duration > 0 ? (
-                                <>
-                                  <span>•</span>
-                                  <span className="flex items-center gap-0.5">
-                                    <Clock className="w-2.5 h-2.5 inline" />
-                                    <span>{formatDuration(ep.duration)}</span>
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <span>•</span>
-                                  <span>Mới</span>
-                                </>
-                              )}
+                          <div className="p-2.5 flex-grow flex flex-col justify-between">
+                            <div className="min-w-0">
+                              <h3 className="text-xs font-bold text-gray-100 line-clamp-1 group-hover:text-orange-400 transition-colors">
+                                {ep.movie?.name || movie.title}
+                              </h3>
+                              <div className="text-[9px] text-gray-400 font-medium mt-1.5 line-clamp-1 flex items-center gap-1.5 flex-wrap">
+                                <span className="text-gray-300 bg-white/5 border border-white/10 px-1 rounded-sm text-[8px] max-w-[80px] truncate">{ep.name}</span>
+                                {ep.duration > 0 ? (
+                                  <>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-0.5">
+                                      <Clock className="w-2.5 h-2.5 inline" />
+                                      <span>{formatDuration(ep.duration)}</span>
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>•</span>
+                                    <span>Mới</span>
+                                  </>
+                                )}
+                                <span>•</span>
+                                <span className="flex items-center gap-0.5 text-orange-400/90 font-semibold">
+                                  <Eye className="w-2.5 h-2.5 inline text-orange-400" />
+                                  <span>{formatNumber(ep.views || 0)}</span>
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
@@ -515,7 +560,8 @@ export default function MoviePageClient({
                     <Link
                       key={ep.id ?? idx}
                       href={playUrl}
-                      className="group bg-[#131520] border border-white/5 rounded-xl overflow-hidden flex flex-col hover:border-orange-500/30 transition-all duration-300 shadow-md shadow-black/40 h-full"
+                      onClick={(e) => handlePlayEpisodeItem(e, ep, idx)}
+                      className="group bg-[#131520] border border-white/5 rounded-xl overflow-hidden flex flex-col hover:border-orange-500/30 transition-all duration-300 shadow-md shadow-black/40 h-full cursor-pointer"
                     >
                       <div className="relative aspect-video w-full bg-[#090a0f] overflow-hidden flex-shrink-0">
                         {displayImage ? (
@@ -550,14 +596,27 @@ export default function MoviePageClient({
                           <h3 className="text-xs font-bold text-gray-100 line-clamp-1 group-hover:text-orange-400 transition-colors">
                             {movie.title}
                           </h3>
-                          <div className="text-[9px] text-gray-400 font-medium mt-1.5 line-clamp-1 flex items-center gap-1 flex-wrap">
+                          <div className="text-[9px] text-gray-400 font-medium mt-1.5 line-clamp-1 flex items-center gap-1.5 flex-wrap">
                             <span className="text-gray-300 bg-white/5 border border-white/10 px-1 rounded-sm text-[8px] max-w-[80px] truncate">{ep.name || `Tập ${idx + 1}`}</span>
-                            <span>•</span>
                             {ep.duration > 0 ? (
-                              <span>{formatDuration(ep.duration)}</span>
+                              <>
+                                <span>•</span>
+                                <span className="flex items-center gap-0.5">
+                                  <Clock className="w-2.5 h-2.5 inline" />
+                                  <span>{formatDuration(ep.duration)}</span>
+                                </span>
+                              </>
                             ) : (
-                              <span>Mới</span>
+                              <>
+                                <span>•</span>
+                                <span>Mới</span>
+                              </>
                             )}
+                            <span>•</span>
+                            <span className="flex items-center gap-0.5 text-orange-400/90 font-semibold">
+                              <Eye className="w-2.5 h-2.5 inline text-orange-400" />
+                              <span>{formatNumber(ep.views || 0)}</span>
+                            </span>
                           </div>
                         </div>
                       </div>

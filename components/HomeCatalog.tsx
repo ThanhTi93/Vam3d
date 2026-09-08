@@ -8,6 +8,7 @@ import MovieSection from "@/components/MovieSection";
 import RankingsSidebar from "@/components/RankingsSidebar";
 import { HomeGallerySection, GalleryDetailModal } from "@/components/GalleryComponents";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { getBunnyImageUrl, formatRelativeTime, formatDuration, slugify } from "@/lib/utils";
 import { Movie } from "@/types";
@@ -26,6 +27,7 @@ function HomeCatalogContent({
   latestEpisodes = [], 
   mostViewedEpisodes = [] 
 }: HomeCatalogProps) {
+  const router = useRouter();
   const [selectedGenre, setSelectedGenre] = useState<string>("Tất cả");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedGallery, setSelectedGallery] = useState<any | null>(null);

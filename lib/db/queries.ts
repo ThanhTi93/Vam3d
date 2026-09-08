@@ -81,7 +81,9 @@ export const getMoviesByCategory = cache(async (categoryIdentifier: string) => {
       .from(schema.movieCategory)
       .where(eq(schema.movieCategory.idCategory, cat.id));
 
-    const movieIds = movieCategoryLinks.map((mc) => mc.idMovie).filter(Boolean);
+    const movieIds = movieCategoryLinks
+      .map((mc) => mc.idMovie)
+      .filter((id): id is number => typeof id === "number");
     if (movieIds.length === 0) return [];
 
     const result = await db.query.movies.findMany({
@@ -184,7 +186,7 @@ export const getTopMovies = cache(async (limit = 6) => {
       where: (movies, { eq }) => eq(movies.status, 1),
       orderBy: (movies, { desc }) => [desc(movies.id)],
       limit,
-      columns: { id: true, name: true, imgUrl: true, rating: true, viewCount: true, likeCount: true },
+      columns: { id: true, name: true, slug: true, imgUrl: true, createdAt: true },
     });
 
     return result;
@@ -599,14 +601,14 @@ export const getCharacterDetails = cache(async (slugOrId: string) => {
       with: {
         episode: {
           with: {
-            movie: { columns: { id: true, name: true, imgUrl: true, banner: true } },
+            movie: { columns: { id: true, name: true, slug: true, imgUrl: true } },
             plan: true,
           },
         },
       },
     });
 
-    let episodesList = epJunctions
+    let episodesList = (epJunctions as any[])
       .map((j) => j.episode)
       .filter(Boolean)
       .filter((ep: any) => ep.status === 1);
@@ -616,7 +618,7 @@ export const getCharacterDetails = cache(async (slugOrId: string) => {
       const movieEps = await db.query.episodes.findMany({
         where: (ep, { eq, and }) => and(eq(ep.status, 1), eq(ep.idMovie, character.idMovie!)),
         with: {
-          movie: { columns: { id: true, name: true, imgUrl: true, banner: true } },
+          movie: { columns: { id: true, name: true, slug: true, imgUrl: true } },
           plan: true,
         },
       });

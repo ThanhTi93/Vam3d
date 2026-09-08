@@ -115,4 +115,17 @@ export function formatDuration(seconds: number | null | undefined): string {
   return parts.length > 0 ? parts.join(" ") : "";
 }
 
+export function formatNumber(num: number | null | undefined): string {
+  if (!num || num <= 0) return "0";
+  if (num >= 1_000_000) {
+    const val = (num / 1_000_000).toFixed(1).replace(/\.0$/, "");
+    return `${val}M`;
+  }
+  if (num >= 10_000) {
+    const val = (num / 1_000).toFixed(1).replace(/\.0$/, "");
+    return `${val}K`;
+  }
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
 

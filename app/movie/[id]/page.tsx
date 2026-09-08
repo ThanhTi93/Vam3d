@@ -242,38 +242,49 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
     const currentEpisodeId = currentEpisode ? currentEpisode.id : 0;
 
     // Derive related episodes from movie's episodes or other movies without extra DB queries
-    let relatedEpisodes: any[] = (movieData.episodes || [])
-      .filter((ep: any) => ep.id !== currentEpisodeId)
-      .map((ep: any) => ({
-        ...ep,
-        idMovie: movieData.id,
-        movie: {
-          id: movieData.id,
-          name: movieData.name,
-          imgUrl: movieData.imgUrl,
-          bannerUrl: movieData.banner,
-        },
-      }));
+    let relatedEpisodes: any[] = (movieData.episodes || []).map((ep: any) => ({
+      id: ep.id,
+      name: ep.name || `Tập ${ep.id}`,
+      url: ep.url || "",
+      banner: ep.banner || "",
+      duration: ep.duration || 0,
+      views: ep.views || 0,
+      bunnyVideoId: ep.bunnyVideoId,
+      bunnyStatus: ep.bunnyStatus,
+      plan: ep.plan || null,
+      idMovie: movieData.id,
+      movie: {
+        id: movieData.id,
+        name: movieData.name,
+        slug: movieData.slug,
+        imgUrl: movieData.imgUrl,
+        bannerUrl: movieData.banner,
+      },
+    }));
 
-    if (relatedEpisodes.length === 0 && allMovies && allMovies.length > 0) {
-      relatedEpisodes = allMovies
+    if (relatedEpisodes.length <= 1 && allMovies && allMovies.length > 0) {
+      const otherMovieEpisodes = allMovies
         .filter((m: any) => m.id !== movieData.id && m.episodes && m.episodes.length > 0)
-        .slice(0, 6)
+        .slice(0, 8)
         .map((m: any) => ({
           ...m.episodes[0],
+          views: m.episodes[0].views || 0,
           idMovie: m.id,
           movie: {
             id: m.id,
             name: m.name,
+            slug: m.slug,
             imgUrl: m.imgUrl,
             bannerUrl: m.banner,
           },
         }));
+      relatedEpisodes = [...relatedEpisodes, ...otherMovieEpisodes];
     }
 
     // Format to standard Client model shape
     const formattedMovie = {
       id: movieData.id.toString(),
+      slug: movieData.slug || "",
       title: movieData.name,
       originalTitle: movieData.originalTitle || "",
       thumbnail: movieData.imgUrl || "",
@@ -300,6 +311,7 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
         url: ep.url || "",
         banner: ep.banner || "",
         duration: ep.duration || 0,
+        views: ep.views || 0,
         bunnyVideoId: ep.bunnyVideoId,
         bunnyStatus: ep.bunnyStatus,
         plan: ep.plan || null,

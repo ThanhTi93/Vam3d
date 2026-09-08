@@ -27,7 +27,7 @@ export const getDb = cache(() => {
     fetch_types: false, // Disables pg_type queries on connection startup to keep CPU < 0.5ms
     ssl: isHyperdrive ? false : { rejectUnauthorized: false },
     max: 1,
-    idle_timeout: null, // CRITICAL: Disable background timer in Cloudflare Workers to eliminate Error 1101
+    idle_timeout: null as any, // CRITICAL: Disable background timer in Cloudflare Workers to eliminate Error 1101
     connect_timeout: 10,
     onnotice: () => {},
   });
