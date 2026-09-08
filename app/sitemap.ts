@@ -87,22 +87,62 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         });
       }
 
-      // 4. Characters (Nhân vật)
+      // 4. Characters (Nhân vật) - Tạo sitemap theo 3 loại tên: Tên chính, Tên tiếng Anh/Pinyin, Tên tiếng Trung
       const dbCharacters = await db.query.characters.findMany({
-        columns: { id: true, name: true, slug: true },
+        columns: { id: true, name: true, slug: true, nameEn: true, nameZh: true },
         where: (chars, { eq }) => eq(chars.status, 1),
       });
 
       if (dbCharacters && dbCharacters.length > 0) {
-        characterPaths = dbCharacters.map((char) => {
-          const slug = char.slug || slugify(char.name) || char.id.toString();
-          return {
-            url: `${siteUrl}/nhan-vat/${slug}`,
-            lastModified: new Date(),
-            changeFrequency: "weekly",
-            priority: 0.7,
-          };
-        });
+        const seenUrls = new Set<string>();
+        characterPaths = [];
+
+        for (const char of dbCharacters) {
+          // 1. URL tên chính (Slug chuẩn / tiếng Việt)
+          const mainSlug = char.slug || slugify(char.name) || char.id.toString();
+          const mainUrl = `${siteUrl}/nhan-vat/${encodeURIComponent(mainSlug)}`;
+          if (!seenUrls.has(mainUrl)) {
+            seenUrls.add(mainUrl);
+            characterPaths.push({
+              url: mainUrl,
+              lastModified: new Date(),
+              changeFrequency: "weekly",
+              priority: 0.7,
+            });
+          }
+
+          // 2. URL tên tiếng Anh / Pinyin quốc tế
+          if (char.nameEn) {
+            const enSlug = slugify(char.nameEn);
+            if (enSlug) {
+              const enUrl = `${siteUrl}/nhan-vat/${encodeURIComponent(enSlug)}`;
+              if (!seenUrls.has(enUrl)) {
+                seenUrls.add(enUrl);
+                characterPaths.push({
+                  url: enUrl,
+                  lastModified: new Date(),
+                  changeFrequency: "weekly",
+                  priority: 0.6,
+                });
+              }
+            }
+          }
+
+          // 3. URL tên tiếng Trung nguyên bản
+          if (char.nameZh && char.nameZh.trim()) {
+            const zhSlug = char.nameZh.trim();
+            const zhUrl = `${siteUrl}/nhan-vat/${encodeURIComponent(zhSlug)}`;
+            if (!seenUrls.has(zhUrl)) {
+              seenUrls.add(zhUrl);
+              characterPaths.push({
+                url: zhUrl,
+                lastModified: new Date(),
+                changeFrequency: "weekly",
+                priority: 0.6,
+              });
+            }
+          }
+        }
       }
 
       // 5. Authors (Tác giả)

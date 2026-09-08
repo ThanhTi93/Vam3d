@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCharacterDetails, getAllCharacters } from "@/lib/db/queries";
 import CharacterDetailPageClient from "./CharacterDetailPageClient";
-import { getBunnyImageUrl } from "@/lib/utils";
+import { getBunnyImageUrl, slugify } from "@/lib/utils";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -11,13 +11,38 @@ interface PageProps {
 
 export const revalidate = 3600;
 
-// Generate Static Params for SSG Prerendering
+// Generate Static Params for SSG Prerendering (supports primary slug, English slug, and Chinese name)
 export async function generateStaticParams() {
   try {
     const characters = await getAllCharacters();
-    return (characters || []).map((c: any) => ({
-      slug: c.slug || c.id.toString(),
-    }));
+    const params: { slug: string }[] = [];
+    const seenSlugs = new Set<string>();
+
+    for (const c of characters || []) {
+      const primarySlug = c.slug || slugify(c.name) || c.id.toString();
+      if (primarySlug && !seenSlugs.has(primarySlug)) {
+        seenSlugs.add(primarySlug);
+        params.push({ slug: primarySlug });
+      }
+
+      if (c.nameEn) {
+        const enSlug = slugify(c.nameEn);
+        if (enSlug && !seenSlugs.has(enSlug)) {
+          seenSlugs.add(enSlug);
+          params.push({ slug: enSlug });
+        }
+      }
+
+      if (c.nameZh && c.nameZh.trim()) {
+        const zhSlug = c.nameZh.trim();
+        if (zhSlug && !seenSlugs.has(zhSlug)) {
+          seenSlugs.add(zhSlug);
+          params.push({ slug: zhSlug });
+        }
+      }
+    }
+
+    return params;
   } catch {
     return [];
   }
@@ -36,8 +61,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const { character } = data;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
-  const charUrl = `${siteUrl}/nhan-vat/${encodeURIComponent(character.slug || character.id)}`;
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost"))
+    ? process.env.NEXT_PUBLIC_SITE_URL
+    : "https://www.vam3dhentai.online";
+
+  // Canonical is ALWAYS the primary URL (Google SEO best practice to avoid duplicate content)
+  const canonicalSlug = character.slug || slugify(character.name) || character.id.toString();
+  const charUrl = `${siteUrl}/nhan-vat/${encodeURIComponent(canonicalSlug)}`;
   const subNames = [character.nameEn, character.nameZh].filter(Boolean).join(" · ");
   
   const title = `Nhân Vật ${character.name}${subNames ? ` (${subNames})` : ""} – Tập Phim & Bộ Sưu Tập AI | Vam3D`;

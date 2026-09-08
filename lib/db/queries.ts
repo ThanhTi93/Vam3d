@@ -530,20 +530,38 @@ export const getCharacterDetails = cache(async (slugOrId: string) => {
   try {
     if (!db) return null;
 
-    const trimmed = slugOrId ? decodeURIComponent(slugOrId).trim() : "";
+    let trimmed = slugOrId ? slugOrId.trim() : "";
     if (!trimmed) return null;
+
+    try {
+      trimmed = decodeURIComponent(trimmed).trim();
+    } catch {
+      // keep original trimmed if malformed URI
+    }
 
     const isNumeric = /^\d+$/.test(trimmed);
     const numericId = isNumeric ? parseInt(trimmed, 10) : -1;
     const targetSlug = slugify(trimmed);
+    const trimmedWithSpaces = trimmed.replace(/[-_]+/g, " ").trim();
 
     // 1. Fetch character with parent movie
-    const character = await db.query.characters.findFirst({
+    // Match across slug, Vietnamese name, English name (or slugified English name), and Chinese name
+    let character = await db.query.characters.findFirst({
       where: (chars, { eq, or, ilike }) => {
+        const conditions = [
+          eq(chars.slug, trimmed),
+          ...(targetSlug ? [eq(chars.slug, targetSlug)] : []),
+          ilike(chars.name, trimmed),
+          ilike(chars.name, trimmedWithSpaces),
+          ilike(chars.nameEn, trimmed),
+          ilike(chars.nameEn, trimmedWithSpaces),
+          eq(chars.nameZh, trimmed),
+          ilike(chars.nameZh, trimmed),
+        ];
         if (isNumeric) {
-          return or(eq(chars.id, numericId), eq(chars.slug, trimmed), eq(chars.slug, targetSlug), ilike(chars.name, `%${trimmed}%`));
+          conditions.unshift(eq(chars.id, numericId));
         }
-        return or(eq(chars.slug, trimmed), eq(chars.slug, targetSlug), ilike(chars.name, `%${trimmed}%`));
+        return or(...conditions);
       },
       with: {
         movie: {
@@ -553,6 +571,25 @@ export const getCharacterDetails = cache(async (slugOrId: string) => {
         },
       },
     });
+
+    // Fallback: If still not found and query string is long enough, try partial match
+    if (!character && trimmed.length > 2) {
+      character = await db.query.characters.findFirst({
+        where: (chars, { or, ilike }) =>
+          or(
+            ilike(chars.name, `%${trimmedWithSpaces}%`),
+            ilike(chars.nameEn, `%${trimmedWithSpaces}%`),
+            ilike(chars.nameZh, `%${trimmed}%`)
+          ),
+        with: {
+          movie: {
+            with: {
+              movieCategories: { with: { category: true } },
+            },
+          },
+        },
+      });
+    }
 
     if (!character) return null;
 
