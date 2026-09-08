@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { HomeGalleryGrid, GalleryDetailModal } from "@/components/GalleryComponents";
 import { incrementGalleryViews } from "@/app/admin/actions";
 import { fetchMoreGalleries } from "./actions";
@@ -18,6 +19,7 @@ export default function GalleryPageClient({
   filterMovies,
   filterCharacters,
 }: GalleryPageClientProps) {
+  const router = useRouter();
   const [galleries, setGalleries] = useState<any[]>(initialGalleries);
   const [totalCount, setTotalCount] = useState<number>(initialTotalCount);
   const [selectedGallery, setSelectedGallery] = useState<any | null>(null);
@@ -32,9 +34,8 @@ export default function GalleryPageClient({
   });
 
   const handleSelectGallery = (g: any) => {
-    setSelectedGallery(g);
-    if (g && g.id) {
-      incrementGalleryViews(g.id);
+    if (g && (g.slug || g.id)) {
+      router.push(`/gallery/${g.slug || g.id}`);
     }
   };
 

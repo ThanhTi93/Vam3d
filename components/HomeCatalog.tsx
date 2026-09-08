@@ -33,9 +33,8 @@ function HomeCatalogContent({
   const [selectedGallery, setSelectedGallery] = useState<any | null>(null);
 
   const handleSelectGallery = (g: any) => {
-    setSelectedGallery(g);
-    if (g && g.id) {
-      incrementGalleryViews(g.id);
+    if (g && (g.slug || g.id)) {
+      router.push(`/gallery/${g.slug || g.id}`);
     }
   };
 

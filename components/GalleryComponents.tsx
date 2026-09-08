@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 // ─── Sub-component: Home Gallery Card ────────────────────────────────────────
-export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) => void }) {
+export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect?: (g: any) => void }) {
+  const router = useRouter();
   const { freeVipMode } = useAuth();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [hovered, setHovered] = useState(false);
@@ -27,14 +28,35 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) =>
 
   const activeImage = g.images && g.images.length > 0 ? g.images[currentIdx] : null;
   const imageUrl = activeImage?.imgUrl || "";
+  const galleryUrl = `/gallery/${g.slug || g.id}`;
+
+  const handleCardClick = () => {
+    if (onSelect) {
+      onSelect(g);
+    } else {
+      router.push(galleryUrl);
+    }
+  };
 
   return (
     <div
-      onClick={() => onSelect(g)}
+      onClick={handleCardClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className="bg-[#131520] border border-white/5 rounded-2xl overflow-hidden group flex flex-col relative aspect-[2/3] shadow-xl hover:border-orange-500/50 hover:shadow-orange-500/5 transition-all duration-300 cursor-pointer p-0 gap-0"
     >
+      <Link
+        href={galleryUrl}
+        className="absolute inset-0 z-[5]"
+        aria-label={g.name || "Xem bộ sưu tập"}
+        onClick={(e) => {
+          if (onSelect) {
+            e.preventDefault();
+            onSelect(g);
+          }
+        }}
+      />
+
       <div className="absolute inset-0 w-full h-full bg-[#090a0f] overflow-hidden">
         {imageUrl ? (
           <Image
@@ -50,7 +72,7 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) =>
           </div>
         )}
 
-        <div className="absolute top-2 left-2 z-10" suppressHydrationWarning>
+        <div className="absolute top-2 left-2 z-10 pointer-events-none" suppressHydrationWarning>
           {freeVipMode ? (
             <span suppressHydrationWarning className="bg-green-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded shadow-md">
               MIỄN PHÍ
@@ -66,20 +88,20 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) =>
           )}
         </div>
 
-        <div className="absolute top-2 right-2 z-10">
+        <div className="absolute top-2 right-2 z-10 pointer-events-none">
           <span className="text-[9px] font-bold text-gray-300 bg-black/60 px-2 py-0.5 rounded-full border border-white/10 backdrop-blur-md shadow-lg">
-            {g.images?.length || 0} ảnh
+            {g.imageCount ?? g.images?.length ?? 0} ảnh
           </span>
         </div>
 
-        <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300 z-10">
+        <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300 z-10 pointer-events-none">
           <span className="text-[10px] font-bold text-white bg-black/60 px-3 py-1.5 rounded-full border border-white/10 backdrop-blur-md shadow-lg scale-90 group-hover:scale-100 transition-transform duration-300">
             Xem Bộ Sưu Tập 🔍
           </span>
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-3 bg-black/40 backdrop-blur-[3px] border-t border-white/5 z-10 flex flex-col justify-between min-h-[85px] group-hover:bg-black/60 transition-colors">
+      <div className="absolute bottom-0 left-0 right-0 p-3 bg-black/40 backdrop-blur-[3px] border-t border-white/5 z-10 flex flex-col justify-between min-h-[85px] group-hover:bg-black/60 transition-colors pointer-events-none">
         <div>
           <h4 className="text-xs font-bold text-gray-100 line-clamp-1 group-hover:text-orange-400 transition-colors">{g.name}</h4>
           <div className="flex items-center justify-between gap-1 mt-0.5">
@@ -92,7 +114,7 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) =>
               👁️ {g.views || 0} lượt xem
             </span>
           </div>
-          <div className="flex flex-wrap gap-1 mt-1.5">
+          <div className="flex flex-wrap gap-1 mt-1.5 pointer-events-auto">
             {g.galleryCharacters && g.galleryCharacters.length > 0 ? (
               g.galleryCharacters.slice(0, 2).map((gc: any, idx: number) => {
                 const charName = gc.character?.name || gc.name;
@@ -103,7 +125,7 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) =>
                     key={gc.character?.id || gc.id || idx}
                     href={`/nhan-vat/${charSlug}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="text-[8px] bg-white/5 hover:bg-orange-500/20 text-gray-300 hover:text-orange-400 px-1.5 py-0.5 rounded-full border border-white/5 hover:border-orange-500/30 transition-colors"
+                    className="text-[8px] bg-white/5 hover:bg-orange-500/20 text-gray-300 hover:text-orange-400 px-1.5 py-0.5 rounded-full border border-white/5 hover:border-orange-500/30 transition-colors relative z-20"
                   >
                     {charName}
                   </Link>
@@ -389,7 +411,7 @@ export function HomeGalleryGrid({
 }
 
 // ─── Sub-component: Home Gallery Lightbox ────────────────────────────────────
-function HomeGalleryLightbox({
+export function HomeGalleryLightbox({
   images: rawImages, activeIndex, galleryName, onClose, onPrev, onNext
 }: {
   images: any[];

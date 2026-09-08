@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { getBunnyImageUrl, formatDuration } from "@/lib/utils";
-import { HomeGalleryCard, GalleryDetailModal } from "@/components/GalleryComponents";
+import { HomeGalleryCard } from "@/components/GalleryComponents";
 import { incrementGalleryViews } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -393,12 +393,6 @@ export default function CharacterDetailPageClient({ data }: CharacterDetailPageC
           </div>
         </section>
       )}
-
-      {/* Interactive Photo Viewer Modal */}
-      <GalleryDetailModal
-        gallery={selectedGallery}
-        onClose={() => setSelectedGallery(null)}
-      />
     </main>
   );
 }

@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { incrementEpisodeViews, incrementGalleryViews } from "@/app/admin/actions";
-import { HomeGalleryCard, GalleryDetailModal } from "@/components/GalleryComponents";
+import { HomeGalleryCard } from "@/components/GalleryComponents";
 import VideoPlayer from "@/components/VideoPlayer";
 
 interface LocalComment {
@@ -784,12 +784,6 @@ export default function MoviePageClient({
           </DialogContent>
         </Dialog>
       )}
-
-      {/* AI Gallery Detail Modal */}
-      <GalleryDetailModal
-        gallery={selectedGallery}
-        onClose={() => setSelectedGallery(null)}
-      />
     </div>
   );
 }

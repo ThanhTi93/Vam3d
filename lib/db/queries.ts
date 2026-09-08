@@ -1,5 +1,5 @@
 import { db, schema } from "./index";
-import { eq, and, or, ilike, inArray, count, isNull, desc, asc, notInArray } from "drizzle-orm";
+import { eq, and, or, ilike, inArray, count, isNull, desc, asc, notInArray, ne, sql } from "drizzle-orm";
 import { slugify } from "@/lib/utils";
 import { cache } from "react";
 
@@ -339,7 +339,8 @@ export const getLatestGalleries = cache(async (limit = 24) => {
   try {
     if (!db) return [];
 
-    return await db.query.aiGalleries.findMany({
+    const items = await db.query.aiGalleries.findMany({
+      where: (g, { eq }) => eq(g.status, 1),
       orderBy: (g, { desc }) => [desc(g.id)],
       limit,
       with: {
@@ -349,11 +350,30 @@ export const getLatestGalleries = cache(async (limit = 24) => {
           with: { character: { columns: { id: true, name: true } } },
         },
         images: {
-          limit: 2,
+          limit: 1,
           columns: { id: true, imgUrl: true },
         },
       },
     });
+
+    const galleryIds = (items || []).map((g: any) => g.id);
+    let countMap = new Map<number, number>();
+    if (galleryIds.length > 0) {
+      const counts = await db
+        .select({
+          idGallery: schema.aiImages.idGallery,
+          count: count(schema.aiImages.id),
+        })
+        .from(schema.aiImages)
+        .where(inArray(schema.aiImages.idGallery, galleryIds))
+        .groupBy(schema.aiImages.idGallery);
+      countMap = new Map(counts.map((c) => [c.idGallery as number, Number(c.count)]));
+    }
+
+    return (items || []).map((g: any) => ({
+      ...g,
+      imageCount: countMap.get(g.id) || g.images?.length || 0,
+    }));
   } catch (err) {
     console.error("Error in getLatestGalleries:", err);
     return [];
@@ -429,7 +449,7 @@ export async function getGalleriesPublicPaginated(params: {
             with: { character: { columns: { id: true, name: true } } },
           },
           images: {
-            limit: 4,
+            limit: 1,
             columns: { id: true, imgUrl: true },
           },
         },
@@ -442,13 +462,181 @@ export async function getGalleriesPublicPaginated(params: {
 
     const totalCount = Number(countResult[0]?.count || 0);
 
+    const galleryIds = (items || []).map((g: any) => g.id);
+    let countMap = new Map<number, number>();
+    if (galleryIds.length > 0) {
+      const counts = await db
+        .select({
+          idGallery: schema.aiImages.idGallery,
+          count: count(schema.aiImages.id),
+        })
+        .from(schema.aiImages)
+        .where(inArray(schema.aiImages.idGallery, galleryIds))
+        .groupBy(schema.aiImages.idGallery);
+      countMap = new Map(counts.map((c) => [c.idGallery as number, Number(c.count)]));
+    }
+
+    const formattedGalleries = (items || []).map((g: any) => ({
+      ...g,
+      imageCount: countMap.get(g.id) || g.images?.length || 0,
+    }));
+
     return {
-      galleries: items || [],
+      galleries: formattedGalleries,
       totalCount,
     };
   } catch (err) {
     console.error("Error in getGalleriesPublicPaginated query:", err);
     return { galleries: [], totalCount: 0 };
+  }
+}
+
+// ─── Get AI Gallery Details by Slug or ID ─────────────────────────────────────
+export const getGalleryBySlug = cache(async (slugOrId: string) => {
+  try {
+    if (!db) return null;
+
+    let trimmed = slugOrId ? slugOrId.trim() : "";
+    if (!trimmed) return null;
+
+    try {
+      trimmed = decodeURIComponent(trimmed).trim();
+    } catch {}
+
+    const isNumeric = /^\d+$/.test(trimmed);
+    const numericId = isNumeric ? parseInt(trimmed, 10) : -1;
+    const targetSlug = slugify(trimmed);
+
+    // 1. Fetch gallery with all images
+    const gallery: any = await db.query.aiGalleries.findFirst({
+      where: (g, { eq, or }) => {
+        const conditions = [
+          eq(g.slug, trimmed),
+          ...(targetSlug ? [eq(g.slug, targetSlug)] : []),
+        ];
+        if (isNumeric) {
+          conditions.unshift(eq(g.id, numericId));
+        }
+        return or(...conditions);
+      },
+      with: {
+        movie: {
+          columns: { id: true, name: true, imgUrl: true },
+        },
+        plan: {
+          columns: { id: true, name: true, level: true },
+        },
+        galleryCharacters: {
+          with: {
+            character: {
+              columns: { id: true, name: true, nameEn: true, nameZh: true, slug: true, imgUrl: true },
+            },
+          },
+        },
+        images: {
+          orderBy: (img, { asc }) => [asc(img.id)],
+          columns: { id: true, imgUrl: true },
+        },
+      },
+    });
+
+    if (!gallery) return null;
+
+    // 2. Fetch related galleries (same movie or popular)
+    const relatedConditions = [
+      eq(schema.aiGalleries.status, 1),
+      ne(schema.aiGalleries.id, gallery.id),
+    ];
+    if (gallery.idMovie) {
+      relatedConditions.push(eq(schema.aiGalleries.idMovie, gallery.idMovie));
+    }
+
+    let related = await db.query.aiGalleries.findMany({
+      where: and(...relatedConditions),
+      orderBy: (g, { desc }) => [desc(g.views), desc(g.id)],
+      limit: 6,
+      with: {
+        movie: { columns: { id: true, name: true } },
+        plan: { columns: { id: true, name: true, level: true } },
+        galleryCharacters: {
+          with: { character: { columns: { id: true, name: true } } },
+        },
+        images: {
+          limit: 1,
+          columns: { id: true, imgUrl: true },
+        },
+      },
+    });
+
+    // If fewer than 6, fallback to popular galleries
+    if (related.length < 6) {
+      const existingIds = [gallery.id, ...related.map((r) => r.id)];
+      const more = await db.query.aiGalleries.findMany({
+        where: and(
+          eq(schema.aiGalleries.status, 1),
+          notInArray(schema.aiGalleries.id, existingIds)
+        ),
+        orderBy: (g, { desc }) => [desc(g.views), desc(g.id)],
+        limit: 6 - related.length,
+        with: {
+          movie: { columns: { id: true, name: true } },
+          plan: { columns: { id: true, name: true, level: true } },
+          galleryCharacters: {
+            with: { character: { columns: { id: true, name: true } } },
+          },
+          images: {
+            limit: 1,
+            columns: { id: true, imgUrl: true },
+          },
+        },
+      });
+      related = [...related, ...more];
+    }
+
+    // Attach imageCount to related galleries
+    const relatedIds = related.map((r) => r.id);
+    let relatedCountMap = new Map<number, number>();
+    if (relatedIds.length > 0) {
+      const counts = await db
+        .select({
+          idGallery: schema.aiImages.idGallery,
+          count: count(schema.aiImages.id),
+        })
+        .from(schema.aiImages)
+        .where(inArray(schema.aiImages.idGallery, relatedIds))
+        .groupBy(schema.aiImages.idGallery);
+      relatedCountMap = new Map(counts.map((c) => [c.idGallery as number, Number(c.count)]));
+    }
+
+    const formattedRelated = related.map((r) => ({
+      ...r,
+      imageCount: relatedCountMap.get(r.id) || r.images?.length || 0,
+    }));
+
+    return {
+      gallery: {
+        ...gallery,
+        imageCount: gallery.images?.length || 0,
+      },
+      relatedGalleries: formattedRelated,
+    };
+  } catch (err) {
+    console.error("Error in getGalleryBySlug:", err);
+    return null;
+  }
+});
+
+// ─── Get All Galleries for Static Params Prerendering ────────────────────────
+export async function getAllGalleriesForStaticParams() {
+  try {
+    if (!db) return [];
+    return await db.query.aiGalleries.findMany({
+      where: (g, { eq }) => eq(g.status, 1),
+      columns: { id: true, slug: true },
+      limit: 100,
+    });
+  } catch {
+    return [];
   }
 }
 
