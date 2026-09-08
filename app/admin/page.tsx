@@ -9,6 +9,8 @@ import {
   getAdminAuthors,
 } from "./actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminPage() {
   await cookies(); // Force dynamic rendering compatibly with cacheComponents
   // Admin check bypassed by user request

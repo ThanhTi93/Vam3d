@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   description: "Quản lý thông tin tài khoản thành viên, kiểm tra thời hạn gói VIP và lịch sử thanh toán đăng ký gói dịch vụ.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function ProfilePage() {
   const user = await getCurrentUser();
   if (!user) {
