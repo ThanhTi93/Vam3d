@@ -2,12 +2,14 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Search, User2 } from "lucide-react";
+import Link from "next/link";
+import { Search, User2, ChevronRight } from "lucide-react";
 import { getBunnyImageUrl } from "@/lib/utils";
 
 interface Character {
   id: number;
   name: string;
+  slug?: string | null;
   nameEn?: string | null;
   nameZh?: string | null;
   imgUrl: string | null;
@@ -61,9 +63,10 @@ export default function CharactersPageClient({ characters }: CharactersPageClien
       {filteredCharacters.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
           {filteredCharacters.map((c) => (
-            <div
+            <Link
               key={c.id}
-              className="group relative bg-[#131520] border border-white/10 hover:border-orange-500/50 rounded-2xl overflow-hidden shadow-xl aspect-[2/3] transition-all duration-300 hover:shadow-orange-500/10 hover:-translate-y-1"
+              href={`/nhan-vat/${c.slug || c.id}`}
+              className="group relative bg-[#131520] border border-white/10 hover:border-orange-500/50 rounded-2xl overflow-hidden shadow-xl aspect-[2/3] transition-all duration-300 hover:shadow-orange-500/10 hover:-translate-y-1 block cursor-pointer"
             >
               {/* Profile Background Image */}
               {c.imgUrl ? (
@@ -79,6 +82,14 @@ export default function CharactersPageClient({ characters }: CharactersPageClien
                   <User2 className="w-12 h-12 text-gray-700" />
                 </div>
               )}
+
+              {/* Hover Badge */}
+              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300 z-20">
+                <span className="text-[10px] font-bold text-white bg-orange-500/90 px-3 py-1.5 rounded-full shadow-lg scale-90 group-hover:scale-100 transition-transform duration-300 flex items-center gap-1">
+                  <span>Xem Chi Tiết</span>
+                  <ChevronRight className="w-3 h-3" />
+                </span>
+              </div>
 
               {/* Text Info Overlay floating ON TOP of Image */}
               <div className="absolute inset-x-0 bottom-0 p-3 pt-10 bg-gradient-to-t from-black/95 via-black/70 to-transparent z-10 flex flex-col items-center text-center justify-end pointer-events-none">
@@ -101,7 +112,7 @@ export default function CharactersPageClient({ characters }: CharactersPageClien
                   </span>
                 )}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       ) : (

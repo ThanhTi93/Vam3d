@@ -525,3 +525,146 @@ export const getAllActors = cache(async () => {
   }
 });
 
+// ─── Get Character Details with Episodes and Galleries ────────────────────────
+export const getCharacterDetails = cache(async (slugOrId: string) => {
+  try {
+    if (!db) return null;
+
+    const trimmed = slugOrId ? decodeURIComponent(slugOrId).trim() : "";
+    if (!trimmed) return null;
+
+    const isNumeric = /^\d+$/.test(trimmed);
+    const numericId = isNumeric ? parseInt(trimmed, 10) : -1;
+    const targetSlug = slugify(trimmed);
+
+    // 1. Fetch character with parent movie
+    const character = await db.query.characters.findFirst({
+      where: (chars, { eq, or, ilike }) => {
+        if (isNumeric) {
+          return or(eq(chars.id, numericId), eq(chars.slug, trimmed), eq(chars.slug, targetSlug), ilike(chars.name, `%${trimmed}%`));
+        }
+        return or(eq(chars.slug, trimmed), eq(chars.slug, targetSlug), ilike(chars.name, `%${trimmed}%`));
+      },
+      with: {
+        movie: {
+          with: {
+            movieCategories: { with: { category: true } },
+          },
+        },
+      },
+    });
+
+    if (!character) return null;
+
+    // 2. Fetch episodes featuring this character via episodesCharacter junction
+    const epJunctions = await db.query.episodesCharacter.findMany({
+      where: eq(schema.episodesCharacter.idCharacter, character.id),
+      with: {
+        episode: {
+          with: {
+            movie: { columns: { id: true, name: true, imgUrl: true, banner: true } },
+            plan: true,
+          },
+        },
+      },
+    });
+
+    let episodesList = epJunctions
+      .map((j) => j.episode)
+      .filter(Boolean)
+      .filter((ep: any) => ep.status === 1);
+
+    // Fallback: If junction has 0 episodes, also search by character name in parent movie's episodes
+    if (episodesList.length === 0 && character.idMovie) {
+      const movieEps = await db.query.episodes.findMany({
+        where: (ep, { eq, and }) => and(eq(ep.status, 1), eq(ep.idMovie, character.idMovie!)),
+        with: {
+          movie: { columns: { id: true, name: true, imgUrl: true, banner: true } },
+          plan: true,
+        },
+      });
+      const matched = movieEps.filter(
+        (ep: any) =>
+          ep.name?.toLowerCase().includes(character.name.toLowerCase()) ||
+          slugify(ep.name || "").includes(targetSlug)
+      );
+      if (matched.length > 0) {
+        episodesList = matched;
+      }
+    }
+
+    // 3. Fetch galleries featuring this character via galleryCharacter junction
+    const galJunctions = await db.query.galleryCharacter.findMany({
+      where: eq(schema.galleryCharacter.idCharacter, character.id),
+      with: {
+        gallery: {
+          with: {
+            movie: { columns: { id: true, name: true } },
+            plan: true,
+            galleryCharacters: {
+              with: { character: { columns: { id: true, name: true } } },
+            },
+            images: {
+              limit: 4,
+              columns: { id: true, imgUrl: true },
+            },
+          },
+        },
+      },
+    });
+
+    let galleriesList = galJunctions
+      .map((j) => j.gallery)
+      .filter(Boolean)
+      .filter((g: any) => g.status === 1);
+
+    // Fallback: If junction has 0 galleries, search galleries in same movie matching character name
+    if (galleriesList.length === 0 && character.idMovie) {
+      const movieGals = await db.query.aiGalleries.findMany({
+        where: (g, { eq, and }) => and(eq(g.status, 1), eq(g.idMovie, character.idMovie!)),
+        limit: 12,
+        with: {
+          movie: { columns: { id: true, name: true } },
+          plan: true,
+          galleryCharacters: {
+            with: { character: { columns: { id: true, name: true } } },
+          },
+          images: {
+            limit: 4,
+            columns: { id: true, imgUrl: true },
+          },
+        },
+      });
+      const matchedGals = movieGals.filter(
+        (g: any) =>
+          g.name?.toLowerCase().includes(character.name.toLowerCase()) ||
+          slugify(g.name || "").includes(targetSlug)
+      );
+      if (matchedGals.length > 0) {
+        galleriesList = matchedGals;
+      }
+    }
+
+    // 4. Fetch 6 other characters for recommendation
+    const otherCharacters = await db.query.characters.findMany({
+      where: (chars, { and, eq, ne }) => and(eq(chars.status, 1), ne(chars.id, character.id)),
+      limit: 6,
+      with: {
+        movie: { columns: { id: true, name: true } },
+      },
+      orderBy: (chars, { desc }) => [desc(chars.id)],
+    });
+
+    return {
+      character,
+      episodes: episodesList,
+      galleries: galleriesList,
+      otherCharacters: otherCharacters || [],
+    };
+  } catch (err) {
+    console.error("Error in getCharacterDetails:", err);
+    return null;
+  }
+});
+
+

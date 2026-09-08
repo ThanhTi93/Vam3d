@@ -4,3 +4,6 @@ npm run db:prod:push
 npm run db:prod:pull
 ## 2. deploy
 /var/www/Vam/deploy.sh
+## 3. deploy all
+chmod +x /var/www/Vam/deploy.sh
+/var/www/Vam/deploy.sh

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Camera, X, ChevronLeft, ChevronRight, Award } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
-import { getBunnyImageUrl } from "@/lib/utils";
+import { getBunnyImageUrl, slugify } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
@@ -97,10 +97,16 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect: (g: any) =>
               g.galleryCharacters.slice(0, 2).map((gc: any, idx: number) => {
                 const charName = gc.character?.name || gc.name;
                 if (!charName) return null;
+                const charSlug = gc.character?.slug || gc.character?.id || slugify(charName);
                 return (
-                  <span key={gc.character?.id || gc.id || idx} className="text-[8px] bg-white/5 text-gray-300 px-1.5 py-0.5 rounded-full border border-white/5">
+                  <Link
+                    key={gc.character?.id || gc.id || idx}
+                    href={`/nhan-vat/${charSlug}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-[8px] bg-white/5 hover:bg-orange-500/20 text-gray-300 hover:text-orange-400 px-1.5 py-0.5 rounded-full border border-white/5 hover:border-orange-500/30 transition-colors"
+                  >
                     {charName}
-                  </span>
+                  </Link>
                 );
               })
             ) : (
