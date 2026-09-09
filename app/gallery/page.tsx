@@ -9,13 +9,30 @@ export const metadata: Metadata = {
 
 export const revalidate = 3600;
 
-export default async function GalleryPage() {
+interface PageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function GalleryPage({ searchParams }: PageProps) {
+  const resolvedSearchParams = (await searchParams) || {};
+  const characterParam = typeof resolvedSearchParams?.character === "string" ? resolvedSearchParams.character : undefined;
+  const movieParam = typeof resolvedSearchParams?.movie === "string" ? resolvedSearchParams.movie : undefined;
+  const planParam = typeof resolvedSearchParams?.plan === "string" ? resolvedSearchParams.plan : undefined;
+  const sortByParam = typeof resolvedSearchParams?.sortBy === "string" ? resolvedSearchParams.sortBy : undefined;
+
   let initialData: any = { galleries: [], totalCount: 0 };
   let filterOptions: any = { movies: [], characters: [] };
 
   try {
     const results = await Promise.all([
-      getGalleriesPublicPaginated({ page: 1, limit: 12 }).catch(() => ({ galleries: [], totalCount: 0 })),
+      getGalleriesPublicPaginated({ 
+        page: 1, 
+        limit: 12,
+        characterId: characterParam || "all",
+        movieId: movieParam || "all",
+        plan: planParam || "all",
+        sortBy: sortByParam || "newest"
+      }).catch(() => ({ galleries: [], totalCount: 0 })),
       getGalleryFilterOptions().catch(() => ({ movies: [], characters: [] }))
     ]);
     initialData = results[0] || { galleries: [], totalCount: 0 };
@@ -30,6 +47,12 @@ export default async function GalleryPage() {
       initialTotalCount={initialData?.totalCount || 0}
       filterMovies={filterOptions?.movies || []}
       filterCharacters={filterOptions?.characters || []}
+      initialFilters={{
+        character: characterParam || "all",
+        movie: movieParam || "all",
+        plan: planParam || "all",
+        sortBy: sortByParam || "newest",
+      }}
     />
   );
 }

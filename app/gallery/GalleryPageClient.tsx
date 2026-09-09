@@ -6,11 +6,19 @@ import { HomeGalleryGrid, GalleryDetailModal } from "@/components/GalleryCompone
 import { incrementGalleryViews } from "@/app/admin/actions";
 import { fetchMoreGalleries } from "./actions";
 
+import { slugify } from "@/lib/utils";
+
 interface GalleryPageClientProps {
   initialGalleries: any[];
   initialTotalCount: number;
   filterMovies: any[];
   filterCharacters: any[];
+  initialFilters?: {
+    plan?: string;
+    movie?: string;
+    character?: string;
+    sortBy?: string;
+  };
 }
 
 export default function GalleryPageClient({
@@ -18,6 +26,7 @@ export default function GalleryPageClient({
   initialTotalCount,
   filterMovies,
   filterCharacters,
+  initialFilters,
 }: GalleryPageClientProps) {
   const router = useRouter();
   const [galleries, setGalleries] = useState<any[]>(initialGalleries);
@@ -26,11 +35,37 @@ export default function GalleryPageClient({
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
 
+  // Resolve initial character filter
+  const resolveInitialCharacter = () => {
+    const raw = initialFilters?.character;
+    if (!raw || raw === "all") return "all";
+    const matched = filterCharacters.find(
+      (c: any) =>
+        c.id?.toString() === raw ||
+        c.slug?.toLowerCase() === raw.toLowerCase() ||
+        slugify(c.name || "").toLowerCase() === raw.toLowerCase()
+    );
+    return matched ? matched.id.toString() : raw;
+  };
+
+  // Resolve initial movie filter
+  const resolveInitialMovie = () => {
+    const raw = initialFilters?.movie;
+    if (!raw || raw === "all") return "all";
+    const matched = filterMovies.find(
+      (m: any) =>
+        m.id?.toString() === raw ||
+        m.slug?.toLowerCase() === raw.toLowerCase() ||
+        slugify(m.name || "").toLowerCase() === raw.toLowerCase()
+    );
+    return matched ? matched.id.toString() : raw;
+  };
+
   const [filters, setFilters] = useState({
-    plan: "all",
-    movie: "all",
-    character: "all",
-    sortBy: "newest"
+    plan: initialFilters?.plan || "all",
+    movie: resolveInitialMovie(),
+    character: resolveInitialCharacter(),
+    sortBy: initialFilters?.sortBy || "newest",
   });
 
   const handleSelectGallery = (g: any) => {
@@ -44,6 +79,33 @@ export default function GalleryPageClient({
     setFilters(newFilters);
     setPage(1);
     setLoading(true);
+
+    // Update URL query parameters seamlessly
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (newFilters.character && newFilters.character !== "all") {
+        url.searchParams.set("character", newFilters.character);
+      } else {
+        url.searchParams.delete("character");
+      }
+      if (newFilters.movie && newFilters.movie !== "all") {
+        url.searchParams.set("movie", newFilters.movie);
+      } else {
+        url.searchParams.delete("movie");
+      }
+      if (newFilters.plan && newFilters.plan !== "all") {
+        url.searchParams.set("plan", newFilters.plan);
+      } else {
+        url.searchParams.delete("plan");
+      }
+      if (newFilters.sortBy && newFilters.sortBy !== "newest") {
+        url.searchParams.set("sortBy", newFilters.sortBy);
+      } else {
+        url.searchParams.delete("sortBy");
+      }
+      window.history.replaceState(null, "", url.toString());
+    }
+
     try {
       const res = await fetchMoreGalleries({
         page: 1,
@@ -51,7 +113,7 @@ export default function GalleryPageClient({
         plan: newFilters.plan,
         movieId: newFilters.movie,
         characterId: newFilters.character,
-        sortBy: newFilters.sortBy
+        sortBy: newFilters.sortBy,
       });
       setGalleries(res.galleries || []);
       setTotalCount(res.totalCount || 0);

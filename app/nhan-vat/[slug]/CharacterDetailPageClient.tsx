@@ -316,18 +316,18 @@ export default function CharacterDetailPageClient({ data }: CharacterDetailPageC
           </h2>
 
           <Link
-            href="/gallery"
-            className="text-xs font-bold text-gray-400 hover:text-orange-400 flex items-center gap-1 transition-colors"
+            href={`/gallery?character=${encodeURIComponent(character.slug || slugify(character.name) || character.id)}`}
+            className="text-xs font-bold text-gray-400 hover:text-orange-400 flex items-center gap-1 transition-colors group"
           >
-            <span>Xem tất cả</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span>Xem tất cả ({galleries.length} bộ)</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>
 
         {galleries.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-5">
-            {galleries.map((g: any) => (
-              <HomeGalleryCard key={g.id} g={g} onSelect={handleSelectGallery} />
+            {galleries.slice(0, 12).map((g: any) => (
+              <HomeGalleryCard key={g.id} g={g} />
             ))}
           </div>
         ) : (

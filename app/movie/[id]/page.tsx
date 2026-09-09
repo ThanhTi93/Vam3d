@@ -318,7 +318,10 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
       })) || [],
       aiGalleries: movieData.aiGalleries?.map((g: any) => ({
         ...g,
-        movie: { id: movieData.id, name: movieData.name }
+        slug: g.slug || slugify(g.name) || g.id?.toString(),
+        imageCount: g.imageCount ?? g.images?.length ?? 0,
+        images: g.images || [],
+        movie: { id: movieData.id, name: movieData.name, slug: movieData.slug }
       })) || [],
       plan: movieData.aiGalleries?.[0]?.plan || movieData.plan || null,
     };

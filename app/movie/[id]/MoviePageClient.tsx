@@ -443,13 +443,22 @@ export default function MoviePageClient({
             {/* AI Galleries Section inside Player View */}
             {movie.aiGalleries && movie.aiGalleries.length > 0 && (
               <div className="space-y-4 pt-5 border-t border-white/5 animate-in fade-in duration-300">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Camera className="w-4 h-4 text-orange-500 fill-orange-500/20" /> 
-                  Bộ sưu tập AI của phim ({movie.aiGalleries.length} bộ):
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Camera className="w-4 h-4 text-orange-500 fill-orange-500/20" /> 
+                    Bộ Sưu Tập AI Của Phim ({movie.aiGalleries.length} bộ)
+                  </h3>
+                  <Link
+                    href="/gallery"
+                    className="text-xs text-orange-400 hover:text-orange-300 font-semibold flex items-center gap-1 transition-colors group"
+                  >
+                    Xem tất cả
+                    <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                  </Link>
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {movie.aiGalleries.slice(0, 12).map((g: any) => (
-                    <HomeGalleryCard key={g.id} g={g} onSelect={handleSelectGallery} />
+                    <HomeGalleryCard key={g.id} g={g} />
                   ))}
                 </div>
               </div>
@@ -627,21 +636,40 @@ export default function MoviePageClient({
             </div>
           )}
 
-          {/* Bộ sưu tập AI của phim */}
+          {/* ─── BỘ SƯU TẬP AI CỦA PHIM (SEO OPTIMIZED SECTION) ─── */}
           {movie.aiGalleries && movie.aiGalleries.length > 0 && (
-            <div className="p-6 border-t border-white/5 bg-[#131520] space-y-6">
-              <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                <h2 className="text-sm font-bold flex items-center gap-2 text-white uppercase tracking-wider">
-                  <Camera className="w-4 h-4 text-orange-500 fill-orange-500/20" /> 
-                  Bộ Sưu Tập AI Của Phim ({movie.aiGalleries.length} bộ):
-                </h2>
+            <section aria-label={`Bộ sưu tập AI của phim ${movie.title}`} className="p-6 sm:p-8 border-t border-white/5 bg-gradient-to-b from-[#131520] to-[#0d0e16] space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-4">
+                <div className="space-y-1">
+                  <h2 className="text-base sm:text-lg font-bold flex items-center gap-2 text-white uppercase tracking-wider">
+                    <Camera className="w-5 h-5 text-orange-500 fill-orange-500/20" /> 
+                    Bộ Sưu Tập AI Của Phim ({movie.aiGalleries.length} bộ)
+                  </h2>
+                  <p className="text-xs text-gray-400">
+                    Tuyển tập ảnh 3D nghệ thuật & hình ảnh cosplay AI chất lượng cao 4K độc quyền từ siêu phẩm {movie.title}.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-semibold text-gray-300 bg-white/5 border border-white/10 px-3 py-1 rounded-full whitespace-nowrap">
+                    Tổng cộng {movie.aiGalleries.reduce((acc: number, g: any) => acc + (g.imageCount || g.images?.length || 0), 0)} ảnh
+                  </span>
+                  <Link
+                    href="/gallery"
+                    className="text-xs text-orange-400 hover:text-orange-300 font-bold flex items-center gap-1 transition-colors whitespace-nowrap group"
+                  >
+                    Xem tất cả
+                    <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                  </Link>
+                </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
                 {movie.aiGalleries.slice(0, 12).map((g: any) => (
-                  <HomeGalleryCard key={g.id} g={g} onSelect={handleSelectGallery} />
+                  <HomeGalleryCard key={g.id} g={g} />
                 ))}
               </div>
-            </div>
+            </section>
           )}
         </div>
       )}

@@ -138,13 +138,13 @@ export const getMovieById = cache(async (id: string) => {
         aiGalleries: {
           where: (g, { eq }) => eq(g.status, 1),
           orderBy: (g, { desc }) => [desc(g.id)],
-          limit: 6,
+          limit: 12,
           with: {
             galleryCharacters: {
-              with: { character: { columns: { id: true, name: true } } },
+              with: { character: { columns: { id: true, name: true, slug: true } } },
             },
             images: {
-              limit: 2,
+              orderBy: (img, { asc }) => [asc(img.id)],
               columns: { id: true, imgUrl: true },
             },
             plan: true,
@@ -168,6 +168,11 @@ export const getMovieById = cache(async (id: string) => {
 
     return {
       ...result,
+      aiGalleries: (result.aiGalleries || []).map((g: any) => ({
+        ...g,
+        imageCount: g.images?.length || 0,
+        slug: g.slug || slugify(g.name) || g.id.toString(),
+      })),
       movieActors: Array.from(uniqueActors.values()).map((actor) => ({ actor })),
       movieCharacters: Array.from(uniqueCharacters.values()).map((character) => ({ character })),
     };
@@ -417,15 +422,40 @@ export async function getGalleriesPublicPaginated(params: {
     }
 
     if (movieId !== "all") {
-      conditions.push(eq(schema.aiGalleries.idMovie, parseInt(movieId, 10)));
+      const isMovieNum = /^\d+$/.test(movieId);
+      if (isMovieNum) {
+        conditions.push(eq(schema.aiGalleries.idMovie, parseInt(movieId, 10)));
+      } else {
+        const movieSub = db
+          .select({ id: schema.movies.id })
+          .from(schema.movies)
+          .where(or(eq(schema.movies.slug, movieId), eq(schema.movies.slug, slugify(movieId))));
+        conditions.push(inArray(schema.aiGalleries.idMovie, movieSub));
+      }
     }
 
     if (characterId !== "all") {
-      const charSub = db
-        .select({ idGallery: schema.galleryCharacter.idGallery })
-        .from(schema.galleryCharacter)
-        .where(eq(schema.galleryCharacter.idCharacter, parseInt(characterId, 10)));
-      conditions.push(inArray(schema.aiGalleries.id, charSub));
+      const isCharNum = /^\d+$/.test(characterId);
+      if (isCharNum) {
+        const charSub = db
+          .select({ idGallery: schema.galleryCharacter.idGallery })
+          .from(schema.galleryCharacter)
+          .where(eq(schema.galleryCharacter.idCharacter, parseInt(characterId, 10)));
+        conditions.push(inArray(schema.aiGalleries.id, charSub));
+      } else {
+        const charSub = db
+          .select({ idGallery: schema.galleryCharacter.idGallery })
+          .from(schema.galleryCharacter)
+          .innerJoin(schema.characters, eq(schema.characters.id, schema.galleryCharacter.idCharacter))
+          .where(
+            or(
+              eq(schema.characters.slug, characterId),
+              eq(schema.characters.slug, slugify(characterId)),
+              ilike(schema.characters.name, `%${characterId.replace(/[-_]+/g, " ")}%`)
+            )
+          );
+        conditions.push(inArray(schema.aiGalleries.id, charSub));
+      }
     }
 
     const whereClause = and(...conditions);
@@ -829,10 +859,10 @@ export const getCharacterDetails = cache(async (slugOrId: string) => {
             movie: { columns: { id: true, name: true } },
             plan: true,
             galleryCharacters: {
-              with: { character: { columns: { id: true, name: true } } },
+              with: { character: { columns: { id: true, name: true, slug: true } } },
             },
             images: {
-              limit: 4,
+              orderBy: (img, { asc }) => [asc(img.id)],
               columns: { id: true, imgUrl: true },
             },
           },
@@ -849,15 +879,15 @@ export const getCharacterDetails = cache(async (slugOrId: string) => {
     if (galleriesList.length === 0 && character.idMovie) {
       const movieGals = await db.query.aiGalleries.findMany({
         where: (g, { eq, and }) => and(eq(g.status, 1), eq(g.idMovie, character.idMovie!)),
-        limit: 12,
+        limit: 24,
         with: {
           movie: { columns: { id: true, name: true } },
           plan: true,
           galleryCharacters: {
-            with: { character: { columns: { id: true, name: true } } },
+            with: { character: { columns: { id: true, name: true, slug: true } } },
           },
           images: {
-            limit: 4,
+            orderBy: (img, { asc }) => [asc(img.id)],
             columns: { id: true, imgUrl: true },
           },
         },
@@ -872,6 +902,12 @@ export const getCharacterDetails = cache(async (slugOrId: string) => {
       }
     }
 
+    const formattedGalleries = galleriesList.map((g: any) => ({
+      ...g,
+      slug: g.slug || slugify(g.name) || g.id?.toString(),
+      imageCount: g.images?.length || 0,
+    }));
+
     // 4. Fetch 6 other characters for recommendation
     const otherCharacters = await db.query.characters.findMany({
       where: (chars, { and, eq, ne }) => and(eq(chars.status, 1), ne(chars.id, character.id)),
@@ -885,7 +921,7 @@ export const getCharacterDetails = cache(async (slugOrId: string) => {
     return {
       character,
       episodes: episodesList,
-      galleries: galleriesList,
+      galleries: formattedGalleries,
       otherCharacters: otherCharacters || [],
     };
   } catch (err) {

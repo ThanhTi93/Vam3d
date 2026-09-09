@@ -28,7 +28,8 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect?: (g: any) =
 
   const activeImage = g.images && g.images.length > 0 ? g.images[currentIdx] : null;
   const imageUrl = activeImage?.imgUrl || "";
-  const galleryUrl = `/gallery/${g.slug || g.id}`;
+  const gallerySlug = g.slug || g.id?.toString();
+  const galleryUrl = `/gallery/${encodeURIComponent(gallerySlug)}`;
 
   const handleCardClick = () => {
     if (onSelect) {
@@ -40,15 +41,15 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect?: (g: any) =
 
   return (
     <div
-      onClick={handleCardClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className="bg-[#131520] border border-white/5 rounded-2xl overflow-hidden group flex flex-col relative aspect-[2/3] shadow-xl hover:border-orange-500/50 hover:shadow-orange-500/5 transition-all duration-300 cursor-pointer p-0 gap-0"
     >
       <Link
         href={galleryUrl}
-        className="absolute inset-0 z-[5]"
-        aria-label={g.name || "Xem bộ sưu tập"}
+        className="absolute inset-0 z-20"
+        aria-label={g.name || "Xem bộ sưu tập ảnh AI"}
+        title={`Xem bộ sưu tập ảnh AI ${g.name || ""}${g.movie?.name ? ` - Phim ${g.movie.name}` : ""}`}
         onClick={(e) => {
           if (onSelect) {
             e.preventDefault();

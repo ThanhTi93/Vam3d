@@ -3,6 +3,7 @@ import { getMoviesByCategory, getAllMovies, getAllCategories } from "@/lib/db/qu
 import CategoryCatalog from "@/components/CategoryCatalog";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { slugify } from "@/lib/utils";
+import { getCategoryDetails } from "@/lib/categories";
 
 interface PageProps {
   params: Promise<{ categoryName: string }>;
@@ -18,7 +19,7 @@ const formatCategoryLabel = (name: string) => {
   return decoded.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 };
 
-// Generate dynamic metadata
+// Generate dynamic metadata for search engine indexing
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { categoryName } = await params;
   const decoded = decodeURIComponent(categoryName).trim();
@@ -35,15 +36,33 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return catSlug === inputSlug || catName === decoded.toLowerCase() || catSlug === decoded.toLowerCase();
   });
 
-  const titleName = cat ? cat.name : formatCategoryLabel(categoryName);
+  const categoryDetails = getCategoryDetails(decoded, cat);
+  const titleName = categoryDetails.name;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
   const categoryUrl = `${siteUrl}/${encodeURIComponent(categoryName)}`;
-  const title = `${titleName} Mới Nhất – Xem Phim ${titleName} Vietsub HD | Vam3D`;
-  const description = `Danh sách phim thuộc thể loại ${titleName} chất lượng cao Vietsub, thuyết minh cập nhật nhanh nhất tại Vam3D.`;
+  
+  const title = `Phim ${titleName} Mới Nhất 2026 – Tuyển Tập Phim ${titleName} Vietsub HD | Vam3D`;
+  const description = (
+    categoryDetails.description ||
+    `Tuyển tập phim ${titleName} chất lượng cao Vietsub Full HD, thuyết minh cập nhật nhanh nhất tại Vam3D.`
+  ).slice(0, 160);
+
+  const keywords = [
+    titleName,
+    `phim ${titleName}`,
+    `phim ${titleName} vietsub`,
+    `xem phim ${titleName}`,
+    `phim ${titleName} moi nhat`,
+    `phim 3d ${titleName}`,
+    `hoat hinh 3d ${titleName}`,
+    "vam3d",
+    "phim 3d online",
+  ];
 
   return {
     title,
     description,
+    keywords,
     alternates: {
       canonical: categoryUrl,
     },
@@ -52,11 +71,32 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       url: categoryUrl,
       type: "website",
+      siteName: "Vam3D - Xem Phim 3D Online",
+      images: [
+        {
+          url: `${siteUrl}/og-image.jpg`,
+          width: 1200,
+          height: 630,
+          alt: `Phim ${titleName} Vietsub HD | Vam3D`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: [`${siteUrl}/og-image.jpg`],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
   };
 }
@@ -103,6 +143,11 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
       catSlug === decodedCategory.toLowerCase()
     );
   });
+
+  const categoryDetails = getCategoryDetails(decodedCategory, targetCategory);
+  const titleName = categoryDetails.name;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
+  const categoryUrl = `${siteUrl}/${encodeURIComponent(categoryName)}`;
 
   let movies: any[] = [];
   let allMovies: any[] = [];
@@ -195,16 +240,89 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
     })) || [],
   }));
 
-  const titleName = targetCategory?.name || formatCategoryLabel(decodedCategory);
+  // Build JSON-LD Collection & ItemList Schemas for SEO
+  const collectionSchema = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: `Phim ${titleName} Vietsub Mới Nhất`,
+    description: categoryDetails.description,
+    url: categoryUrl,
+    inLanguage: "vi-VN",
+    publisher: {
+      "@type": "Organization",
+      name: "Vam3D",
+      url: siteUrl,
+      logo: {
+        "@type": "ImageObject",
+        url: `${siteUrl}/icon.png`,
+      },
+    },
+    mainEntity: {
+      "@type": "ItemList",
+      name: `Danh Sách Phim ${titleName}`,
+      numberOfItems: formattedMovies.length,
+      itemListElement: formattedMovies.slice(0, 24).map((movie, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: `${siteUrl}/movie/${movie.id}`,
+        name: movie.title,
+        image: movie.thumbnail || movie.banner,
+      })),
+    },
+  };
+
+  const faqSchema = categoryDetails.faqs && categoryDetails.faqs.length > 0
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: categoryDetails.faqs.map((faq) => ({
+          "@type": "Question",
+          name: faq.question,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: faq.answer,
+          },
+        })),
+      }
+    : null;
 
   return (
-    <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-4">
-      <Breadcrumbs items={[{ label: titleName }]} />
-      <CategoryCatalog
-        categoryTitle={`${titleName} Mới Nhất`}
-        movies={formattedMovies}
-        allMovies={formattedAllMovies}
+    <>
+      {/* Dynamic JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(collectionSchema).replace(/</g, "\\u003c"),
+        }}
       />
-    </div>
+      {faqSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c"),
+          }}
+        />
+      )}
+
+      <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-4">
+        <Breadcrumbs items={[{ label: titleName }]} />
+        <CategoryCatalog
+          categoryTitle={titleName}
+          categorySlug={categoryDetails.slug || inputSlug}
+          categoryDescription={categoryDetails.description || ""}
+          categoryLongDescription={categoryDetails.longDescription || ""}
+          categoryHighlights={categoryDetails.highlights || []}
+          categoryFaqs={categoryDetails.faqs || []}
+          movies={formattedMovies}
+          allMovies={formattedAllMovies}
+          allCategories={allDbCategories.map((c) => ({
+            id: c.id,
+            name: c.name,
+            slug: c.slug || slugify(c.name),
+          }))}
+        />
+      </div>
+    </>
   );
 }
+

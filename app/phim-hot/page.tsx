@@ -84,10 +84,21 @@ export default async function PhimHotPage() {
   }));
 
   return (
-    <CategoryCatalog
-      categoryTitle="Phim Hot Đề Cử (New)"
-      movies={formattedMovies}
-      allMovies={formattedAllMovies}
-    />
+    <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-4">
+      <CategoryCatalog
+        categoryTitle="Phim Hot Đề Cử"
+        categorySlug="phim-hot"
+        categoryDescription="Tuyển tập những bộ phim hoạt hình 3D hot nhất, được xem nhiều nhất và đánh giá cao nhất bởi cộng đồng. Chất lượng Full HD / 4K, Vietsub chuẩn cập nhật liên tục."
+        categoryHighlights={[
+          "Phim đề cử xem nhiều nhất",
+          "Chất lượng Full HD & 4K",
+          "Vietsub mượt mà",
+          "Cập nhật liên tục",
+        ]}
+        movies={formattedMovies}
+        allMovies={formattedAllMovies}
+      />
+    </div>
   );
 }
+
