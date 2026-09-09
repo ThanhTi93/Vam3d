@@ -17,7 +17,7 @@ import {
   User2
 } from "lucide-react";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { getBunnyImageUrl, formatDuration } from "@/lib/utils";
+import { getBunnyImageUrl, formatDuration, slugify } from "@/lib/utils";
 import { HomeGalleryCard } from "@/components/GalleryComponents";
 import { incrementGalleryViews } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";

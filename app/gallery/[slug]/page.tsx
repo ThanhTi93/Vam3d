@@ -60,7 +60,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const charText = charNames.length > 0 ? ` [${charNames.join(", ")}]` : "";
 
   const title = `${gallery.name}${charText}${movieName} – Bộ Sưu Tập Ảnh AI Sắc Nét Full HD | Vam3D`;
-  const description = `Khám phá bộ sưu tập ảnh AI ${gallery.name} gồm ${gallery.imageCount || gallery.images?.length || 0} ảnh chất lượng cao 4K độc quyền${movieName ? ` từ ${gallery.movie?.name}` : ""} chỉ có tại Vam3D.`;
+  const description = gallery.description
+    ? `${gallery.description}${movieName ? ` Phim ${gallery.movie?.name}.` : ""} Xem trọn bộ chất lượng cao tại Vam3D.`
+    : `Khám phá bộ sưu tập ảnh AI ${gallery.name} gồm ${gallery.imageCount || gallery.images?.length || 0} ảnh chất lượng cao 4K độc quyền${movieName ? ` từ ${gallery.movie?.name}` : ""} chỉ có tại Vam3D.`;
 
   return {
     title,
@@ -119,7 +121,7 @@ export default async function GalleryDetailPage({ params }: PageProps) {
     "@context": "https://schema.org",
     "@type": "ImageGallery",
     name: gallery.name,
-    description: `Bộ sưu tập ảnh AI ${gallery.name} gồm ${gallery.imageCount || gallery.images?.length || 0} ảnh sắc nét tại Vam3D.`,
+    description: gallery.description || `Bộ sưu tập ảnh AI ${gallery.name} gồm ${gallery.imageCount || gallery.images?.length || 0} ảnh sắc nét tại Vam3D.`,
     url: galleryUrl,
     image: posterUrl,
     numberOfItems: gallery.imageCount || gallery.images?.length || 0,

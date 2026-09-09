@@ -316,6 +316,7 @@ export const aiGalleries = pgTable("ai_galleries", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 255 }),
+  description: text("description"),
   idMovie: integer("id_movie").references(() => movies.id, { onDelete: "cascade" }),
   idPlan: integer("id_plan").references(() => plans.id, { onDelete: "set null" }),
   status: integer("status").default(1),

@@ -36,7 +36,7 @@ import {
 } from "./actions";
 import { ImagePicker } from "@/components/ui/image-picker";
 import { uploadFileToBunny } from "@/lib/uploadClient";
-import { getBunnyImageUrl, cleanFolderName } from "@/lib/utils";
+import { getBunnyImageUrl, cleanFolderName, slugify } from "@/lib/utils";
 import * as tus from "tus-js-client";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -3382,7 +3382,7 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
   const [filterMovie, setFilterMovie] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
 
-  const [form, setForm] = useState({ name: "", idMovie: 0, idPlan: 0, characterIds: [] as number[] });
+  const [form, setForm] = useState({ name: "", slug: "", description: "", idMovie: 0, idPlan: 0, characterIds: [] as number[] });
   const [editing, setEditing] = useState<number | null>(null);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -3548,6 +3548,8 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
     setEditing(g.id);
     setForm({
       name: g.name || "",
+      slug: g.slug || "",
+      description: g.description || "",
       idMovie: g.idMovie || 0,
       idPlan: g.idPlan || 0,
       characterIds: g.galleryCharacters?.map((gc: any) => gc.character?.id || gc.idCharacter).filter(Boolean) || []
@@ -3610,6 +3612,8 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
           if (isEdit) {
             await updateGallery(editing!, {
               name: form.name,
+              slug: form.slug,
+              description: form.description,
               idMovie: form.idMovie > 0 ? form.idMovie : undefined,
               idPlan: form.idPlan > 0 ? form.idPlan : undefined,
               characterIds: form.characterIds,
@@ -3618,6 +3622,8 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
           } else {
             await createGallery({
               name: form.name,
+              slug: form.slug,
+              description: form.description,
               idMovie: form.idMovie > 0 ? form.idMovie : undefined,
               idPlan: form.idPlan > 0 ? form.idPlan : undefined,
               characterIds: form.characterIds,
@@ -3625,7 +3631,7 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
             });
           }
           await handleLocalRefresh();
-          setForm({ name: "", idMovie: 0, idPlan: 0, characterIds: [] });
+          setForm({ name: "", slug: "", description: "", idMovie: 0, idPlan: 0, characterIds: [] });
           setCharacterSearch("");
           setUploadFiles([]);
           setUploadProgress(null);
@@ -3674,7 +3680,7 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
         </div>
 
         <Button
-          onClick={() => { setEditing(null); setForm({ name: "", idMovie: 0, idPlan: 0, characterIds: [] }); setCharacterSearch(""); setUploadFiles([]); setIsFormOpen(true); }}
+          onClick={() => { setEditing(null); setForm({ name: "", slug: "", description: "", idMovie: 0, idPlan: 0, characterIds: [] }); setCharacterSearch(""); setUploadFiles([]); setIsFormOpen(true); }}
           className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold h-9 text-xs px-4 rounded-xl shadow-lg border-0 gap-1.5 flex items-center justify-center shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
@@ -3732,7 +3738,7 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
         onOpenChange={(open) => { 
           if (!open && !uploading) { 
             setIsFormOpen(false); 
-            setForm({ name: "", idMovie: 0, idPlan: 0, characterIds: [] }); 
+            setForm({ name: "", slug: "", description: "", idMovie: 0, idPlan: 0, characterIds: [] }); 
             setCharacterSearch("");
             setUploadFiles([]);
             setUploadProgress(null);
@@ -3748,7 +3754,50 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
             
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Tên bộ sưu tập <span className="text-red-400">*</span></label>
-              <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required className="bg-[#090a0f] border-white/5 text-sm h-9" placeholder="Bộ sưu tập Cosplay Dune" />
+              <Input
+                value={form.name}
+                onChange={e => {
+                  const val = e.target.value;
+                  setForm(p => ({
+                    ...p,
+                    name: val,
+                    slug: editing === null ? slugify(val) : p.slug
+                  }));
+                }}
+                required
+                className="bg-[#090a0f] border-white/5 text-sm h-9"
+                placeholder="Bộ sưu tập Cosplay Dune"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs text-gray-400 block">Đường dẫn (Slug)</label>
+                <button
+                  type="button"
+                  onClick={() => setForm(p => ({ ...p, slug: slugify(p.name) }))}
+                  className="text-[10px] text-orange-400 hover:text-orange-300 cursor-pointer"
+                >
+                  Tự tạo từ tên
+                </button>
+              </div>
+              <Input
+                value={form.slug}
+                onChange={e => setForm(p => ({ ...p, slug: e.target.value }))}
+                className="bg-[#090a0f] border-white/5 text-sm h-9 font-mono"
+                placeholder="bo-suu-tap-cosplay-dune"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">Mô tả bộ sưu tập</label>
+              <Textarea
+                value={form.description}
+                onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                rows={3}
+                className="bg-[#090a0f] border-white/5 text-xs rounded-lg resize-none"
+                placeholder="Nhập đoạn mô tả ngắn hấp dẫn cho bộ sưu tập..."
+              />
             </div>
 
             <div>
@@ -3831,7 +3880,7 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
                 {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                 {uploading ? "Đang upload..." : editing !== null ? "Cập nhật" : "Tạo bộ sưu tập"}
               </Button>
-              <Button type="button" disabled={uploading} onClick={() => { if (!uploading) { setIsFormOpen(false); setEditing(null); setForm({ name: "", idMovie: 0, idPlan: 0, characterIds: [] }); setUploadFiles([]); } }} className="border-white/10 text-gray-400 h-9 text-xs cursor-pointer">Huỷ</Button>
+              <Button type="button" disabled={uploading} onClick={() => { if (!uploading) { setIsFormOpen(false); setEditing(null); setForm({ name: "", slug: "", description: "", idMovie: 0, idPlan: 0, characterIds: [] }); setUploadFiles([]); } }} className="border-white/10 text-gray-400 h-9 text-xs cursor-pointer">Huỷ</Button>
             </div>
           </form>
         </DialogContent>

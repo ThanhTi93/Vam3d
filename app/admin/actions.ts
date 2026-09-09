@@ -1043,6 +1043,8 @@ export async function getAdminGalleriesPaginated(
 
 export async function createGallery(data: {
   name: string;
+  slug?: string;
+  description?: string;
   idMovie?: number;
   idPlan?: number;
   characterIds: number[];
@@ -1051,11 +1053,14 @@ export async function createGallery(data: {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
 
-  const { characterIds = [], imageUrls = [], idMovie, idPlan, name } = data;
+  const { characterIds = [], imageUrls = [], idMovie, idPlan, name, description } = data;
+  const rawSlug = data.slug?.trim() || slugify(name);
+  const slug = rawSlug || `gallery-${Date.now()}`;
 
   const [inserted] = await db.insert(schema.aiGalleries).values({
     name,
-    slug: slugify(name),
+    slug,
+    description: description?.trim() || null,
     idMovie: idMovie || null,
     idPlan: idPlan || null,
     status: 1,
@@ -1084,6 +1089,8 @@ export async function updateGallery(
   id: number,
   data: {
     name: string;
+    slug?: string;
+    description?: string;
     idMovie?: number;
     idPlan?: number;
     characterIds?: number[];
@@ -1092,12 +1099,16 @@ export async function updateGallery(
 ) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
-  const { name, idMovie, idPlan, characterIds = [], imageUrls = [] } = data;
+  const { name, slug, description, idMovie, idPlan, characterIds = [], imageUrls = [] } = data;
+
+  const targetSlug = slug?.trim() || slugify(name);
 
   await db
     .update(schema.aiGalleries)
     .set({
       name,
+      slug: targetSlug,
+      description: description !== undefined ? (description.trim() || null) : undefined,
       idMovie: idMovie || null,
       idPlan: idPlan || null,
     })

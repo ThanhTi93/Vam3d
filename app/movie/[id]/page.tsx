@@ -5,6 +5,7 @@ import { getMovieById, getAllMovies } from "@/lib/db/queries";
 import MoviePageClient from "./MoviePageClient";
 import RankingsSidebar from "@/components/RankingsSidebar";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { slugify } from "@/lib/utils";
 
 interface MoviePageProps {
   params: Promise<{ id: string }>;

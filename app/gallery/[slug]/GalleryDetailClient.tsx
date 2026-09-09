@@ -183,6 +183,13 @@ export default function GalleryDetailClient({
                   </div>
                 )}
               </div>
+
+              {/* Description */}
+              {gallery.description && (
+                <p className="text-xs sm:text-sm text-gray-300/90 leading-relaxed bg-white/[0.03] border border-white/5 p-3.5 rounded-xl">
+                  {gallery.description}
+                </p>
+              )}
             </div>
 
             {/* Quick Actions */}
