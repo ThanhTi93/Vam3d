@@ -13,8 +13,10 @@ export interface Movie {
   id: string;
   slug?: string;
   title: string;
+  name?: string;
   originalTitle: string;
   thumbnail: string;
+  imgUrl?: string;
   banner: string;
   category: "phim-le" | "phim-bo" | "chieu-rap" | "hoat-hinh" | string;
   genres: string[];

@@ -288,6 +288,98 @@ export async function getMostViewedEpisodes(limit = 12) {
   }
 }
 
+// ─── Get Episodes Paginated ──────────────────────────────────────────────────
+export async function getEpisodesPaginated(params: {
+  page?: number;
+  limit?: number;
+  sortBy?: "newest" | "views";
+  movieId?: string;
+  search?: string;
+}) {
+  const page = Math.max(1, Number(params.page) || 1);
+  const limit = Math.min(48, Math.max(1, Number(params.limit) || 24));
+  const sortBy = params.sortBy || "newest";
+  const movieId = params.movieId || "all";
+  const search = (params.search || "").trim();
+
+  try {
+    if (!db) return { episodes: [], totalCount: 0, movies: [] };
+
+    const offset = (page - 1) * limit;
+    const conditions = [eq(schema.episodes.status, 1)];
+
+    if (movieId !== "all") {
+      const isMovieNum = /^\d+$/.test(movieId);
+      if (isMovieNum) {
+        conditions.push(eq(schema.episodes.idMovie, parseInt(movieId, 10)));
+      } else {
+        const movieSub = db
+          .select({ id: schema.movies.id })
+          .from(schema.movies)
+          .where(or(eq(schema.movies.slug, movieId), eq(schema.movies.slug, slugify(movieId))));
+        conditions.push(inArray(schema.episodes.idMovie, movieSub));
+      }
+    }
+
+    if (search) {
+      const movieSub = db
+        .select({ id: schema.movies.id })
+        .from(schema.movies)
+        .where(ilike(schema.movies.name, `%${search}%`));
+
+      const searchOr = or(
+        ilike(schema.episodes.name, `%${search}%`),
+        inArray(schema.episodes.idMovie, movieSub)
+      );
+      if (searchOr) {
+        conditions.push(searchOr);
+      }
+    }
+
+    const whereClause = and(...conditions);
+    const orderByClause: any = sortBy === "views"
+      ? (ep: any, { desc }: any) => [desc(ep.views), desc(ep.id)]
+      : (ep: any, { desc }: any) => [desc(ep.id)];
+
+    const [items, countResult, filterMovies] = await Promise.all([
+      db.query.episodes.findMany({
+        where: whereClause,
+        orderBy: orderByClause,
+        limit,
+        offset,
+        with: {
+          movie: {
+            with: {
+              movieCategories: { with: { category: true } },
+            },
+          },
+          plan: true,
+          episodesCharacters: {
+            with: { character: true },
+          },
+        },
+      }),
+      whereClause
+        ? db.select({ count: count() }).from(schema.episodes).where(whereClause)
+        : db.select({ count: count() }).from(schema.episodes),
+      db.query.movies.findMany({
+        columns: { id: true, name: true, slug: true },
+        where: (m, { eq }) => eq(m.status, 1),
+        orderBy: (m, { asc }) => [asc(m.name)],
+      }),
+    ]);
+
+    return {
+      episodes: items || [],
+      totalCount: Number(countResult[0]?.count || 0),
+      movies: filterMovies || [],
+    };
+  } catch (err) {
+    console.error("Error in getEpisodesPaginated:", err);
+    return { episodes: [], totalCount: 0, movies: [] };
+  }
+}
+
 // ─── Get Recommended Episodes (Same Movie or Latest) ───────────────────────
 export async function getRecommendedEpisodes(currentEpisodeId: number, currentMovieId: number, limit = 8) {
   try {

@@ -100,8 +100,8 @@ export default function RankingsSidebar({ movies }: RankingsSidebarProps) {
                 </span>
                 <div className="relative w-16 h-10 rounded overflow-hidden flex-shrink-0 bg-[#090a0f] border border-white/5">
                   <Image
-                    src={getBunnyImageUrl(movie.thumbnail, 'thumb')}
-                    alt={movie.title}
+                    src={getBunnyImageUrl(movie.thumbnail || movie.imgUrl || "", 'thumb')}
+                    alt={movie.title || movie.name || "Phim 3D"}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform"
                     sizes="64px"
@@ -109,7 +109,7 @@ export default function RankingsSidebar({ movies }: RankingsSidebarProps) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <h4 className="text-xs font-bold text-gray-200 line-clamp-1 group-hover:text-orange-500 transition-colors">
-                    {movie.title}
+                    {movie.title || movie.name}
                   </h4>
                   <p className="text-[10px] text-gray-500 line-clamp-1 italic mb-0.5">
                     {movie.originalTitle}

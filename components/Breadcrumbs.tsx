@@ -14,6 +14,11 @@ interface BreadcrumbsProps {
 export default function Breadcrumbs({ items }: BreadcrumbsProps) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
 
+  // Filter out any redundant 'Trang chủ' item passed in props
+  const cleanItems = (items || []).filter(
+    (item) => item.label?.toLowerCase().trim() !== "trang chủ" && item.href !== "/"
+  );
+
   // Build JSON-LD BreadcrumbList Schema
   const jsonLd = {
     "@context": "https://schema.org",
@@ -25,7 +30,7 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
         name: "Trang chủ",
         item: siteUrl,
       },
-      ...items.map((item, idx) => ({
+      ...cleanItems.map((item, idx) => ({
         "@type": "ListItem",
         position: idx + 2,
         name: item.label,
@@ -53,8 +58,8 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
               <span>Trang chủ</span>
             </Link>
           </li>
-          {items.map((item, index) => {
-            const isLast = index === items.length - 1;
+          {cleanItems.map((item, index) => {
+            const isLast = index === cleanItems.length - 1;
             return (
               <li key={index} className="inline-flex items-center space-x-2">
                 <ChevronRight className="w-3.5 h-3.5 text-gray-600 shrink-0" />

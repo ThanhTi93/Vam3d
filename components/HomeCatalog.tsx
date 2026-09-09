@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Flame, Award, Film, Tv, TrendingUp, Camera, Play, Clock } from "lucide-react";
+import { Flame, Award, Film, Tv, TrendingUp, Camera, Play, Clock, ArrowRight } from "lucide-react";
 import MovieCard from "@/components/MovieCard";
 import MovieSection from "@/components/MovieSection";
 import RankingsSidebar from "@/components/RankingsSidebar";
@@ -141,6 +141,7 @@ function HomeCatalogContent({
                   title="Tập Phim Xem Nhiều Nhất"
                   episodes={mostViewedEpisodes}
                   showViews={true}
+                  viewAllHref="/tap-phim?sort=views"
                 />
               )}
 
@@ -157,6 +158,7 @@ function HomeCatalogContent({
                   }
                   episodes={latestEpisodes}
                   showViews={false}
+                  viewAllHref="/tap-phim?sort=newest"
                 />
               )}
 
@@ -209,11 +211,13 @@ function HomeCatalogContent({
 function LatestEpisodesSection({ 
   episodes, 
   title, 
-  showViews = false 
+  showViews = false,
+  viewAllHref
 }: { 
   episodes: any[]; 
   title: React.ReactNode; 
-  showViews?: boolean; 
+  showViews?: boolean;
+  viewAllHref?: string;
 }) {
   return (
     <div className="space-y-6">
@@ -222,6 +226,15 @@ function LatestEpisodesSection({
           <Play className="w-4 h-4 md:w-5 md:h-5 text-orange-500 fill-orange-500/20" />
           {title}
         </h2>
+        {viewAllHref && (
+          <Link
+            href={viewAllHref}
+            className="text-xs font-bold text-gray-400 hover:text-orange-400 flex items-center gap-1 transition-colors group"
+          >
+            <span>Xem tất cả</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        )}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
         {episodes.map((ep) => {

@@ -124,5 +124,36 @@ export default async function CharacterDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  return <CharacterDetailPageClient data={data} />;
+  const { character } = data;
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost"))
+    ? process.env.NEXT_PUBLIC_SITE_URL
+    : "https://www.vam3dhentai.online";
+
+  const canonicalSlug = character.slug || slugify(character.name) || character.id.toString();
+  const charUrl = `${siteUrl}/nhan-vat/${encodeURIComponent(canonicalSlug)}`;
+  const posterUrl = character.imgUrl
+    ? getBunnyImageUrl(character.imgUrl, "display")
+    : `${siteUrl}/og-image.jpg`;
+
+  const characterJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: character.name,
+    alternateName: [character.nameEn, character.nameZh].filter(Boolean),
+    url: charUrl,
+    image: posterUrl,
+    description: character.description || `Thông tin nhân vật ${character.name}, tổng hợp tập phim và kho ảnh AI tại Vam3D.`,
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(characterJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+      <CharacterDetailPageClient data={data} />
+    </>
+  );
 }

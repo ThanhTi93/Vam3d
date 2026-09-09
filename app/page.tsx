@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
 import { getHotMovies, getAllMovies, getMostViewedEpisodes, getLatestEpisodes, getLatestGalleries } from "@/lib/db/queries";
 import HeroCarousel from "@/components/HeroCarousel";
 import HomeCatalog from "@/components/HomeCatalog";
+
+export const metadata: Metadata = {
+  title: "Vam3D – Xem Phim Hoạt Hình 3D & Anime Vietsub Thuyết Minh HD",
+  description: "Website xem phim trực tuyến miễn phí hàng đầu. Cập nhật liên tục phim hoạt hình 3D, anime vietsub, thuyết minh Full HD cùng kho bộ sưu tập ảnh AI 4K độc quyền tại Vam3D.",
+  alternates: {
+    canonical: "/",
+  },
+};
 
 export const revalidate = 3600;
 
@@ -112,15 +121,50 @@ export default async function Home() {
     })) || [],
   }));
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
+
+  const homeItemListJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Phim Hoạt Hình 3D & Anime Đề Cử Hot Nhất",
+    description: "Danh sách phim hoạt hình 3D, anime vietsub và bộ sưu tập AI hot nhất tại Vam3D",
+    itemListElement: formattedHotMovies.map((m: any, index: number) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      item: {
+        "@type": "Movie",
+        name: m.title,
+        alternateName: m.originalTitle || undefined,
+        image: m.thumbnail || `${siteUrl}/og-image.jpg`,
+        url: `${siteUrl}/movie/${m.id}`,
+        description: m.description || undefined,
+        aggregateRating: m.rating > 0 ? {
+          "@type": "AggregateRating",
+          ratingValue: m.rating,
+          bestRating: 10,
+          ratingCount: m.votes || 1,
+        } : undefined,
+      },
+    })),
+  };
+
   return (
-    <div className="flex-1 flex flex-col animate-in fade-in duration-300">
-      <HeroCarousel hotMovies={formattedHotMovies} />
-      <HomeCatalog 
-        movies={formattedAllMovies} 
-        galleries={galleries || []} 
-        mostViewedEpisodes={mostViewedEpisodes || []} 
-        latestEpisodes={latestEpisodes || []} 
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(homeItemListJsonLd).replace(/</g, "\\u003c"),
+        }}
       />
-    </div>
+      <div className="flex-1 flex flex-col animate-in fade-in duration-300">
+        <HeroCarousel hotMovies={formattedHotMovies} />
+        <HomeCatalog 
+          movies={formattedAllMovies} 
+          galleries={galleries || []} 
+          mostViewedEpisodes={mostViewedEpisodes || []} 
+          latestEpisodes={latestEpisodes || []} 
+        />
+      </div>
+    </>
   );
 }
