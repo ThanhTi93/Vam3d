@@ -365,12 +365,8 @@ export default function MoviePageClient({
                             )}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
 
-                            <div className="absolute top-2 left-2 z-20 max-w-[55%]">
-                              <span className="bg-orange-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-sm shadow-md truncate block w-full text-center select-none">
-                                {ep.name || "Tập mới"}
-                              </span>
-                            </div>
-                            {ep.plan && (
+                            {/* VIP Plan Badge (only when not free) */}
+                            {ep.plan && ep.plan.level > 0 && (
                               <div className="absolute top-2 right-2 z-20 max-w-[40%]">
                                 <span className="bg-amber-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-sm shadow-md truncate block w-full text-center select-none">
                                   {ep.plan.name}
@@ -587,11 +583,14 @@ export default function MoviePageClient({
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
 
-                        <div className="absolute top-2 left-2 z-20 max-w-[90%]">
-                          <span className="bg-orange-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-sm shadow-md truncate block w-full text-center select-none">
-                            {ep.name || `Tập ${idx + 1}`}
-                          </span>
-                        </div>
+                        {/* VIP Plan Badge (only when not free) */}
+                        {ep.plan && ep.plan.level > 0 && (
+                          <div className="absolute top-2 right-2 z-20 max-w-[40%]">
+                            <span className="bg-amber-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-sm shadow-md truncate block w-full text-center select-none">
+                              {ep.plan.name}
+                            </span>
+                          </div>
+                        )}
 
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-15">
                           <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-lg scale-75 group-hover:scale-100 transition-transform duration-300">

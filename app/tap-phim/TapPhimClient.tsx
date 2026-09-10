@@ -313,22 +313,14 @@ export default function TapPhimClient({
                         </div>
                       </div>
 
-                      {/* Top Badges: Character / Tag & Plan */}
-                      <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1">
-                        <span className="bg-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md truncate max-w-[120px]">
-                          {epName}
-                        </span>
-
-                        {isFree ? (
-                          <span className="bg-green-600 text-white text-[9px] font-black uppercase px-1.5 py-0.5 rounded shadow">
-                            Miễn Phí
+                      {/* Top Badges: VIP Plan (only when not free) */}
+                      {!isFree && ep.plan && ep.plan.level > 0 && (
+                        <div className="absolute top-2 right-2 z-20">
+                          <span className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded shadow">
+                            {planName || ep.plan.name || "VIP"}
                           </span>
-                        ) : (
-                          <span className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[9px] font-black uppercase px-1.5 py-0.5 rounded shadow">
-                            {planName || "VIP"}
-                          </span>
-                        )}
-                      </div>
+                        </div>
+                      )}
 
                       {/* Bottom Info inside thumbnail: Duration & Views */}
                       <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between text-[10px] text-gray-300 font-medium">

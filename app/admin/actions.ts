@@ -413,28 +413,63 @@ export async function updateEpisode(
   if (!db) throw new Error("Database not available");
   const { actorIds, characterIds, ...episodeData } = data;
 
+  const existing = await db.query.episodes.findFirst({
+    where: (ep, { eq }) => eq(ep.id, id),
+  });
+
+  if (!existing) {
+    throw new Error("Episode not found");
+  }
+
   // If a new bunnyVideoId is uploaded/provided, delete the old one from Bunny Stream to avoid wasting storage
-  if (data.bunnyVideoId !== undefined) {
+  if (data.bunnyVideoId !== undefined && existing.bunnyVideoId && existing.bunnyVideoId !== data.bunnyVideoId) {
     try {
-      const existing = await db.query.episodes.findFirst({
-        where: (ep, { eq }) => eq(ep.id, id),
-        columns: { bunnyVideoId: true }
-      });
-      if (existing && existing.bunnyVideoId && existing.bunnyVideoId !== data.bunnyVideoId) {
-        deleteBunnyVideo(existing.bunnyVideoId).catch(err => {
-          console.error("Failed to delete old Bunny video on update:", err);
-        });
-      }
+      await deleteBunnyVideo(existing.bunnyVideoId);
     } catch (err) {
-      console.error("Failed to query existing episode for video deletion:", err);
+      console.error("Failed to delete old Bunny video on update:", err);
     }
   }
 
-  const existingEpisode = await db.query.episodes.findFirst({
-    where: eq(schema.episodes.id, id),
-    columns: { idMovie: true }
-  });
-  const idMovie = existingEpisode?.idMovie;
+  // If banner image was changed, clean up old banner image from Bunny Storage
+  if (data.banner !== undefined && existing.banner && existing.banner !== data.banner) {
+    try {
+      await deleteBunnyAsset(existing.banner);
+    } catch (err) {
+      console.error("Failed to delete old banner asset on update:", err);
+    }
+  }
+
+  // Update episode fields in database
+  await db
+    .update(schema.episodes)
+    .set({
+      ...episodeData,
+      ...(episodeData.name ? { slug: slugify(episodeData.name) } : {}),
+      ...(episodeData.idPlan !== undefined ? { idPlan: episodeData.idPlan || null } : {}),
+    })
+    .where(eq(schema.episodes.id, id));
+
+  // Update actor relations if provided
+  if (actorIds !== undefined) {
+    await db.delete(schema.episodesActor).where(eq(schema.episodesActor.idEpisodes, id));
+    if (actorIds.length > 0) {
+      await db.insert(schema.episodesActor).values(
+        actorIds.map((aid) => ({ idActor: aid, idEpisodes: id }))
+      );
+    }
+  }
+
+  // Update character relations if provided
+  if (characterIds !== undefined) {
+    await db.delete(schema.episodesCharacter).where(eq(schema.episodesCharacter.idEpisodes, id));
+    if (characterIds.length > 0) {
+      await db.insert(schema.episodesCharacter).values(
+        characterIds.map((cid) => ({ idCharacter: cid, idEpisodes: id }))
+      );
+    }
+  }
+
+  const idMovie = existing.idMovie;
 
   revalidateAdmin();
   if (idMovie) {
@@ -525,20 +560,23 @@ export async function deleteEpisode(id: number) {
   try {
     const existing = await db.query.episodes.findFirst({
       where: (ep, { eq }) => eq(ep.id, id),
-      columns: { bunnyVideoId: true, idMovie: true }
+      columns: { bunnyVideoId: true, banner: true, idMovie: true }
     });
     if (existing) {
       idMovie = existing.idMovie;
       if (existing.bunnyVideoId) {
-        deleteBunnyVideo(existing.bunnyVideoId).catch(err => {
-          console.error("Failed to delete Bunny video on episode deletion:", err);
-        });
+        await deleteBunnyVideo(existing.bunnyVideoId);
+      }
+      if (existing.banner) {
+        await deleteBunnyAsset(existing.banner);
       }
     }
   } catch (err) {
     console.error("Failed to query episode before deletion:", err);
   }
 
+  await db.delete(schema.episodesActor).where(eq(schema.episodesActor.idEpisodes, id));
+  await db.delete(schema.episodesCharacter).where(eq(schema.episodesCharacter.idEpisodes, id));
   await db.delete(schema.episodes).where(eq(schema.episodes.id, id));
   revalidateAdmin();
   if (idMovie) {

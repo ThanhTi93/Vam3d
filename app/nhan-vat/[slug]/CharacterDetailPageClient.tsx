@@ -242,15 +242,8 @@ export default function CharacterDetailPageClient({ data }: CharacterDetailPageC
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
 
-                    {/* Episode Tag */}
-                    <div className="absolute top-2 left-2 z-20 max-w-[70%]">
-                      <span className="bg-orange-500 text-white font-extrabold text-[9px] sm:text-[10px] px-2 py-0.5 rounded shadow-md truncate block select-none">
-                        {ep.name || `Tập ${idx + 1}`}
-                      </span>
-                    </div>
-
-                    {/* VIP Plan Badge */}
-                    {ep.plan && (
+                    {/* VIP Plan Badge (only when not free) */}
+                    {ep.plan && ep.plan.level > 0 && (
                       <div className="absolute top-2 right-2 z-20">
                         <span className="bg-amber-500 text-white font-extrabold text-[8px] uppercase px-1.5 py-0.5 rounded shadow-md select-none">
                           {ep.plan.name}
