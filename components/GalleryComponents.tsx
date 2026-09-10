@@ -73,21 +73,13 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect?: (g: any) =
           </div>
         )}
 
-        <div className="absolute top-2 left-2 z-10 pointer-events-none" suppressHydrationWarning>
-          {freeVipMode ? (
-            <span suppressHydrationWarning className="bg-green-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded shadow-md">
-              MIỄN PHÍ
-            </span>
-          ) : g.plan ? (
+        {!freeVipMode && g.plan && (g.plan.level || 0) > 0 && (
+          <div className="absolute top-2 left-2 z-10 pointer-events-none" suppressHydrationWarning>
             <span suppressHydrationWarning className="bg-orange-500 text-white font-bold text-[9px] uppercase px-1.5 py-0.5 rounded tracking-wide shadow-md">
               {g.plan.name}
             </span>
-          ) : (
-            <span suppressHydrationWarning className="bg-green-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded shadow-md">
-              MIỄN PHÍ
-            </span>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="absolute top-2 right-2 z-10 pointer-events-none">
           <span className="text-[9px] font-bold text-gray-300 bg-black/60 px-2 py-0.5 rounded-full border border-white/10 backdrop-blur-md shadow-lg">

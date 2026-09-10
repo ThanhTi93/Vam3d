@@ -22,6 +22,7 @@ import { HomeGalleryCard } from "@/components/GalleryComponents";
 import { incrementGalleryViews } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/app/context/AuthContext";
 
 interface CharacterDetailPageClientProps {
   data: {
@@ -34,6 +35,7 @@ interface CharacterDetailPageClientProps {
 
 export default function CharacterDetailPageClient({ data }: CharacterDetailPageClientProps) {
   const { character, episodes, galleries, otherCharacters } = data;
+  const { freeVipMode } = useAuth();
   const [selectedGallery, setSelectedGallery] = useState<any | null>(null);
 
   const handleSelectGallery = (g: any) => {
@@ -243,7 +245,7 @@ export default function CharacterDetailPageClient({ data }: CharacterDetailPageC
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
 
                     {/* VIP Plan Badge (only when not free) */}
-                    {ep.plan && ep.plan.level > 0 && (
+                    {!freeVipMode && ep.plan && ep.plan.level > 0 && (
                       <div className="absolute top-2 right-2 z-20">
                         <span className="bg-amber-500 text-white font-extrabold text-[8px] uppercase px-1.5 py-0.5 rounded shadow-md select-none">
                           {ep.plan.name}

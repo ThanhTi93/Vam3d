@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getBunnyImageUrl, formatDuration, formatRelativeTime } from "@/lib/utils";
 import { fetchEpisodesAction } from "./actions";
+import { useAuth } from "@/app/context/AuthContext";
 
 interface TapPhimClientProps {
   initialEpisodes: any[];
@@ -48,6 +49,7 @@ export default function TapPhimClient({
 }: TapPhimClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { freeVipMode } = useAuth();
 
   const [sortBy, setSortBy] = useState<"newest" | "views">(initialFilters.sort || "newest");
   const [selectedMovie, setSelectedMovie] = useState<string>(initialFilters.movie || "all");
@@ -314,7 +316,7 @@ export default function TapPhimClient({
                       </div>
 
                       {/* Top Badges: VIP Plan (only when not free) */}
-                      {!isFree && ep.plan && ep.plan.level > 0 && (
+                      {!freeVipMode && !isFree && ep.plan && ep.plan.level > 0 && (
                         <div className="absolute top-2 right-2 z-20">
                           <span className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded shadow">
                             {planName || ep.plan.name || "VIP"}

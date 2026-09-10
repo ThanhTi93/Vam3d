@@ -122,17 +122,9 @@ export default function GalleryDetailClient({
             <div className="space-y-4 max-w-3xl">
               {/* Badges line */}
               <div className="flex flex-wrap items-center gap-2">
-                {freeVipMode ? (
-                  <span className="bg-green-600 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded shadow-md">
-                    MIỄN PHÍ
-                  </span>
-                ) : gallery.plan ? (
+                {!freeVipMode && gallery.plan && (gallery.plan.level || 0) > 0 && (
                   <span className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-[10px] uppercase px-2.5 py-0.5 rounded tracking-wide shadow-md">
                     {gallery.plan.name}
-                  </span>
-                ) : (
-                  <span className="bg-green-600 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded shadow-md">
-                    MIỄN PHÍ
                   </span>
                 )}
 

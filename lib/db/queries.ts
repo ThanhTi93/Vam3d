@@ -837,6 +837,99 @@ export const getAllActors = cache(async () => {
   }
 });
 
+// ─── Get All Authors ──────────────────────────────────────────────────────────
+export const getAllAuthors = cache(async () => {
+  try {
+    if (!db) return [];
+    return await db.query.authors.findMany({
+      where: eq(schema.authors.status, 1),
+      orderBy: (a, { asc }) => [asc(a.name)],
+      with: {
+        movies: {
+          where: eq(schema.movies.status, 1),
+          columns: { id: true, name: true, slug: true, imgUrl: true, createdAt: true },
+          with: {
+            movieCategories: { with: { category: true } },
+            episodes: {
+              columns: { id: true, name: true, views: true }
+            }
+          }
+        }
+      }
+    });
+  } catch (err) {
+    console.error("Error in getAllAuthors:", err);
+    return [];
+  }
+});
+
+// ─── Get Author Details with Authored Movies ───────────────────────────────────
+export const getAuthorDetails = cache(async (slugOrId: string) => {
+  try {
+    if (!db) return null;
+    let trimmed = slugOrId ? slugOrId.trim() : "";
+    if (!trimmed) return null;
+    try {
+      trimmed = decodeURIComponent(trimmed).trim();
+    } catch {}
+
+    const isNumeric = /^\d+$/.test(trimmed);
+    const numericId = isNumeric ? parseInt(trimmed, 10) : -1;
+    const targetSlug = slugify(trimmed);
+    const trimmedWithSpaces = trimmed.replace(/[-_]+/g, " ").trim();
+
+    const author = await db.query.authors.findFirst({
+      where: (authors, { eq, or, ilike }) => {
+        const conditions = [
+          eq(authors.slug, trimmed),
+          ...(targetSlug ? [eq(authors.slug, targetSlug)] : []),
+          ilike(authors.name, trimmed),
+          ilike(authors.name, trimmedWithSpaces),
+        ];
+        if (isNumeric) {
+          conditions.unshift(eq(authors.id, numericId));
+        }
+        return or(...conditions);
+      },
+      with: {
+        movies: {
+          where: eq(schema.movies.status, 1),
+          orderBy: (m, { desc }) => [desc(m.id)],
+          with: {
+            movieCategories: { with: { category: true } },
+            episodes: {
+              columns: { id: true, name: true, views: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!author) return null;
+
+    // Fetch other authors for recommendation
+    const otherAuthors = await db.query.authors.findMany({
+      where: (authors, { and, eq, ne }) => and(eq(authors.status, 1), ne(authors.id, author.id)),
+      limit: 6,
+      with: {
+        movies: {
+          where: eq(schema.movies.status, 1),
+          columns: { id: true, name: true }
+        }
+      }
+    });
+
+    return {
+      author,
+      movies: author.movies || [],
+      otherAuthors: otherAuthors || []
+    };
+  } catch (err) {
+    console.error("Error in getAuthorDetails:", err);
+    return null;
+  }
+});
+
 // ─── Get Character Details with Episodes and Galleries ────────────────────────
 export const getCharacterDetails = cache(async (slugOrId: string) => {
   try {

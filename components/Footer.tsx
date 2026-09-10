@@ -82,7 +82,7 @@ export default function Footer() {
         <div>
           <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Thông Tin &amp; Liên Hệ</h3>
           <ul className="space-y-2 text-xs mb-4">
-            <li><Link href="/lich-chieu" prefetch={false} className="hover:text-orange-500 transition-colors font-semibold text-orange-400">📅 Lịch Chiếu Phim 3D</Link></li>
+            <li><Link href="/tac-gia" prefetch={false} className="hover:text-orange-500 transition-colors font-semibold text-orange-400">✍️ Tác Giả Phim 3D</Link></li>
             <li><Link href="/gioi-thieu" prefetch={false} className="hover:text-orange-500 transition-colors">Giới thiệu</Link></li>
             <li><Link href="/dieu-khoan-su-dung" prefetch={false} className="hover:text-orange-500 transition-colors">Điều khoản sử dụng</Link></li>
             <li><Link href="/chinh-sach-bao-mat" prefetch={false} className="hover:text-orange-500 transition-colors">Chính sách bảo mật</Link></li>

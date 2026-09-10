@@ -366,7 +366,7 @@ export default function MoviePageClient({
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
 
                             {/* VIP Plan Badge (only when not free) */}
-                            {ep.plan && ep.plan.level > 0 && (
+                            {!freeVipMode && ep.plan && ep.plan.level > 0 && (
                               <div className="absolute top-2 right-2 z-20 max-w-[40%]">
                                 <span className="bg-amber-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-sm shadow-md truncate block w-full text-center select-none">
                                   {ep.plan.name}
@@ -584,7 +584,7 @@ export default function MoviePageClient({
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
 
                         {/* VIP Plan Badge (only when not free) */}
-                        {ep.plan && ep.plan.level > 0 && (
+                        {!freeVipMode && ep.plan && ep.plan.level > 0 && (
                           <div className="absolute top-2 right-2 z-20 max-w-[40%]">
                             <span className="bg-amber-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-sm shadow-md truncate block w-full text-center select-none">
                               {ep.plan.name}

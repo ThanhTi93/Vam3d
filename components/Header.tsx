@@ -242,13 +242,13 @@ export default function Header() {
             </Link>
 
             <Link
-              href="/lich-chieu"
+              href="/tac-gia"
               prefetch={false}
-              className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative group ${pathname.startsWith("/lich-chieu") ? "text-orange-500" : "text-gray-400 hover:text-white"
+              className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative group ${pathname.startsWith("/tac-gia") ? "text-orange-500" : "text-gray-400 hover:text-white"
                 }`}
             >
-              Lịch Chiếu
-              {pathname.startsWith("/lich-chieu") && (
+              Tác Giả
+              {pathname.startsWith("/tac-gia") && (
                 <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-500 to-amber-400 rounded-full" />
               )}
             </Link>
@@ -546,13 +546,13 @@ export default function Header() {
             Diễn Viên
           </Link>
           <Link
-            href="/lich-chieu"
+            href="/tac-gia"
             prefetch={false}
             onClick={() => setShowMobileMenu(false)}
-            className={`text-sm font-bold py-1 ${pathname === "/lich-chieu" ? "text-orange-500" : "text-gray-400"
+            className={`text-sm font-bold py-1 ${pathname === "/tac-gia" ? "text-orange-500" : "text-gray-400"
               }`}
           >
-            Lịch Chiếu 3D
+            Tác Giả
           </Link>
           <Link
             href="/gallery"
