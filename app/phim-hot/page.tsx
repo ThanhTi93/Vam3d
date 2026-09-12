@@ -23,6 +23,7 @@ export default async function PhimHotPage() {
   // Format to expected Movie model shape
   const formattedMovies = (hotMovies.length > 0 ? hotMovies : allMovies).map((m: any) => ({
     id: m?.id?.toString() || "",
+    slug: m?.slug || "",
     title: m?.name || "",
     originalTitle: m?.originalTitle || "",
     thumbnail: m?.imgUrl || "",
@@ -54,6 +55,7 @@ export default async function PhimHotPage() {
 
   const formattedAllMovies = (allMovies || []).map((m: any) => ({
     id: m?.id?.toString() || "",
+    slug: m?.slug || "",
     title: m?.name || "",
     originalTitle: m?.originalTitle || "",
     thumbnail: m?.imgUrl || "",

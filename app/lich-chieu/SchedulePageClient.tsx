@@ -91,7 +91,7 @@ export default function SchedulePageClient({ moviesWithDay }: { moviesWithDay: a
                     return (
                       <Link
                         key={movie.id}
-                        href={`/movie/${movie.id}`}
+                        href={`/movie/${movie.slug || movie.id}`}
                         className="group relative bg-[#181a26] rounded-xl overflow-hidden border border-white/5 hover:border-orange-500/50 transition-all duration-300 flex flex-col"
                       >
                         <div className="relative aspect-[3/4] w-full overflow-hidden bg-gray-900">

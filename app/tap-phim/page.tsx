@@ -130,6 +130,7 @@ export default async function TapPhimPage({ searchParams }: PageProps) {
 
   const formattedAllMovies = (allMovies || []).map((m: any) => ({
     id: m?.id?.toString() || "",
+    slug: m?.slug || "",
     title: m?.name || m?.title || "",
     originalTitle: m?.originalTitle || "",
     thumbnail: m?.imgUrl || m?.thumbnail || "",

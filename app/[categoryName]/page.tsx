@@ -176,6 +176,7 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
   // Format to expected Movie model shape
   const formattedMovies = (movies || []).map((m: any) => ({
     id: m?.id?.toString() || "",
+    slug: m?.slug || "",
     title: m?.name || "",
     originalTitle: m?.originalTitle || "",
     thumbnail: m?.imgUrl || "",
@@ -209,6 +210,7 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
 
   const formattedAllMovies = (allMovies || []).map((m: any) => ({
     id: m?.id?.toString() || "",
+    slug: m?.slug || "",
     title: m?.name || "",
     originalTitle: m?.originalTitle || "",
     thumbnail: m?.imgUrl || "",
@@ -264,7 +266,7 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
       itemListElement: formattedMovies.slice(0, 24).map((movie, index) => ({
         "@type": "ListItem",
         position: index + 1,
-        url: `${siteUrl}/movie/${movie.id}`,
+        url: `${siteUrl}/movie/${movie.slug || movie.id}`,
         name: movie.title,
         image: movie.thumbnail || movie.banner,
       })),

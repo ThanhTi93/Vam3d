@@ -441,7 +441,7 @@ export const getLatestGalleries = cache(async (limit = 24) => {
       orderBy: (g, { desc }) => [desc(g.id)],
       limit,
       with: {
-        movie: { columns: { id: true, name: true } },
+        movie: { columns: { id: true, name: true, slug: true } },
         plan: { columns: { id: true, name: true, level: true } },
         galleryCharacters: {
           with: { character: { columns: { id: true, name: true } } },
@@ -565,7 +565,7 @@ export async function getGalleriesPublicPaginated(params: {
         limit,
         offset,
         with: {
-          movie: { columns: { id: true, name: true } },
+          movie: { columns: { id: true, name: true, slug: true } },
           plan: { columns: { id: true, name: true, level: true } },
           galleryCharacters: {
             with: { character: { columns: { id: true, name: true } } },
@@ -643,7 +643,7 @@ export const getGalleryBySlug = cache(async (slugOrId: string) => {
       },
       with: {
         movie: {
-          columns: { id: true, name: true, imgUrl: true },
+          columns: { id: true, name: true, slug: true, imgUrl: true },
         },
         plan: {
           columns: { id: true, name: true, level: true },
@@ -678,7 +678,7 @@ export const getGalleryBySlug = cache(async (slugOrId: string) => {
       orderBy: (g, { desc }) => [desc(g.views), desc(g.id)],
       limit: 6,
       with: {
-        movie: { columns: { id: true, name: true } },
+        movie: { columns: { id: true, name: true, slug: true } },
         plan: { columns: { id: true, name: true, level: true } },
         galleryCharacters: {
           with: { character: { columns: { id: true, name: true } } },
@@ -701,7 +701,7 @@ export const getGalleryBySlug = cache(async (slugOrId: string) => {
         orderBy: (g, { desc }) => [desc(g.views), desc(g.id)],
         limit: 6 - related.length,
         with: {
-          movie: { columns: { id: true, name: true } },
+          movie: { columns: { id: true, name: true, slug: true } },
           plan: { columns: { id: true, name: true, level: true } },
           galleryCharacters: {
             with: { character: { columns: { id: true, name: true } } },
@@ -1041,7 +1041,7 @@ export const getCharacterDetails = cache(async (slugOrId: string) => {
       with: {
         gallery: {
           with: {
-            movie: { columns: { id: true, name: true } },
+            movie: { columns: { id: true, name: true, slug: true } },
             plan: true,
             galleryCharacters: {
               with: { character: { columns: { id: true, name: true, slug: true } } },
@@ -1066,7 +1066,7 @@ export const getCharacterDetails = cache(async (slugOrId: string) => {
         where: (g, { eq, and }) => and(eq(g.status, 1), eq(g.idMovie, character.idMovie!)),
         limit: 24,
         with: {
-          movie: { columns: { id: true, name: true } },
+          movie: { columns: { id: true, name: true, slug: true } },
           plan: true,
           galleryCharacters: {
             with: { character: { columns: { id: true, name: true, slug: true } } },
@@ -1098,7 +1098,7 @@ export const getCharacterDetails = cache(async (slugOrId: string) => {
       where: (chars, { and, eq, ne }) => and(eq(chars.status, 1), ne(chars.id, character.id)),
       limit: 6,
       with: {
-        movie: { columns: { id: true, name: true } },
+        movie: { columns: { id: true, name: true, slug: true } },
       },
       orderBy: (chars, { desc }) => [desc(chars.id)],
     });

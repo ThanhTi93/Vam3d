@@ -147,7 +147,7 @@ export default function GalleryDetailClient({
               <div className="flex flex-wrap items-center gap-3 text-xs">
                 {gallery.movie?.name && (
                   <Link
-                    href={`/movie/${gallery.movie.id}`}
+                    href={`/movie/${gallery.movie.slug || gallery.movie.id}`}
                     className="inline-flex items-center gap-1.5 text-orange-400 hover:text-orange-300 font-semibold bg-orange-500/10 hover:bg-orange-500/20 px-3 py-1 rounded-full border border-orange-500/20 transition-all"
                   >
                     <Film className="w-3.5 h-3.5" />

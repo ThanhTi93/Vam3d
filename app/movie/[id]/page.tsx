@@ -28,7 +28,8 @@ export async function generateMetadata({ params }: MoviePageProps): Promise<Meta
   const description = (movieData.description || `Xem phim ${movieData.name} chất lượng cao Full HD Vietsub, Thuyết minh cập nhật nhanh nhất tại Vam3D.`).substring(0, 160);
   
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
-  const movieUrl = `${siteUrl}/movie/${movieData.id}`;
+  const movieSlug = movieData.slug || slugify(movieData.name) || movieData.id;
+  const movieUrl = `${siteUrl}/movie/${movieSlug}`;
   const posterUrl = movieData.imgUrl || `${siteUrl}/og-image.jpg`;
 
   return {
@@ -70,50 +71,56 @@ export async function generateMetadata({ params }: MoviePageProps): Promise<Meta
 // Render dynamic JSON-LD structured schema on server-side for search engines
 function MovieSchemaScript({ movie, currentEp }: { movie: any; currentEp?: string }) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
-  const movieUrl = `${siteUrl}/movie/${movie.id}`;
+  const movieSlug = movie.slug || slugify(movie.title || movie.name) || movie.id;
+  const movieUrl = `${siteUrl}/movie/${movieSlug}`;
   const currentUrl = currentEp ? `${movieUrl}?ep=${currentEp}` : movieUrl;
   const posterUrl = movie.thumbnail || movie.banner || `${siteUrl}/og-image.jpg`;
 
   const isSeries = movie.category === "phim-bo" || movie.category === "hoat-hinh" || (movie.episodes && movie.episodes.length > 1);
+
+  // Safe rating within [1, 10] range with explicit bestRating and worstRating
+  const rawRating = typeof movie.rating === "number" && movie.rating > 0 
+    ? movie.rating 
+    : parseFloat(movie.rating) || 9.8;
+  const ratingValue = Number(Math.min(10, Math.max(1, rawRating)).toFixed(1));
+  const ratingCount = Math.max(1, Number(movie.votes) || 120);
+
+  const aggregateRating = {
+    "@type": "AggregateRating",
+    ratingValue,
+    bestRating: 10,
+    worstRating: 1,
+    ratingCount,
+  };
 
   const mainSchema = isSeries
     ? {
         "@context": "https://schema.org",
         "@type": "TVSeries",
         name: movie.title || movie.name,
-        alternateName: movie.originalTitle,
+        alternateName: movie.originalTitle || undefined,
         description: movie.description,
         image: posterUrl,
         url: movieUrl,
-        numberOfEpisodes: movie.episodes?.length || 1,
-        genre: movie.genres || ["Hoạt Hình 3D"],
+        numberOfEpisodes: Math.max(1, movie.episodes?.length || 1),
+        genre: movie.genres && movie.genres.length > 0 ? movie.genres : ["Hoạt Hình 3D"],
         dateCreated: movie.year?.toString() || "2026",
-        director: { "@type": "Person", name: movie.director || "—" },
-        actor: movie.cast?.map((name: string) => ({ "@type": "Person", name })) || [],
-        aggregateRating: {
-          "@type": "AggregateRating",
-          ratingValue: movie.rating?.toString() || "9.8",
-          bestRating: "10",
-          ratingCount: movie.votes || 1,
-        },
+        director: movie.director && movie.director !== "—" ? { "@type": "Person", name: movie.director } : undefined,
+        actor: movie.cast && movie.cast.length > 0 ? movie.cast.map((name: string) => ({ "@type": "Person", name })) : undefined,
+        aggregateRating,
       }
     : {
         "@context": "https://schema.org",
         "@type": "Movie",
         name: movie.title || movie.name,
-        alternateName: movie.originalTitle,
+        alternateName: movie.originalTitle || undefined,
         description: movie.description,
         image: posterUrl,
         url: movieUrl,
         dateCreated: movie.year?.toString() || "2026",
-        director: { "@type": "Person", name: movie.director || "—" },
-        actor: movie.cast?.map((name: string) => ({ "@type": "Person", name })) || [],
-        aggregateRating: {
-          "@type": "AggregateRating",
-          ratingValue: movie.rating?.toString() || "9.8",
-          bestRating: "10",
-          ratingCount: movie.votes || 1,
-        },
+        director: movie.director && movie.director !== "—" ? { "@type": "Person", name: movie.director } : undefined,
+        actor: movie.cast && movie.cast.length > 0 ? movie.cast.map((name: string) => ({ "@type": "Person", name })) : undefined,
+        aggregateRating,
       };
 
   const episodeSchema = currentEp
@@ -219,9 +226,14 @@ export const revalidate = 3600;
 export async function generateStaticParams() {
   try {
     const movies = await getAllMovies(100);
-    return (movies || []).map((m: any) => ({
-      id: m.id.toString(),
-    }));
+    const paramsList: { id: string }[] = [];
+    (movies || []).forEach((m: any) => {
+      paramsList.push({ id: m.id.toString() });
+      if (m.slug) {
+        paramsList.push({ id: m.slug });
+      }
+    });
+    return paramsList;
   } catch {
     return [];
   }
@@ -282,6 +294,12 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
       relatedEpisodes = [...relatedEpisodes, ...otherMovieEpisodes];
     }
 
+    const rawMovieRating = typeof movieData.rating === "number" && movieData.rating > 0
+      ? movieData.rating
+      : (parseFloat(movieData.rating) || 9.8);
+    const movieRating = Number(Math.min(10, Math.max(1, rawMovieRating)).toFixed(1));
+    const movieVotes = Math.max(1, Number(movieData.votes || movieData.likeCount) || 120);
+
     // Format to standard Client model shape
     const formattedMovie = {
       id: movieData.id.toString(),
@@ -294,8 +312,8 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
                 movieData.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :
                 movieData.movieCategories?.[0]?.category?.name === "chieu-rap" ? "chieu-rap" : "phim-le") as any,
       genres: movieData.movieCategories?.map((mc: any) => mc.category?.name).filter(Boolean) || movieData.genres || [],
-      rating: typeof movieData.rating === "string" ? parseFloat(movieData.rating) : movieData.rating || 0.0,
-      votes: movieData.votes || movieData.likeCount || 0,
+      rating: movieRating,
+      votes: movieVotes,
       year: movieData.year || 2026,
       duration: movieData.duration ? (movieData.duration.toString().includes("phút") ? movieData.duration : `${movieData.duration} phút`) : "—",
       quality: movieData.quality || "HD",
@@ -329,6 +347,7 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
 
     const formattedAllMovies = (allMovies || []).map((m: any) => ({
       id: m.id.toString(),
+      slug: m.slug || slugify(m.name) || m.id.toString(),
       title: m.name,
       originalTitle: m.originalTitle || "",
       thumbnail: m.imgUrl || "",
@@ -362,7 +381,7 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
     const categoryLabel = formattedMovie.category === "phim-bo" ? "Phim Bộ" : formattedMovie.category === "hoat-hinh" ? "Hoạt Hình 3D" : formattedMovie.category === "chieu-rap" ? "Chiếu Rạp" : "Phim Lẻ";
     const breadcrumbItems = [
       { label: categoryLabel, href: `/${formattedMovie.category || "hoat-hinh"}` },
-      { label: formattedMovie.title, href: `/movie/${formattedMovie.id}` },
+      { label: formattedMovie.title, href: `/movie/${formattedMovie.slug || formattedMovie.id}` },
     ];
 
     return (

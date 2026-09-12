@@ -81,7 +81,7 @@ export default function RankingsSidebar({ movies }: RankingsSidebarProps) {
             return (
               <Link
                 key={movie.id}
-                href={`/movie/${movie.id}`}
+                href={`/movie/${(movie as any).slug || movie.id}`}
                 prefetch={false}
                 className="flex items-center gap-3 group cursor-pointer hover:bg-white/2 rounded-lg transition-colors p-1"
               >

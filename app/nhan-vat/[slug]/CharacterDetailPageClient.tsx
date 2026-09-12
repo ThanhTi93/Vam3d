@@ -96,7 +96,7 @@ export default function CharacterDetailPageClient({ data }: CharacterDetailPageC
               {/* Parent Movie Link Badge */}
               {character.movie && (
                 <Link
-                  href={`/movie/${character.movie.id}`}
+                  href={`/movie/${character.movie.slug || character.movie.id}`}
                   className="inline-flex items-center gap-2 bg-[#1a1c2b] hover:bg-orange-500/20 text-orange-400 hover:text-orange-300 border border-orange-500/30 px-3 py-1 rounded-full text-xs font-bold transition-all mb-3 shadow-md group/tag"
                 >
                   <Film className="w-3.5 h-3.5 group-hover/tag:scale-110 transition-transform" />

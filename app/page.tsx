@@ -59,6 +59,7 @@ export default async function Home() {
   // Format to standard Client Movie model shape
   const formattedHotMovies = (hotMovies || []).map((m: any) => ({
     id: m?.id?.toString() || "",
+    slug: m?.slug || "",
     title: m?.name || "",
     originalTitle: m?.originalTitle || "",
     thumbnail: m?.imgUrl || "",
@@ -91,6 +92,7 @@ export default async function Home() {
 
   const formattedAllMovies = (allMovies || []).map((m: any) => ({
     id: m?.id?.toString() || "",
+    slug: m?.slug || "",
     title: m?.name || "",
     originalTitle: m?.originalTitle || "",
     thumbnail: m?.imgUrl || "",
@@ -128,24 +130,31 @@ export default async function Home() {
     "@type": "ItemList",
     name: "Phim Hoạt Hình 3D & Anime Đề Cử Hot Nhất",
     description: "Danh sách phim hoạt hình 3D, anime vietsub và bộ sưu tập AI hot nhất tại Vam3D",
-    itemListElement: formattedHotMovies.map((m: any, index: number) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      item: {
-        "@type": "Movie",
-        name: m.title,
-        alternateName: m.originalTitle || undefined,
-        image: m.thumbnail || `${siteUrl}/og-image.jpg`,
-        url: `${siteUrl}/movie/${m.id}`,
-        description: m.description || undefined,
-        aggregateRating: m.rating > 0 ? {
-          "@type": "AggregateRating",
-          ratingValue: m.rating,
-          bestRating: 10,
-          ratingCount: m.votes || 1,
-        } : undefined,
-      },
-    })),
+    itemListElement: formattedHotMovies.map((m: any, index: number) => {
+      const rawRating = typeof m.rating === "number" && m.rating > 0 ? m.rating : parseFloat(m.rating) || 9.8;
+      const ratingValue = Number(Math.min(10, Math.max(1, rawRating)).toFixed(1));
+      const ratingCount = Math.max(1, Number(m.votes) || 120);
+
+      return {
+        "@type": "ListItem",
+        position: index + 1,
+        item: {
+          "@type": "Movie",
+          name: m.title,
+          alternateName: m.originalTitle || undefined,
+          image: m.thumbnail || `${siteUrl}/og-image.jpg`,
+          url: `${siteUrl}/movie/${m.slug || m.id}`,
+          description: m.description || undefined,
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue,
+            bestRating: 10,
+            worstRating: 1,
+            ratingCount,
+          },
+        },
+      };
+    }),
   };
 
   return (

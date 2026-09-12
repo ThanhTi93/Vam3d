@@ -216,14 +216,14 @@ export default function HeroCarousel({ hotMovies }: HeroCarouselProps) {
 
           <div className="flex items-center gap-4">
             <Link
-              href={`/movie/${movie.id}?play=true`}
+              href={`/movie/${(movie as any).slug || movie.id}?play=true`}
               prefetch={false}
               className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-orange-500/25 hover:scale-105 transition-all duration-200 cursor-pointer"
             >
               <Play className="w-5 h-5 fill-white" /> Xem Ngay
             </Link>
             <Link
-              href={`/movie/${movie.id}`}
+              href={`/movie/${(movie as any).slug || movie.id}`}
               prefetch={false}
               className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold px-6 py-3 rounded-xl border border-white/10 backdrop-blur-sm hover:scale-105 transition-all duration-200 cursor-pointer"
             >
