@@ -23,7 +23,10 @@ import { slugify } from "@/lib/utils";
 const getCached_getAdminMovies = async () => {
     if (!db) return [];
   const result = await db.query.movies.findMany({
-    orderBy: (m, { desc }) => [desc(m.id)],
+    orderBy: (m, { asc, desc }) => [
+      sql`CASE WHEN ${m.displayOrder} > 0 THEN ${m.displayOrder} ELSE 999999 END ASC`,
+      desc(m.id),
+    ],
     with: {
       movieCategories: { with: { category: true } },
       author: true,
@@ -67,14 +70,16 @@ export async function createMovie(data: {
   imgUrl?: string;
   idAuthor?: number | null;
   categoryIds?: number[];
+  displayOrder?: number;
 }) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
 
-  const { categoryIds = [], idAuthor, ...movieData } = data;
+  const { categoryIds = [], idAuthor, displayOrder = 0, ...movieData } = data;
 
   const [inserted] = await db.insert(schema.movies).values({
     ...movieData,
+    displayOrder,
     slug: slugify(movieData.name),
     idAuthor: idAuthor || null,
     status: 1,
@@ -105,6 +110,7 @@ export async function updateMovie(
     status?: number;
     idAuthor?: number | null;
     categoryIds?: number[];
+    displayOrder?: number;
   }
 ) {
   await verifyAdmin();
@@ -1572,6 +1578,216 @@ export async function toggleTurnstileModeAction(enabled: boolean): Promise<{ suc
   revalidateTag("system-settings", "default");
   revalidatePath("/", "layout");
   return { success: true, enabled };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// REAL-TIME TRAFFIC & CLICK ANALYTICS
+// ─────────────────────────────────────────────────────────────────
+
+export async function getRealtimeAnalytics(
+  timeframe: "today" | "yesterday" | "7days" | "30days" = "today"
+) {
+  await verifyAdmin();
+  if (!db) {
+    return {
+      totalClicks: 0,
+      googleClicks: 0,
+      uniqueVisitors: 0,
+      mobilePercentage: 0,
+      desktopPercentage: 0,
+      chartData: [],
+      topPages: [],
+      topGooglePages: [],
+      sources: [],
+    };
+  }
+
+  // Cố định mốc thời gian theo Múi Giờ Việt Nam (UTC+7 / GMT+7)
+  const VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000;
+  const now = new Date();
+  const nowVn = new Date(now.getTime() + VIETNAM_OFFSET_MS);
+
+  const year = nowVn.getUTCFullYear();
+  const month = nowVn.getUTCMonth();
+  const date = nowVn.getUTCDate();
+
+  let start: Date;
+  let end: Date;
+
+  if (timeframe === "today") {
+    // 00:00:00.000 giờ VN ngày hôm nay
+    start = new Date(Date.UTC(year, month, date, 0, 0, 0, 0) - VIETNAM_OFFSET_MS);
+    end = new Date();
+  } else if (timeframe === "yesterday") {
+    // 00:00:00.000 đến 23:59:59.999 giờ VN ngày hôm qua
+    start = new Date(Date.UTC(year, month, date - 1, 0, 0, 0, 0) - VIETNAM_OFFSET_MS);
+    end = new Date(Date.UTC(year, month, date - 1, 23, 59, 59, 999) - VIETNAM_OFFSET_MS);
+  } else if (timeframe === "7days") {
+    start = new Date(Date.UTC(year, month, date - 7, 0, 0, 0, 0) - VIETNAM_OFFSET_MS);
+    end = new Date();
+  } else if (timeframe === "30days") {
+    start = new Date(Date.UTC(year, month, date - 30, 0, 0, 0, 0) - VIETNAM_OFFSET_MS);
+    end = new Date();
+  } else {
+    start = new Date(Date.UTC(year, month, date, 0, 0, 0, 0) - VIETNAM_OFFSET_MS);
+    end = new Date();
+  }
+
+  const startIso = start.toISOString();
+  const endIso = end.toISOString();
+
+  try {
+    const summaryRes = await db.execute(sql`
+      SELECT 
+        COUNT(*)::int AS "totalClicks",
+        COUNT(CASE WHEN "source" = 'google' THEN 1 END)::int AS "googleClicks",
+        COUNT(DISTINCT "ip_hash")::int AS "uniqueVisitors",
+        COUNT(CASE WHEN "device" = 'mobile' OR "device" = 'tablet' THEN 1 END)::int AS "mobileClicks",
+        COUNT(CASE WHEN "device" = 'desktop' THEN 1 END)::int AS "desktopClicks"
+      FROM "traffic_logs"
+      WHERE "created_at" >= ${startIso}::timestamp AND "created_at" <= ${endIso}::timestamp
+    `);
+
+    const sourcesRes = await db.execute(sql`
+      SELECT 
+        "source",
+        COUNT(*)::int AS "count"
+      FROM "traffic_logs"
+      WHERE "created_at" >= ${startIso}::timestamp AND "created_at" <= ${endIso}::timestamp
+      GROUP BY "source"
+      ORDER BY "count" DESC
+      LIMIT 6
+    `);
+
+    const topPagesRes = await db.execute(sql`
+      SELECT 
+        "path",
+        COALESCE(MAX("title"), "path") AS "title",
+        COUNT(*)::int AS "count",
+        COUNT(CASE WHEN "source" = 'google' THEN 1 END)::int AS "googleCount"
+      FROM "traffic_logs"
+      WHERE "created_at" >= ${startIso}::timestamp AND "created_at" <= ${endIso}::timestamp
+      GROUP BY "path"
+      ORDER BY "count" DESC
+      LIMIT 10
+    `);
+
+    const topGooglePagesRes = await db.execute(sql`
+      SELECT 
+        "path",
+        COALESCE(MAX("title"), "path") AS "title",
+        COUNT(*)::int AS "googleCount"
+      FROM "traffic_logs"
+      WHERE "created_at" >= ${startIso}::timestamp AND "created_at" <= ${endIso}::timestamp AND "source" = 'google'
+      GROUP BY "path"
+      ORDER BY "googleCount" DESC
+      LIMIT 10
+    `);
+
+    const chartRes =
+      timeframe === "today" || timeframe === "yesterday"
+        ? await db.execute(sql`
+            SELECT 
+              EXTRACT(HOUR FROM ("created_at" + INTERVAL '7 HOURS'))::int AS "hour",
+              COUNT(*)::int AS "clicks",
+              COUNT(CASE WHEN "source" = 'google' THEN 1 END)::int AS "googleClicks"
+            FROM "traffic_logs"
+            WHERE "created_at" >= ${startIso}::timestamp AND "created_at" <= ${endIso}::timestamp
+            GROUP BY "hour"
+            ORDER BY "hour" ASC
+          `)
+        : await db.execute(sql`
+            SELECT 
+              TO_CHAR("created_at" + INTERVAL '7 HOURS', 'DD/MM') AS "day",
+              COUNT(*)::int AS "clicks",
+              COUNT(CASE WHEN "source" = 'google' THEN 1 END)::int AS "googleClicks"
+            FROM "traffic_logs"
+            WHERE "created_at" >= ${startIso}::timestamp AND "created_at" <= ${endIso}::timestamp
+            GROUP BY "day", DATE_TRUNC('day', "created_at" + INTERVAL '7 HOURS')
+            ORDER BY DATE_TRUNC('day', "created_at" + INTERVAL '7 HOURS') ASC
+          `);
+
+    const summary = (summaryRes as any).rows?.[0] || (summaryRes as any)?.[0] || {};
+    const totalClicks = Number(summary.totalClicks) || 0;
+    const googleClicks = Number(summary.googleClicks) || 0;
+    const uniqueVisitors = Number(summary.uniqueVisitors) || 0;
+    const mobileClicks = Number(summary.mobileClicks) || 0;
+    const desktopClicks = Number(summary.desktopClicks) || 0;
+
+    const totalDev = mobileClicks + desktopClicks || 1;
+    const mobilePercentage = Math.round((mobileClicks / totalDev) * 100);
+    const desktopPercentage = 100 - mobilePercentage;
+
+    const sources = ((sourcesRes as any).rows || (sourcesRes as any) || []).map((r: any) => ({
+      source: r.source,
+      count: Number(r.count) || 0,
+    }));
+
+    const topPages = ((topPagesRes as any).rows || (topPagesRes as any) || []).map((r: any) => ({
+      path: r.path,
+      title: r.title,
+      count: Number(r.count) || 0,
+      googleCount: Number(r.googleCount) || 0,
+    }));
+
+    const topGooglePages = ((topGooglePagesRes as any).rows || (topGooglePagesRes as any) || []).map((r: any) => ({
+      path: r.path,
+      title: r.title,
+      googleCount: Number(r.googleCount) || 0,
+    }));
+
+    let chartData: { label: string; clicks: number; googleClicks: number }[] = [];
+    const rawChart = (chartRes as any).rows || (chartRes as any) || [];
+
+    if (timeframe === "today" || timeframe === "yesterday") {
+      const chartMap = new Map<number, { clicks: number; googleClicks: number }>();
+      rawChart.forEach((r: any) => {
+        chartMap.set(Number(r.hour), {
+          clicks: Number(r.clicks) || 0,
+          googleClicks: Number(r.googleClicks) || 0,
+        });
+      });
+      for (let h = 0; h < 24; h++) {
+        const data = chartMap.get(h) || { clicks: 0, googleClicks: 0 };
+        chartData.push({
+          label: `${String(h).padStart(2, "0")}:00`,
+          clicks: data.clicks,
+          googleClicks: data.googleClicks,
+        });
+      }
+    } else {
+      chartData = rawChart.map((r: any) => ({
+        label: r.day,
+        clicks: Number(r.clicks) || 0,
+        googleClicks: Number(r.googleClicks) || 0,
+      }));
+    }
+
+    return {
+      totalClicks,
+      googleClicks,
+      uniqueVisitors,
+      mobilePercentage,
+      desktopPercentage,
+      chartData,
+      topPages,
+      topGooglePages,
+      sources,
+    };
+  } catch (err) {
+    console.error("Error in getRealtimeAnalytics:", err);
+    return {
+      totalClicks: 0,
+      googleClicks: 0,
+      uniqueVisitors: 0,
+      mobilePercentage: 0,
+      desktopPercentage: 0,
+      chartData: [],
+      topPages: [],
+      topGooglePages: [],
+      sources: [],
+    };
+  }
 }
 
 

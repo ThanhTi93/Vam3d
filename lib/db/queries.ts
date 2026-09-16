@@ -10,7 +10,10 @@ export const getAllMovies = cache(async (limit = 100) => {
 
     const result = await db.query.movies.findMany({
       where: (movies, { eq }) => eq(movies.status, 1),
-      orderBy: (movies, { desc }) => [desc(movies.id)],
+      orderBy: (movies, { asc, desc }) => [
+        sql`CASE WHEN ${movies.displayOrder} > 0 THEN ${movies.displayOrder} ELSE 999999 END ASC`,
+        desc(movies.id),
+      ],
       limit,
       with: {
         author: true,
@@ -39,7 +42,10 @@ export const getHotMovies = cache(async () => {
 
     const result = await db.query.movies.findMany({
       where: (movies, { eq }) => eq(movies.status, 1),
-      orderBy: (movies, { desc }) => [desc(movies.id)],
+      orderBy: (movies, { asc, desc }) => [
+        sql`CASE WHEN ${movies.displayOrder} > 0 THEN ${movies.displayOrder} ELSE 999999 END ASC`,
+        desc(movies.id),
+      ],
       limit: 6,
       with: {
         author: true,
@@ -189,9 +195,12 @@ export const getTopMovies = cache(async (limit = 6) => {
 
     const result = await db.query.movies.findMany({
       where: (movies, { eq }) => eq(movies.status, 1),
-      orderBy: (movies, { desc }) => [desc(movies.id)],
+      orderBy: (movies, { asc, desc }) => [
+        sql`CASE WHEN ${movies.displayOrder} > 0 THEN ${movies.displayOrder} ELSE 999999 END ASC`,
+        desc(movies.id),
+      ],
       limit,
-      columns: { id: true, name: true, slug: true, imgUrl: true, createdAt: true },
+      columns: { id: true, name: true, slug: true, imgUrl: true, createdAt: true, displayOrder: true },
     });
 
     return result;

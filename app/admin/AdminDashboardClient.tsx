@@ -7,7 +7,7 @@ import {
   Plus, Pencil, Trash2, Check, X, RefreshCw, Search,
   ChevronDown, Eye, Star, Flame, Save, Loader2, BookOpen,
   Shield, Settings, Camera, ChevronLeft, ChevronRight, FolderOpen,
-  Tv, Play, Info
+  Tv, Play, Info, MousePointerClick, Globe, Smartphone, Monitor, BarChart3, TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,7 @@ import {
   addImageToCollection, removeImageFromCollection, getAdminAiImages,
   getFreeVipModeAction, toggleFreeVipModeAction,
   getTurnstileModeAction, toggleTurnstileModeAction,
+  getRealtimeAnalytics,
 } from "./actions";
 import { ImagePicker } from "@/components/ui/image-picker";
 import { uploadFileToBunny } from "@/lib/uploadClient";
@@ -421,11 +422,11 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
         isSidebarCollapsed ? "lg:ml-[72px]" : "lg:ml-64"
       }`}>
         {/* Header bar */}
-        <div className="sticky top-0 z-20 bg-[#090a0f]/95 backdrop-blur border-b border-white/5 px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="sticky top-0 z-20 bg-[#090a0f]/95 backdrop-blur border-b border-white/5 px-3 sm:px-8 py-2.5 sm:py-4 flex items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {/* Hamburger – mobile only */}
             <button
-              className="lg:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
+              className="lg:hidden p-1.5 sm:p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
               onClick={() => setIsSidebarOpen(true)}
               aria-label="Mở menu"
             >
@@ -434,19 +435,19 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
               </svg>
             </button>
             <div className="min-w-0">
-              <h1 className="text-base sm:text-lg font-black text-white truncate">
+              <h1 className="text-sm sm:text-lg font-black text-white truncate">
                 {navItems.find(n => n.id === tab)?.label || navItems.flatMap(n => n.subItems || []).find(s => s.id === tab)?.label}
               </h1>
-              <p className="text-[11px] text-gray-500 hidden sm:block">Quản lý dữ liệu Vam3D · Neon PostgreSQL</p>
+              <p className="text-[10px] sm:text-[11px] text-gray-500 hidden sm:block">Quản lý dữ liệu Vam3D · Neon PostgreSQL</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {loading && <Loader2 className="w-4 h-4 text-orange-400 animate-spin" />}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {loading && <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-400 animate-spin" />}
             <Button
               variant="outline"
               size="sm"
               onClick={() => startTransition(async () => { await revalidateAllCache(); await loadData(tab, true); show("Đã cập nhật cache!"); })}
-              className="border-white/10 text-gray-300 hover:text-white text-xs gap-1.5"
+              className="border-white/10 text-gray-300 hover:text-white text-[11px] sm:text-xs h-8 px-2 sm:px-3 gap-1 sm:gap-1.5"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Làm mới cache</span>
@@ -466,14 +467,14 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
                   show("Không thể gửi yêu cầu lập chỉ mục", "error");
                 }
               })}
-              className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold gap-1.5 shadow-md shadow-orange-500/20"
+              className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-[11px] sm:text-xs font-bold h-8 px-2 sm:px-3 gap-1 sm:gap-1.5 shadow-md shadow-orange-500/20"
             >
-              🚀 Lập Chỉ Mục Ngay
+              🚀 <span className="hidden sm:inline">Lập Chỉ Mục Ngay</span><span className="sm:hidden">Lập chỉ mục</span>
             </Button>
           </div>
         </div>
 
-        <div className="p-4 sm:p-8">
+        <div className="p-3 sm:p-6 lg:p-8">
           {/* Toast */}
           {toast && (
             <div className={`fixed top-4 right-4 z-[200] flex items-center gap-2 px-4 py-3 rounded-xl shadow-2xl text-sm font-bold border animate-in slide-in-from-right-4 ${
@@ -632,6 +633,8 @@ function VipFreeModeCard({ show }: { show: (msg: string, type?: "success" | "err
   const [loading, setLoading] = useState<boolean>(true);
   const [toggling, setToggling] = useState<boolean>(false);
 
+  const isVipEnabled = !freeMode;
+
   const fetchStatus = async () => {
     try {
       const mode = await getFreeVipModeAction();
@@ -650,14 +653,14 @@ function VipFreeModeCard({ show }: { show: (msg: string, type?: "success" | "err
   const handleToggle = async () => {
     setToggling(true);
     try {
-      const newStatus = !freeMode;
-      const res = await toggleFreeVipModeAction(newStatus);
+      const nextFreeMode = !freeMode;
+      const res = await toggleFreeVipModeAction(nextFreeMode);
       if (res.success) {
         setFreeMode(res.enabled);
         show(
-          res.enabled
-            ? "Đã BẬT cho xem FREE & Hủy hiển thị gói VIP bên người dùng!"
-            : "Đã TẮT chế độ Free. Đã khôi phục hiển thị gói VIP!"
+          !res.enabled
+            ? "Đã BẬT hệ thống gói VIP! Người dùng cần mua gói để xem nội dung VIP."
+            : "Đã TẮT gói VIP & Mở khóa xem FREE toàn bộ cho người dùng!"
         );
       }
     } catch {
@@ -668,51 +671,51 @@ function VipFreeModeCard({ show }: { show: (msg: string, type?: "success" | "err
   };
 
   return (
-    <div className="bg-gradient-to-r from-[#181a28] via-[#151726] to-[#131520] border border-orange-500/30 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+    <div className="bg-gradient-to-r from-[#181a28] via-[#151726] to-[#131520] border border-orange-500/30 rounded-2xl p-4 sm:p-5 shadow-2xl relative overflow-hidden">
       <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
-        <div className="space-y-1">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 relative z-10">
+        <div className="space-y-1 w-full sm:w-auto">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="p-2 rounded-xl bg-orange-500/10 text-orange-400">
-              <Shield className="w-5 h-5" />
+            <span className="p-1.5 sm:p-2 rounded-xl bg-orange-500/10 text-orange-400">
+              <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
             </span>
-            <h3 className="text-base font-bold text-white">
-              Cấu hình hiển thị Gói VIP & Cho Xem Free
+            <h3 className="text-sm sm:text-base font-bold text-white">
+              Cấu hình hiển thị Gói VIP & Thu Phí
             </h3>
             {loading ? (
-              <Loader2 className="w-4 h-4 text-orange-400 animate-spin" />
-            ) : freeMode ? (
-              <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[11px] px-2.5 py-0.5">
-                ⚡ Đang mở chiếu FREE toàn bộ VIP
+              <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-400 animate-spin" />
+            ) : isVipEnabled ? (
+              <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-0.5">
+                🔒 Đang bật gói cước VIP
               </Badge>
             ) : (
-              <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 text-[11px] px-2.5 py-0.5">
-                🔒 Đang bật gói cước VIP
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-0.5">
+                ⚡ Đang tắt VIP (Free toàn bộ)
               </Badge>
             )}
           </div>
-          <p className="text-xs text-gray-400 leading-relaxed max-w-xl">
-            {freeMode
-              ? "Hệ thống đang ẨN các gói cước thanh toán bên người dùng. Toàn bộ phim & bộ sưu tập VIP đang cho tất cả thành viên xem MIỄN PHÍ."
-              : "Công tắc này dùng để HỦY BỎ hiển thị các gói VIP bên người dùng và mở khóa tất cả nội dung VIP cho phép xem Miễn Phí (Free)."}
+          <p className="text-[11px] sm:text-xs text-gray-400 leading-relaxed max-w-xl">
+            {isVipEnabled
+              ? "Hệ thống đang HIỂN THỊ các gói cước thanh toán bên người dùng. Nội dung VIP yêu cầu tài khoản nâng cấp gói để xem."
+              : "Hệ thống đang ẨN các gói cước thanh toán bên người dùng. Toàn bộ phim & bộ sưu tập VIP đang cho tất cả thành viên xem MIỄN PHÍ (FREE)."}
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
-          <span className="text-xs font-bold text-gray-300">
-            {freeMode ? "Hủy hiển thị VIP (Cho xem Free)" : "Hiển thị gói VIP"}
+        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t border-white/5 sm:border-t-0 shrink-0">
+          <span className="text-[11px] sm:text-xs font-bold text-gray-300">
+            {isVipEnabled ? "Đang Bật Gói VIP" : "Đang Tắt VIP (Free)"}
           </span>
           <button
             type="button"
             disabled={loading || toggling}
             onClick={handleToggle}
             className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-              freeMode ? "bg-orange-500 shadow-lg shadow-orange-500/30" : "bg-gray-700"
+              isVipEnabled ? "bg-orange-500 shadow-lg shadow-orange-500/30" : "bg-gray-700"
             }`}
           >
             <span
               className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                freeMode ? "translate-x-7" : "translate-x-0"
+                isVipEnabled ? "translate-x-7" : "translate-x-0"
               }`}
             />
           </button>
@@ -766,38 +769,38 @@ function TurnstileControlCard({ show }: { show: (msg: string, type?: "success" |
   };
 
   return (
-    <div className="bg-gradient-to-r from-[#181a28] via-[#151726] to-[#131520] border border-blue-500/30 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+    <div className="bg-gradient-to-r from-[#181a28] via-[#151726] to-[#131520] border border-blue-500/30 rounded-2xl p-4 sm:p-5 shadow-2xl relative overflow-hidden">
       <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
-        <div className="space-y-1">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 relative z-10">
+        <div className="space-y-1 w-full sm:w-auto">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
-              <Shield className="w-5 h-5" />
+            <span className="p-1.5 sm:p-2 rounded-xl bg-blue-500/10 text-blue-400">
+              <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
             </span>
-            <h3 className="text-base font-bold text-white">
+            <h3 className="text-sm sm:text-base font-bold text-white">
               Cấu hình Xác minh Bot (Cloudflare Turnstile)
             </h3>
             {loading ? (
-              <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+              <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400 animate-spin" />
             ) : enabled ? (
-              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[11px] px-2.5 py-0.5">
-                🛡️ Đang BẬT xác minh con người
+              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-0.5">
+                🛡️ Đang BẬT xác minh bot
               </Badge>
             ) : (
-              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[11px] px-2.5 py-0.5">
+              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-0.5">
                 🔓 Đã TẮT xác minh (Truy cập thẳng)
               </Badge>
             )}
           </div>
-          <p className="text-xs text-gray-400 leading-relaxed max-w-xl">
+          <p className="text-[11px] sm:text-xs text-gray-400 leading-relaxed max-w-xl">
             {enabled
               ? "Hệ thống đang hiển thị màn hình kiểm tra 'Xác minh bạn là con người' của Cloudflare Turnstile trước khi cho phép người dùng vào trang web."
               : "Đã TẮT chế độ xác minh bot. Tất cả người dùng sẽ truy cập trực tiếp các trang mà không bị chặn bởi trang thử thách /challenge."}
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
-          <span className="text-xs font-bold text-gray-300">
+        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t border-white/5 sm:border-t-0 shrink-0">
+          <span className="text-[11px] sm:text-xs font-bold text-gray-300">
             {enabled ? "Đang Bật xác minh" : "Đang Tắt xác minh"}
           </span>
           <button
@@ -821,52 +824,374 @@ function TurnstileControlCard({ show }: { show: (msg: string, type?: "success" |
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// OVERVIEW TAB
+// REAL-TIME ANALYTICS CARD
 // ═══════════════════════════════════════════════════════════════════════
-function OverviewTab({ movies, categories, show }: { movies: any[]; categories: any[]; show: (msg: string, type?: "success" | "error") => void }) {
-  const stats = [
-    { label: "Tổng phim", value: movies.length, icon: <Film className="w-5 h-5" />, color: "text-orange-400 bg-orange-500/10" },
-    { label: "Thể loại", value: categories.length, icon: <List className="w-5 h-5" />, color: "text-green-400 bg-green-500/10" },
-  ];
+function RealtimeAnalyticsCard() {
+  const [timeframe, setTimeframe] = useState<"today" | "yesterday" | "7days" | "30days">("today");
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<{
+    totalClicks: number;
+    googleClicks: number;
+    uniqueVisitors: number;
+    mobilePercentage: number;
+    desktopPercentage: number;
+    chartData: { label: string; clicks: number; googleClicks: number }[];
+    topPages: { path: string; title: string; count: number; googleCount: number }[];
+    topGooglePages: { path: string; title: string; googleCount: number }[];
+    sources: { source: string; count: number }[];
+  } | null>(null);
+
+  const fetchAnalytics = async (tf: typeof timeframe) => {
+    setLoading(true);
+    try {
+      const res = await getRealtimeAnalytics(tf);
+      setData(res);
+    } catch (err) {
+      console.error("Failed to load realtime analytics:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalytics(timeframe);
+    const interval = setInterval(() => {
+      fetchAnalytics(timeframe);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [timeframe]);
+
+  const maxClicks = Math.max(
+    ...(data?.chartData.map((d) => Math.max(d.clicks, d.googleClicks)) || [1]),
+    1
+  );
+
+  const timeframeLabels: Record<string, string> = {
+    today: "Hôm nay (Real-time)",
+    yesterday: "Hôm qua",
+    "7days": "7 ngày qua",
+    "30days": "30 ngày qua",
+  };
 
   return (
-    <div className="space-y-8">
-      {/* Control Cards Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <VipFreeModeCard show={show} />
-        <TurnstileControlCard show={show} />
+    <div className="bg-[#131520] border border-white/5 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 lg:p-7 shadow-2xl space-y-4 sm:space-y-6">
+      {/* Header with Title, Live Badge, and Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 border-b border-white/5 pb-4 sm:pb-5">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-sm sm:text-lg font-bold text-white flex items-center gap-1.5 sm:gap-2">
+              <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
+              Thống Kê Lượt Nhấp & Tìm Kiếm (Real-time)
+            </h2>
+            <span className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Live
+            </span>
+          </div>
+          <p className="text-[11px] sm:text-xs text-gray-400 mt-1">
+            Đo lường tức thời lượt click từ Google Search và các nguồn truy cập chuẩn xác 100%
+          </p>
+        </div>
+
+        <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          <div className="grid grid-cols-4 flex-1 sm:flex-initial sm:flex items-center bg-[#090a0f] p-1 rounded-xl border border-white/5">
+            {(["today", "yesterday", "7days", "30days"] as const).map((tf) => (
+              <button
+                key={tf}
+                onClick={() => setTimeframe(tf)}
+                className={`px-1.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold text-center transition-all cursor-pointer truncate ${
+                  timeframe === tf
+                    ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                {tf === "today" ? "Hôm nay" : tf === "yesterday" ? "Hôm qua" : tf === "7days" ? "7 ngày" : "30 ngày"}
+              </button>
+            ))}
+          </div>
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => fetchAnalytics(timeframe)}
+            disabled={loading}
+            className="border-white/10 text-gray-300 hover:text-white bg-[#090a0f] h-8 w-8 sm:w-auto px-0 sm:px-2.5 shrink-0"
+            title="Làm mới dữ liệu"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-orange-400" : ""}`} />
+          </Button>
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, idx) => (
-          <div key={idx} className="bg-[#131520] border border-white/5 rounded-2xl p-5 flex items-center gap-4">
-            <div className={`p-3 rounded-xl ${stat.color}`}>
-              {stat.icon}
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">{stat.label}</p>
-              <p className="text-2xl font-black text-white mt-1">{stat.value}</p>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        {/* Total Clicks */}
+        <div className="bg-[#090a0f] border border-white/5 rounded-xl sm:rounded-2xl p-3 sm:p-4 relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs text-gray-400 font-medium">Tổng Lượt Nhấp</span>
+            <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-orange-500/10 text-orange-400">
+              <MousePointerClick className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-        ))}
+          <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl xs:text-2xl sm:text-3xl font-black text-white">
+              {data ? data.totalClicks.toLocaleString() : "—"}
+            </span>
+            <span className="text-[9px] sm:text-[10px] text-gray-500">clicks</span>
+          </div>
+          <div className="mt-1.5 sm:mt-2 text-[9px] sm:text-[10px] text-gray-400 flex items-center gap-1">
+            <span className="text-orange-400 font-bold truncate">{timeframeLabels[timeframe]}</span>
+          </div>
+        </div>
+
+        {/* Google Clicks */}
+        <div className="bg-[#090a0f] border border-emerald-500/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs text-emerald-400/90 font-medium">Từ Google Search</span>
+            <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-400">
+              <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </div>
+          </div>
+          <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl xs:text-2xl sm:text-3xl font-black text-emerald-400">
+              {data ? data.googleClicks.toLocaleString() : "—"}
+            </span>
+            <span className="text-[9px] sm:text-[10px] text-emerald-500/70">clicks</span>
+          </div>
+          <div className="mt-1.5 sm:mt-2 text-[9px] sm:text-[10px] text-gray-400 flex items-center justify-between">
+            <span>Tỷ lệ Google:</span>
+            <span className="font-bold text-emerald-400">
+              {data && data.totalClicks > 0
+                ? `${Math.round((data.googleClicks / data.totalClicks) * 100)}%`
+                : "0%"}
+            </span>
+          </div>
+        </div>
+
+        {/* Unique Visitors */}
+        <div className="bg-[#090a0f] border border-white/5 rounded-xl sm:rounded-2xl p-3 sm:p-4 relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs text-gray-400 font-medium">Khách Duy Nhất (UV)</span>
+            <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-indigo-500/10 text-indigo-400">
+              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </div>
+          </div>
+          <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl xs:text-2xl sm:text-3xl font-black text-indigo-300">
+              {data ? data.uniqueVisitors.toLocaleString() : "—"}
+            </span>
+            <span className="text-[9px] sm:text-[10px] text-gray-500">người</span>
+          </div>
+          <div className="mt-1.5 sm:mt-2 text-[9px] sm:text-[10px] text-gray-400">
+            <span>Dựa trên IP ẩn danh</span>
+          </div>
+        </div>
+
+        {/* Device Breakdown */}
+        <div className="bg-[#090a0f] border border-white/5 rounded-xl sm:rounded-2xl p-3 sm:p-4 relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs text-gray-400 font-medium">Thiết Bị</span>
+            <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-purple-500/10 text-purple-400 flex items-center gap-1">
+              <Smartphone className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+              <Monitor className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+            </div>
+          </div>
+          <div className="mt-1.5 sm:mt-2 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] sm:text-xs text-gray-400 block">Mobile</span>
+              <span className="text-base sm:text-lg lg:text-xl font-black text-purple-400">
+                {data ? `${data.mobilePercentage}%` : "—"}
+              </span>
+            </div>
+            <div className="h-7 w-[1px] bg-white/10" />
+            <div>
+              <span className="text-[10px] sm:text-xs text-gray-400 block">Desktop</span>
+              <span className="text-base sm:text-lg lg:text-xl font-black text-blue-400">
+                {data ? `${data.desktopPercentage}%` : "—"}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Phim Gần Đây */}
-      <div>
-        <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Phim Gần Đây</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {movies.slice(0, 12).map((m: any) => (
-            <div key={m.id} className="bg-[#131520] border border-white/5 rounded-xl overflow-hidden group">
-              <div className="relative aspect-video bg-[#090a0f]">
-                {m.imgUrl && <Image src={getBunnyImageUrl(m.imgUrl, 'original')} alt={m.name} fill className="object-cover" sizes="180px" />}
-              </div>
-              <div className="p-2">
-                <p className="text-[11px] font-bold text-gray-200 line-clamp-1">{m.name}</p>
-              </div>
-            </div>
-          ))}
+      {/* Visual Bar Chart */}
+      <div className="bg-[#090a0f] border border-white/5 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 space-y-3 sm:space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-white/5 pb-2.5 sm:border-0 sm:pb-0">
+          <div>
+            <h3 className="text-[11px] sm:text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5 sm:gap-2">
+              <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-400" />
+              Biểu Đồ Lượt Nhấp {timeframe === "today" || timeframe === "yesterday" ? "Theo Từng Giờ" : "Theo Từng Ngày"}
+            </h3>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[10px] sm:text-xs">
+            <span className="flex items-center gap-1.5 text-gray-400">
+              <span className="w-2.5 h-2.5 rounded-sm bg-orange-500" /> Tổng Lượt Nhấp
+            </span>
+            <span className="flex items-center gap-1.5 text-emerald-400">
+              <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" /> Từ Google Search
+            </span>
+          </div>
         </div>
+
+        {/* Chart Bars with horizontal scrolling on mobile */}
+        <div className="pt-3 sm:pt-6 pb-1 overflow-x-auto scrollbar-thin">
+          {data && data.chartData.length > 0 ? (
+            <div className="flex items-end gap-1 sm:gap-2 h-40 sm:h-44 min-w-[440px] sm:min-w-full pb-3">
+              {data.chartData.map((item, idx) => {
+                const totalHeight = Math.max(8, Math.round((item.clicks / maxClicks) * 130));
+                const googleHeight = Math.max(
+                  item.googleClicks > 0 ? 6 : 0,
+                  Math.round((item.googleClicks / maxClicks) * 130)
+                );
+
+                return (
+                  <div key={idx} className="flex-1 min-w-[16px] sm:min-w-[24px] flex flex-col items-center gap-1.5 group relative">
+                    {/* Tooltip on hover */}
+                    <div className="absolute -top-12 z-30 hidden group-hover:flex flex-col items-center bg-black/90 border border-white/15 px-2.5 py-1.5 rounded-lg shadow-xl text-[10px] whitespace-nowrap pointer-events-none">
+                      <span className="text-gray-300 font-bold">{item.label}</span>
+                      <span className="text-orange-400">Tổng: {item.clicks}</span>
+                      <span className="text-emerald-400">Google: {item.googleClicks}</span>
+                    </div>
+
+                    {/* Bars */}
+                    <div className="w-full flex items-end justify-center gap-0.5 sm:gap-1 h-32 sm:h-36">
+                      {/* Total clicks bar */}
+                      <div
+                        style={{ height: `${totalHeight}px` }}
+                        className="w-full max-w-[10px] sm:max-w-[14px] bg-gradient-to-t from-orange-600 to-amber-400 rounded-t-sm group-hover:brightness-125 transition-all"
+                      />
+                      {/* Google clicks bar */}
+                      <div
+                        style={{ height: `${googleHeight}px` }}
+                        className="w-full max-w-[10px] sm:max-w-[14px] bg-gradient-to-t from-emerald-600 to-teal-400 rounded-t-sm group-hover:brightness-125 transition-all"
+                      />
+                    </div>
+
+                    {/* Label */}
+                    <span className="text-[8px] sm:text-[9px] text-gray-500 group-hover:text-gray-200 transition-colors truncate max-w-full">
+                      {item.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="h-32 sm:h-36 flex items-center justify-center text-gray-500 text-xs">
+              {loading ? "Đang tải dữ liệu..." : "Chưa có dữ liệu lượt nhấp trong khoảng thời gian này."}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Two Detailed Tables Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Top Google Clicked Pages */}
+        <div className="bg-[#090a0f] border border-white/5 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 space-y-3">
+          <div className="flex items-center justify-between border-b border-white/5 pb-2.5 sm:pb-3">
+            <h3 className="text-[11px] sm:text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5 sm:gap-2">
+              <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+              Top Phim & Link Từ Google Search
+            </h3>
+            <span className="text-[9px] sm:text-[10px] text-gray-500">Lượt click</span>
+          </div>
+
+          <div className="space-y-1.5 sm:space-y-2 max-h-72 overflow-y-auto pr-1">
+            {data && data.topGooglePages.length > 0 ? (
+              data.topGooglePages.map((page, idx) => (
+                <div key={idx} className="flex items-center justify-between p-2 sm:p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-colors gap-2 sm:gap-3">
+                  <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                    <span className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold text-[9px] sm:text-[10px] flex items-center justify-center shrink-0">
+                      {idx + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-gray-200 truncate max-w-[150px] xs:max-w-[200px] sm:max-w-[280px] md:max-w-md">{page.title || page.path}</p>
+                      <p className="text-[10px] text-gray-500 font-mono truncate max-w-[150px] xs:max-w-[200px] sm:max-w-[280px] md:max-w-md">{page.path}</p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] sm:text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md shrink-0">
+                    {page.googleCount.toLocaleString()}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-gray-500 text-center py-6">Chưa có lượt click từ Google Search.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Traffic Sources Breakdown */}
+        <div className="bg-[#090a0f] border border-white/5 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 space-y-3">
+          <div className="flex items-center justify-between border-b border-white/5 pb-2.5 sm:pb-3">
+            <h3 className="text-[11px] sm:text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5 sm:gap-2">
+              <MousePointerClick className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-400" />
+              Phân Bổ Nguồn Truy Cập
+            </h3>
+            <span className="text-[9px] sm:text-[10px] text-gray-500">Tổng nhấp</span>
+          </div>
+
+          <div className="space-y-1.5 sm:space-y-2 max-h-72 overflow-y-auto pr-1">
+            {data && data.sources.length > 0 ? (
+              data.sources.map((src, idx) => {
+                const percentage = data.totalClicks > 0 ? Math.round((src.count / data.totalClicks) * 100) : 0;
+                const sourceNames: Record<string, string> = {
+                  google: "Google Search",
+                  direct: "Truy cập Trực tiếp",
+                  facebook: "Facebook",
+                  tiktok: "TikTok",
+                  bing: "Bing Search",
+                  coccoc: "Cốc Cốc",
+                  youtube: "YouTube",
+                  other: "Khác",
+                };
+
+                return (
+                  <div key={idx} className="p-2 sm:p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-colors space-y-1 sm:space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] sm:text-xs">
+                      <span className="font-semibold text-gray-200 capitalize">
+                        {sourceNames[src.source] || src.source}
+                      </span>
+                      <span className="font-bold text-white">
+                        {src.count.toLocaleString()} <span className="text-[9px] sm:text-[10px] text-gray-500">({percentage}%)</span>
+                      </span>
+                    </div>
+                    {/* Progress bar */}
+                    <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        style={{ width: `${percentage}%` }}
+                        className={`h-full rounded-full ${
+                          src.source === "google"
+                            ? "bg-emerald-500"
+                            : src.source === "facebook"
+                            ? "bg-blue-500"
+                            : "bg-orange-500"
+                        }`}
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-xs text-gray-500 text-center py-6">Chưa có dữ liệu nguồn truy cập.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// OVERVIEW TAB
+// ═══════════════════════════════════════════════════════════════════════
+function OverviewTab({ show }: { movies?: any[]; categories?: any[]; show: (msg: string, type?: "success" | "error") => void }) {
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      {/* Real-time Click & Search Analytics Section */}
+      <RealtimeAnalyticsCard />
+
+      {/* Control Cards Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <VipFreeModeCard show={show} />
+        <TurnstileControlCard show={show} />
       </div>
     </div>
   );
@@ -876,7 +1201,7 @@ function OverviewTab({ movies, categories, show }: { movies: any[]; categories: 
 // MOVIES TAB
 // ═══════════════════════════════════════════════════════════════════════
 function MoviesTab({ movies, categories, actors, characters, authors, search, setSearch, isPending, startTransition, onRefresh, show, confirmThenDelete }: any) {
-  const emptyForm = { name: "", description: "", imgUrl: "" as string | File | null, categoryIds: [] as number[], idAuthor: 0 };
+  const emptyForm = { name: "", description: "", imgUrl: "" as string | File | null, categoryIds: [] as number[], idAuthor: 0, displayOrder: 0 };
   const [form, setForm] = useState(emptyForm);
   const [editing, setEditing] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -922,6 +1247,7 @@ function MoviesTab({ movies, categories, actors, characters, authors, search, se
       imgUrl: m.imgUrl ?? "",
       categoryIds: m.movieCategories?.map((mc: any) => mc.idCategory) ?? [],
       idAuthor: m.idAuthor ?? 0,
+      displayOrder: m.displayOrder ?? 0,
     });
     setEditing(m.id);
     setShowForm(true);
@@ -954,6 +1280,7 @@ function MoviesTab({ movies, categories, actors, characters, authors, search, se
           imgUrl: (finalImgUrl as string) || "",
           categoryIds: form.categoryIds,
           idAuthor: form.idAuthor || null,
+          displayOrder: Number(form.displayOrder) || 0,
         };
  
         if (isEdit) {
@@ -1016,12 +1343,24 @@ function MoviesTab({ movies, categories, actors, characters, authors, search, se
                   ))}
                 </div>
               </div>
-              <div className="sm:col-span-2">
-                <label className="text-xs text-gray-400 mb-1 block">Tác Giả (Author)</label>
-                <select value={form.idAuthor} onChange={e => f("idAuthor", parseInt(e.target.value))} className="w-full bg-[#090a0f] border border-white/5 rounded-lg h-9 px-3 text-sm text-gray-200">
-                  <option value={0}>-- Không có (Chưa chọn) --</option>
-                  {authors?.map((a: any) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
+              <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">Tác Giả (Author)</label>
+                  <select value={form.idAuthor} onChange={e => f("idAuthor", parseInt(e.target.value))} className="w-full bg-[#090a0f] border border-white/5 rounded-lg h-9 px-3 text-sm text-gray-200">
+                    <option value={0}>-- Không có (Chưa chọn) --</option>
+                    {authors?.map((a: any) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">Thứ tự hiển thị (Display Order)</label>
+                  <Input 
+                    type="number" 
+                    value={form.displayOrder} 
+                    onChange={e => f("displayOrder", parseInt(e.target.value) || 0)} 
+                    placeholder="1 (Số 1 = TOP 1, số 2 = TOP 2...)" 
+                    className="bg-[#090a0f] border-white/5 text-sm h-9" 
+                  />
+                </div>
               </div>
             </div>
  
@@ -1063,6 +1402,13 @@ function MoviesTab({ movies, categories, actors, characters, authors, search, se
                       <Film className="w-8 h-8 text-gray-700" />
                     </div>
                   )}
+                </div>
+
+                {/* Top left order badge */}
+                <div className="absolute top-2 left-2 z-20 pointer-events-none">
+                  <span className="bg-black/80 backdrop-blur-md border border-orange-500/30 text-orange-400 font-mono font-bold text-[10px] px-2 py-0.5 rounded-md shadow-md flex items-center gap-1">
+                    #{m.displayOrder ?? 0}
+                  </span>
                 </div>
 
                 {/* Gradient Overlay */}

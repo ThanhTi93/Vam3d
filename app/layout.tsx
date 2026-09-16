@@ -8,6 +8,7 @@ import { AuthProvider } from "./context/AuthContext";
 import JsonLd from "./components/JsonLd";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import TrafficTracker from "@/components/TrafficTracker";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -131,6 +132,9 @@ export default function RootLayout({
         <JsonLd data={organizationJsonLd} />
       </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[#090a0f] text-gray-100 selection:bg-orange-500 selection:text-white">
+        <Suspense fallback={null}>
+          <TrafficTracker />
+        </Suspense>
         <AuthProvider>
           <WatchlistProvider>
             <Header />

@@ -96,9 +96,6 @@ function SearchInput() {
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
-  if (pathname?.startsWith("/admin")) {
-    return null;
-  }
   const { watchlist } = useWatchlist();
   const { user, loading: authLoading, logout, refreshUser, freeVipMode } = useAuth();
 
@@ -127,6 +124,10 @@ export default function Header() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
 
   return (
     <header className={`sticky top-0 z-40 transition-all duration-300 ${isScrolled
@@ -563,14 +564,16 @@ export default function Header() {
           >
             Bộ Sưu Tập AI
           </Link>
-          <Link
-            href="/upgrade"
-            prefetch={false}
-            onClick={() => setShowMobileMenu(false)}
-            className="w-full text-center mt-1 bg-gradient-to-r from-yellow-500 via-orange-500 to-red-600 text-white font-extrabold text-xs py-2 rounded-xl hover:from-yellow-400 hover:via-orange-400 hover:to-red-500 transition-all shadow-lg active:scale-[0.98]"
-          >
-            ⚡ NÂNG CẤP VIP
-          </Link>
+          {mounted && !freeVipMode && (
+            <Link
+              href="/upgrade"
+              prefetch={false}
+              onClick={() => setShowMobileMenu(false)}
+              className="w-full text-center mt-1 bg-gradient-to-r from-yellow-500 via-orange-500 to-red-600 text-white font-extrabold text-xs py-2 rounded-xl hover:from-yellow-400 hover:via-orange-400 hover:to-red-500 transition-all shadow-lg active:scale-[0.98]"
+            >
+              ⚡ NÂNG CẤP VIP
+            </Link>
+          )}
         </div>
       )}
     </header>

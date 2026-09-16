@@ -80,6 +80,7 @@ export default async function Home() {
     videoUrl: m?.episodes?.[0]?.url || "",
     views: m?.viewCount || 0,
     isHot: m?.isHot || false,
+    displayOrder: m?.displayOrder ?? 0,
     episodes: m?.episodes?.map((ep: any) => ({
       name: ep?.name || `Tập ${ep?.id}`,
       url: ep?.url || "",
@@ -113,6 +114,7 @@ export default async function Home() {
     videoUrl: m?.episodes?.[0]?.url || "",
     views: m?.viewCount || 0,
     isHot: m?.isHot || false,
+    displayOrder: m?.displayOrder ?? 0,
     episodes: m?.episodes?.map((ep: any) => ({
       name: ep?.name || `Tập ${ep?.id}`,
       url: ep?.url || "",

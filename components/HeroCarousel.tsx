@@ -157,6 +157,7 @@ export default function HeroCarousel({ hotMovies }: HeroCarouselProps) {
               alt={movie.title}
               fill
               priority={idx === 0}
+              loading={idx === 0 ? "eager" : "lazy"}
               className="object-cover object-center scale-105 brightness-40"
               sizes="100vw"
             />
@@ -184,9 +185,17 @@ export default function HeroCarousel({ hotMovies }: HeroCarouselProps) {
             pointerEvents: idx === heroIndex ? "auto" : "none",
           }}
         >
-          <div className="flex items-center gap-3 mb-3">
-            <span className="flex items-center gap-1 bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold text-xs uppercase tracking-wider px-2.5 py-1 rounded">
-              <Flame className="w-3.5 h-3.5" /> Đề Cử Hot
+          {/* Subtle Decorative Position Watermark */}
+          <div className="absolute -top-16 -left-6 sm:-top-24 sm:-left-10 text-7xl sm:text-9xl font-black text-white/5 select-none pointer-events-none font-mono tracking-tighter">
+            #{String(idx + 1).padStart(2, '0')}
+          </div>
+
+          <div className="flex items-center gap-2.5 sm:gap-3 mb-3 flex-wrap">
+            <span className="flex items-center gap-1 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white font-extrabold text-xs uppercase tracking-wider px-2.5 py-1 rounded shadow-lg shadow-orange-500/30 ring-1 ring-white/20">
+              <Flame className="w-3.5 h-3.5 fill-white" /> TOP #{idx + 1}
+            </span>
+            <span className="flex items-center gap-1 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded border border-white/10 text-orange-400 font-bold text-xs uppercase tracking-wider">
+              Đề Cử Hot
             </span>
             <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded border border-white/10 text-yellow-400 font-bold text-sm">
               <Star className="w-4 h-4 fill-yellow-400" /> {movie.rating}
@@ -253,18 +262,24 @@ export default function HeroCarousel({ hotMovies }: HeroCarouselProps) {
           <ChevronRight className="w-6 h-6" />
         </Button>
 
-      {/* Dot Indicators */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full">
-        {hotMovies.map((_, idx) => (
-          <button
-            key={idx}
-            onClick={() => setHeroIndex(idx)}
-            aria-label={`Chuyển đến slide ${idx + 1}`}
-            className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-              idx === heroIndex ? "bg-orange-500 w-6" : "bg-gray-500 w-2"
-            }`}
-          />
-        ))}
+      {/* Slide Counter & Dot Indicators */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 bg-black/50 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 shadow-lg">
+        <span className="text-[11px] font-mono font-bold text-orange-400">
+          {String(heroIndex + 1).padStart(2, "0")} <span className="text-gray-500">/ {String(hotMovies.length).padStart(2, "0")}</span>
+        </span>
+        <div className="h-3 w-[1px] bg-white/10" />
+        <div className="flex items-center gap-1.5">
+          {hotMovies.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setHeroIndex(idx)}
+              aria-label={`Chuyển đến slide ${idx + 1}`}
+              className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                idx === heroIndex ? "bg-orange-500 w-5" : "bg-gray-600 hover:bg-gray-400 w-1.5"
+              }`}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );

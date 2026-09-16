@@ -32,6 +32,7 @@ export interface Movie {
   videoUrl: string;
   views: number;
   isHot: boolean;
+  displayOrder?: number;
   episodes?: Episode[];
   aiGalleries?: any[];
   plan?: any;

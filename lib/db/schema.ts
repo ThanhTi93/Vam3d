@@ -74,6 +74,7 @@ export const movies = pgTable("movies", {
   imgUrl: varchar("img_url", { length: 500 }), // Thumbnail URL
   createdAt: timestamp("created_at").defaultNow(),
   status: integer("status").default(1),
+  displayOrder: integer("display_order").default(0),
 });
 
 // Movies Relations
@@ -458,5 +459,17 @@ export const systemSettings = pgTable("system_settings", {
   key: varchar("key", { length: 255 }).primaryKey(),
   value: text("value"),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// 25. Traffic Logs Table (Real-time Click & Search Tracking)
+export const trafficLogs = pgTable("traffic_logs", {
+  id: serial("id").primaryKey(),
+  path: varchar("path", { length: 500 }).notNull(),
+  title: varchar("title", { length: 500 }),
+  referrer: varchar("referrer", { length: 500 }),
+  source: varchar("source", { length: 50 }).default("direct"),
+  device: varchar("device", { length: 50 }).default("desktop"),
+  ipHash: varchar("ip_hash", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
