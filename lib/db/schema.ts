@@ -245,6 +245,7 @@ export const accounts = pgTable("accounts", {
   status: integer("status").default(1),
   level: integer("level").default(0),
   expiredAt: timestamp("expired_at"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Accounts Relations

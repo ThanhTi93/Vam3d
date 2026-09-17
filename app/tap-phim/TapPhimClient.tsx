@@ -341,10 +341,10 @@ export default function TapPhimClient({
                     <div className="p-3 flex-1 flex flex-col justify-between space-y-1.5">
                       <div>
                         <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-orange-400 transition-colors line-clamp-1">
-                          {movieName}
-                        </h3>
-                        <p className="text-[11px] text-gray-400 line-clamp-1 mt-0.5">
                           {epName}
+                        </h3>
+                        <p className="text-[11px] text-gray-400 line-clamp-1 mt-0.5 font-medium">
+                          {movieName}
                         </p>
                       </div>
 

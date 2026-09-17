@@ -7,6 +7,8 @@ import {
   Sparkles, 
   ChevronDown, 
   ChevronUp, 
+  ChevronLeft,
+  ChevronRight,
   Layers, 
   CheckCircle2, 
   Search, 
@@ -54,6 +56,9 @@ export default function CategoryCatalog({
     ? allCategories 
     : DEFAULT_CATEGORIES;
 
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 16;
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -63,6 +68,11 @@ export default function CategoryCatalog({
       if (genreParam) setSelectedGenre(genreParam);
     }
   }, []);
+
+  // Reset to page 1 on filter or search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedGenre, categorySlug]);
 
   const getFilteredMovies = () => {
     let list = movies;
@@ -88,6 +98,11 @@ export default function CategoryCatalog({
   };
 
   const filteredMovies = getFilteredMovies();
+  const totalItems = filteredMovies.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const paginatedMovies = filteredMovies.slice(startIndex, startIndex + pageSize);
   const currentSlugClean = (categorySlug || slugify(categoryTitle)).toLowerCase();
 
   return (
@@ -240,11 +255,94 @@ export default function CategoryCatalog({
 
           {/* Movies List */}
           {filteredMovies.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-5 animate-in fade-in duration-300">
-              {filteredMovies.map((movie) => (
-                <MovieCard key={movie.id} movie={movie} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-5 animate-in fade-in duration-300">
+                {paginatedMovies.map((movie) => (
+                  <MovieCard key={movie.id} movie={movie} />
+                ))}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-white/10">
+                  <div className="text-xs text-gray-400">
+                    Hiển thị <strong className="text-white font-mono">{startIndex + 1}</strong> – <strong className="text-white font-mono">{Math.min(startIndex + pageSize, totalItems)}</strong> / <strong className="text-orange-400 font-mono">{totalItems}</strong> phim
+                  </div>
+
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <button
+                      onClick={() => {
+                        const newPage = Math.max(1, safeCurrentPage - 1);
+                        setCurrentPage(newPage);
+                        window.scrollTo({ top: 250, behavior: "smooth" });
+                      }}
+                      disabled={safeCurrentPage === 1}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#131520] border border-white/10 text-gray-300 hover:text-white hover:border-orange-500/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span>Trước</span>
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter((p) => {
+                          return (
+                            p === 1 ||
+                            p === totalPages ||
+                            Math.abs(p - safeCurrentPage) <= 1
+                          );
+                        })
+                        .reduce<(number | string)[]>((acc, p, idx, arr) => {
+                          if (idx > 0 && typeof arr[idx - 1] === "number" && (p as number) - (arr[idx - 1] as number) > 1) {
+                            acc.push("...");
+                          }
+                          acc.push(p);
+                          return acc;
+                        }, [])
+                        .map((item, idx) => {
+                          if (typeof item === "string") {
+                            return (
+                              <span key={`dots-${idx}`} className="px-2 text-xs text-gray-500">
+                                ...
+                              </span>
+                            );
+                          }
+                          const isActive = item === safeCurrentPage;
+                          return (
+                            <button
+                              key={item}
+                              onClick={() => {
+                                setCurrentPage(item);
+                                window.scrollTo({ top: 250, behavior: "smooth" });
+                              }}
+                              className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                isActive
+                                  ? "bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-md shadow-orange-500/20"
+                                  : "bg-[#131520] border border-white/10 text-gray-400 hover:text-white hover:border-white/20"
+                              }`}
+                            >
+                              {item}
+                            </button>
+                          );
+                        })}
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        const newPage = Math.min(totalPages, safeCurrentPage + 1);
+                        setCurrentPage(newPage);
+                        window.scrollTo({ top: 250, behavior: "smooth" });
+                      }}
+                      disabled={safeCurrentPage === totalPages}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#131520] border border-white/10 text-gray-300 hover:text-white hover:border-orange-500/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    >
+                      <span>Sau</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 bg-[#131520]/60 rounded-2xl border border-white/10 text-center px-4 space-y-3">
               <Film className="w-16 h-16 text-gray-600 stroke-1" />

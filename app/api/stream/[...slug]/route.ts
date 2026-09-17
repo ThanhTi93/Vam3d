@@ -1,6 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
+import dns from "node:dns";
+import { Agent } from "undici";
 
-const BUNNY_STREAM_HOST = "vz-df52fbd4-040.b-cdn.net";
+const BUNNY_STREAM_HOST = process.env.BUNNY_STREAM_HOST || "vz-df52fbd4-040.b-cdn.net";
+
+// Custom DNS Resolver using Google and Cloudflare Public DNS
+const customResolver = new dns.Resolver();
+customResolver.setServers(["8.8.8.8", "1.1.1.1", "8.8.4.4", "1.0.0.1"]);
+
+// In-memory DNS cache to eliminate repeated DNS resolution latency
+const dnsCache = new Map<string, { ip: string; expires: number }>();
+
+function customLookup(hostname: string, opts: any, cb: any) {
+  const callback = typeof opts === "function" ? opts : cb;
+  const options = typeof opts === "object" ? opts : {};
+
+  // Check in-memory DNS cache
+  const cached = dnsCache.get(hostname);
+  const now = Date.now();
+  if (cached && cached.expires > now) {
+    if (options.all) {
+      return callback(null, [{ address: cached.ip, family: 4 }]);
+    }
+    return callback(null, cached.ip, 4);
+  }
+
+  customResolver.resolve4(hostname, (err, addresses) => {
+    if (err || !addresses || addresses.length === 0) {
+      // Fallback to default system DNS lookup
+      return dns.lookup(hostname, options, callback);
+    }
+
+    const ip = addresses[0];
+    // Cache for 10 minutes
+    dnsCache.set(hostname, { ip, expires: now + 10 * 60 * 1000 });
+
+    if (options.all) {
+      callback(null, addresses.map((a) => ({ address: a, family: 4 })));
+    } else {
+      callback(null, ip, 4);
+    }
+  });
+}
+
+const streamAgent = new Agent({
+  connect: {
+    lookup: customLookup,
+  },
+  pipelining: 1,
+  keepAliveTimeout: 30000,
+});
 
 export async function GET(
   request: NextRequest,
@@ -29,6 +78,8 @@ export async function GET(
 
     const bunnyRes = await fetch(targetUrl, {
       headers,
+      // @ts-ignore
+      dispatcher: streamAgent,
       // @ts-ignore
       cf: {
         cacheTtl: path.endsWith(".m3u8") ? 60 : 86400 * 30,

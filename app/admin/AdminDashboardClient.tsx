@@ -1576,7 +1576,22 @@ function CategoriesTab({ categories, search, setSearch, isPending, startTransiti
   const [form, setForm] = useState({ name: "", description: "" });
   const [editing, setEditing] = useState<number | null>(null);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  // Reset to page 1 whenever search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
   const filtered = categories.filter((c: any) => c.name.toLowerCase().includes(search.toLowerCase()));
+
+  const totalItems = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const paginatedCategories = filtered.slice(startIndex, startIndex + pageSize);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1610,22 +1625,28 @@ function CategoriesTab({ categories, search, setSearch, isPending, startTransiti
             <Textarea value={form.description} onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))} className="bg-[#090a0f] border-white/5 text-sm min-h-[80px]" />
           </div>
           <div className="flex gap-2">
-            <Button type="submit" disabled={isPending} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white border-0 h-9 text-xs gap-1">
+            <Button type="submit" disabled={isPending} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white border-0 h-9 text-xs gap-1 cursor-pointer">
               {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
               {editing !== null ? "Lưu" : "Thêm"}
             </Button>
             {editing !== null && (
-              <Button type="button" variant="outline" onClick={() => { setEditing(null); setForm({ name: "", description: "" }); }} className="border-white/10 text-gray-400 h-9 text-xs">Huỷ</Button>
+              <Button type="button" variant="outline" onClick={() => { setEditing(null); setForm({ name: "", description: "" }); }} className="border-white/10 text-gray-400 h-9 text-xs cursor-pointer">Huỷ</Button>
             )}
           </div>
         </form>
       </div>
 
       <div className="lg:col-span-2 space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-          <Input placeholder="Tìm thể loại…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-[#131520] border-white/5 text-sm h-9" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+            <Input placeholder="Tìm thể loại…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-[#131520] border-white/5 text-sm h-9" />
+          </div>
+          <div className="text-xs text-gray-400 whitespace-nowrap">
+            Tổng: <strong className="text-orange-400 font-mono">{totalItems}</strong> thể loại
+          </div>
         </div>
+
         <div className="bg-[#131520] border border-white/5 rounded-2xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
@@ -1637,17 +1658,17 @@ function CategoriesTab({ categories, search, setSearch, isPending, startTransiti
               </tr>
             </thead>
             <tbody>
-              {filtered.map((c: any) => (
+              {paginatedCategories.map((c: any) => (
                 <tr key={c.id} className="border-b border-white/5 hover:bg-white/2 group">
                   <td className="px-4 py-3 text-xs text-gray-500 font-mono">#{c.id}</td>
                   <td className="px-4 py-3 text-xs font-bold text-gray-200">{c.name}</td>
                   <td className="px-4 py-3 text-xs text-gray-500 line-clamp-1">{c.description || "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button size="sm" variant="outline" onClick={() => { setEditing(c.id); setForm({ name: c.name, description: c.description ?? "" }); }} className="h-7 border-white/10 text-gray-300 px-2 gap-1">
+                      <Button size="sm" variant="outline" onClick={() => { setEditing(c.id); setForm({ name: c.name, description: c.description ?? "" }); }} className="h-7 border-white/10 text-gray-300 px-2 gap-1 cursor-pointer">
                         <Pencil className="w-3 h-3" />
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => confirmThenDelete(`Xoá thể loại "${c.name}"?`, () => deleteCategory(c.id))} className="h-7 border-red-500/20 text-red-400 hover:bg-red-500/10 px-2">
+                      <Button size="sm" variant="outline" onClick={() => confirmThenDelete(`Xoá thể loại "${c.name}"?`, () => deleteCategory(c.id))} className="h-7 border-red-500/20 text-red-400 hover:bg-red-500/10 px-2 cursor-pointer">
                         <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
@@ -1656,6 +1677,118 @@ function CategoriesTab({ categories, search, setSearch, isPending, startTransiti
               ))}
             </tbody>
           </table>
+          {filtered.length === 0 && <div className="text-center py-12 text-sm text-gray-500">Không tìm thấy thể loại nào</div>}
+
+          {/* Pagination Controls */}
+          {totalItems > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-white/5 bg-[#0e1018]/80 text-xs text-gray-400">
+              <div className="flex flex-wrap items-center gap-3">
+                <span>
+                  Hiển thị <strong className="text-white font-mono">{startIndex + 1}</strong> – <strong className="text-white font-mono">{Math.min(startIndex + pageSize, totalItems)}</strong> / <strong className="text-orange-400 font-mono">{totalItems}</strong>
+                </span>
+                <span className="text-gray-600 hidden sm:inline">|</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-gray-500">Hiển thị:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-[#131520] border border-white/10 rounded-md px-2 py-1 text-xs text-gray-200 cursor-pointer focus:outline-none focus:border-orange-500"
+                  >
+                    <option value={10}>10 / trang</option>
+                    <option value={20}>20 / trang</option>
+                    <option value={50}>50 / trang</option>
+                    <option value={100}>100 / trang</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={safeCurrentPage <= 1}
+                  onClick={() => setCurrentPage(1)}
+                  className="h-8 px-2.5 border-white/10 text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 cursor-pointer"
+                  title="Trang đầu"
+                >
+                  «
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={safeCurrentPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="h-8 px-2.5 border-white/10 text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 cursor-pointer flex items-center gap-1"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Trước</span>
+                </Button>
+
+                {/* Page numbers */}
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((page) => {
+                      return (
+                        page === 1 ||
+                        page === totalPages ||
+                        Math.abs(page - safeCurrentPage) <= 1
+                      );
+                    })
+                    .reduce((acc: (number | string)[], page, idx, arr) => {
+                      if (idx > 0 && page - (arr[idx - 1] as number) > 1) {
+                        acc.push("...");
+                      }
+                      acc.push(page);
+                      return acc;
+                    }, [])
+                    .map((item, idx) =>
+                      typeof item === "string" ? (
+                        <span key={`cat-ellipsis-${idx}`} className="px-1 text-gray-600 select-none">
+                          ...
+                        </span>
+                      ) : (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => setCurrentPage(item)}
+                          className={`h-8 min-w-8 px-2 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                            item === safeCurrentPage
+                              ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/20"
+                              : "text-gray-400 hover:text-white hover:bg-white/5 border border-transparent"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      )
+                    )}
+                </div>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={safeCurrentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="h-8 px-2.5 border-white/10 text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 cursor-pointer flex items-center gap-1"
+                >
+                  <span className="hidden sm:inline">Sau</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={safeCurrentPage >= totalPages}
+                  onClick={() => setCurrentPage(totalPages)}
+                  className="h-8 px-2.5 border-white/10 text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 cursor-pointer"
+                  title="Trang cuối"
+                >
+                  »
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1696,13 +1829,29 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
   const [uploading, setUploading] = useState<boolean>(false);
   const [tusUpload, setTusUpload] = useState<any>(null);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  // Reset to page 1 whenever search or movie filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterMovie]);
+
   const filtered = episodes.filter((ep: any) => {
-    const matchSearch = (ep.url?.toLowerCase() || "").includes(search.toLowerCase()) || 
+    const matchSearch = (ep.name?.toLowerCase() || "").includes(search.toLowerCase()) ||
+                        (ep.url?.toLowerCase() || "").includes(search.toLowerCase()) || 
                         (ep.bunnyVideoId?.toLowerCase() || "").includes(search.toLowerCase()) || 
-                        ep.movie?.name?.toLowerCase().includes(search.toLowerCase());
+                        (ep.movie?.name?.toLowerCase() || "").includes(search.toLowerCase());
     const matchFilter = filterMovie === 0 || ep.idMovie === filterMovie;
     return matchSearch && matchFilter;
   });
+
+  const totalItems = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const paginatedEpisodes = filtered.slice(startIndex, startIndex + pageSize);
 
   const cancelUpload = () => {
     if (tusUpload) {
@@ -2119,7 +2268,7 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
               </tr>
             </thead>
             <tbody>
-              {filtered.map((ep: any) => (
+              {paginatedEpisodes.map((ep: any) => (
                 <tr key={ep.id} className="border-b border-white/5 hover:bg-white/2 group">
                   <td className="px-4 py-3 text-xs text-gray-500 font-mono">#{ep.id}</td>
                   <td className="px-4 py-3 text-xs text-gray-300 font-medium">{ep.movie?.name ?? ep.idMovie}</td>
@@ -2196,10 +2345,10 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
                         setUploadProgress(null);
                         setUploadStatusMsg("");
                         setShowForm(true);
-                      }} className="h-7 border-white/10 text-gray-300 px-2">
+                      }} className="h-7 border-white/10 text-gray-300 px-2 cursor-pointer">
                         <Pencil className="w-3 h-3" />
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => confirmThenDelete(`Xoá tập ${ep.name || ep.id}?`, () => deleteEpisode(ep.id))} className="h-7 border-red-500/20 text-red-400 hover:bg-red-500/10 px-2">
+                      <Button size="sm" variant="outline" onClick={() => confirmThenDelete(`Xoá tập ${ep.name || ep.id}?`, () => deleteEpisode(ep.id))} className="h-7 border-red-500/20 text-red-400 hover:bg-red-500/10 px-2 cursor-pointer">
                         <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
@@ -2209,6 +2358,117 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
             </tbody>
           </table>
           {filtered.length === 0 && <div className="text-center py-12 text-sm text-gray-500">Không có tập phim nào</div>}
+
+          {/* Pagination Controls */}
+          {totalItems > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-white/5 bg-[#0e1018]/80 text-xs text-gray-400">
+              <div className="flex flex-wrap items-center gap-3">
+                <span>
+                  Hiển thị <strong className="text-white font-mono">{startIndex + 1}</strong> – <strong className="text-white font-mono">{Math.min(startIndex + pageSize, totalItems)}</strong> trong tổng <strong className="text-orange-400 font-mono">{totalItems}</strong> tập
+                </span>
+                <span className="text-gray-600 hidden sm:inline">|</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-gray-500">Hiển thị:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-[#131520] border border-white/10 rounded-md px-2 py-1 text-xs text-gray-200 cursor-pointer focus:outline-none focus:border-orange-500"
+                  >
+                    <option value={10}>10 / trang</option>
+                    <option value={20}>20 / trang</option>
+                    <option value={50}>50 / trang</option>
+                    <option value={100}>100 / trang</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={safeCurrentPage <= 1}
+                  onClick={() => setCurrentPage(1)}
+                  className="h-8 px-2.5 border-white/10 text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 cursor-pointer"
+                  title="Trang đầu"
+                >
+                  «
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={safeCurrentPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="h-8 px-2.5 border-white/10 text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 cursor-pointer flex items-center gap-1"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Trước</span>
+                </Button>
+
+                {/* Page number buttons */}
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((page) => {
+                      return (
+                        page === 1 ||
+                        page === totalPages ||
+                        Math.abs(page - safeCurrentPage) <= 1
+                      );
+                    })
+                    .reduce((acc: (number | string)[], page, idx, arr) => {
+                      if (idx > 0 && page - (arr[idx - 1] as number) > 1) {
+                        acc.push("...");
+                      }
+                      acc.push(page);
+                      return acc;
+                    }, [])
+                    .map((item, idx) =>
+                      typeof item === "string" ? (
+                        <span key={`ep-ellipsis-${idx}`} className="px-1 text-gray-600 select-none">
+                          ...
+                        </span>
+                      ) : (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => setCurrentPage(item)}
+                          className={`h-8 min-w-8 px-2 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                            item === safeCurrentPage
+                              ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/20"
+                              : "text-gray-400 hover:text-white hover:bg-white/5 border border-transparent"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      )
+                    )}
+                </div>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={safeCurrentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="h-8 px-2.5 border-white/10 text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 cursor-pointer flex items-center gap-1"
+                >
+                  <span className="hidden sm:inline">Sau</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={safeCurrentPage >= totalPages}
+                  onClick={() => setCurrentPage(totalPages)}
+                  className="h-8 px-2.5 border-white/10 text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 cursor-pointer"
+                  title="Trang cuối"
+                >
+                  »
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -3209,18 +3469,70 @@ function AuthorsTab({ authors, search, setSearch, isPending, startTransition, on
 // ═══════════════════════════════════════════════════════════════════════
 // ACCOUNTS TAB
 // ═══════════════════════════════════════════════════════════════════════
+function isRegisteredToday(createdAtDate?: string | Date | null): boolean {
+  if (!createdAtDate) return false;
+  const created = new Date(createdAtDate);
+  if (isNaN(created.getTime())) return false;
+
+  // Cố định múi giờ Việt Nam (UTC+7)
+  const VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000;
+  const now = new Date();
+  const nowVn = new Date(now.getTime() + VIETNAM_OFFSET_MS);
+  const createdVn = new Date(created.getTime() + VIETNAM_OFFSET_MS);
+
+  return (
+    nowVn.getUTCFullYear() === createdVn.getUTCFullYear() &&
+    nowVn.getUTCMonth() === createdVn.getUTCMonth() &&
+    nowVn.getUTCDate() === createdVn.getUTCDate()
+  );
+}
+
+function formatRegistrationDate(createdAtDate?: string | Date | null): string {
+  if (!createdAtDate) return "—";
+  const d = new Date(createdAtDate);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function AccountsTab({ accounts, search, setSearch, isPending, startTransition, onRefresh, show, confirmThenDelete }: any) {
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  // Reset to page 1 whenever search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
   const filtered = accounts.filter((a: any) =>
     a.username.toLowerCase().includes(search.toLowerCase()) ||
     a.email.toLowerCase().includes(search.toLowerCase())
   );
 
+  const totalItems = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const paginatedAccounts = filtered.slice(startIndex, startIndex + pageSize);
+
   return (
     <div className="space-y-4">
-      <div className="relative max-w-xs">
-        <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-        <Input placeholder="Tìm tài khoản…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-[#131520] border-white/5 text-sm h-9" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="relative max-w-xs w-full">
+          <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+          <Input placeholder="Tìm tài khoản…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-[#131520] border-white/5 text-sm h-9" />
+        </div>
+        <div className="text-xs text-gray-400">
+          Tổng cộng: <strong className="text-orange-400 font-mono">{totalItems}</strong> tài khoản
+        </div>
       </div>
+
       <div className="bg-[#131520] border border-white/5 rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -3228,38 +3540,167 @@ function AccountsTab({ accounts, search, setSearch, isPending, startTransition, 
               <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">ID</th>
               <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Username</th>
               <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Email</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Ngày Đăng Ký</th>
               <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Role</th>
               <th className="text-right px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Thao tác</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((a: any) => (
-              <tr key={a.id} className="border-b border-white/5 hover:bg-white/2 group">
-                <td className="px-4 py-3 text-xs text-gray-500 font-mono">#{a.id}</td>
-                <td className="px-4 py-3 text-xs font-bold text-gray-200">{a.username}</td>
-                <td className="px-4 py-3 text-xs text-gray-400">{a.email}</td>
-                <td className="px-4 py-3">
-                  <select
-                    value={a.role}
-                    onChange={e => startTransition(async () => { await updateAccountRole(a.id, e.target.value); await onRefresh(); show("Đã cập nhật role!"); })}
-                    className="bg-[#090a0f] border border-white/5 rounded-lg h-7 px-2 text-xs text-gray-200"
-                  >
-                    <option value="user">user</option>
-                    <option value="admin">admin</option>
-                  </select>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2 justify-end opacity-0 group-hover:opacity-100">
-                    <Button size="sm" variant="outline" onClick={() => confirmThenDelete(`Xoá tài khoản "${a.username}"?`, () => deleteAccount(a.id))} className="h-7 border-red-500/20 text-red-400 hover:bg-red-500/10 px-2 gap-1">
-                      <Trash2 className="w-3 h-3" /> Xoá
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {paginatedAccounts.map((a: any) => {
+              const isNew = isRegisteredToday(a.createdAt);
+              return (
+                <tr key={a.id} className="border-b border-white/5 hover:bg-white/2 group">
+                  <td className="px-4 py-3 text-xs text-gray-500 font-mono">#{a.id}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-gray-200">{a.username}</span>
+                      {isNew && (
+                        <span className="bg-gradient-to-r from-red-600 via-orange-500 to-amber-400 text-white font-black text-[9px] px-1.5 py-0.5 rounded shadow-sm shadow-orange-500/30 animate-pulse uppercase tracking-wider select-none">
+                          NEW
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-400 font-mono">{a.email}</td>
+                  <td className="px-4 py-3 text-xs text-gray-400 font-mono">
+                    <span className={isNew ? "text-orange-400 font-semibold" : "text-gray-400"}>
+                      {formatRegistrationDate(a.createdAt)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <select
+                      value={a.role}
+                      onChange={e => startTransition(async () => { await updateAccountRole(a.id, e.target.value); await onRefresh(); show("Đã cập nhật role!"); })}
+                      className="bg-[#090a0f] border border-white/5 rounded-lg h-7 px-2 text-xs text-gray-200 cursor-pointer focus:outline-none focus:border-orange-500"
+                    >
+                      <option value="user">user</option>
+                      <option value="admin">admin</option>
+                    </select>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2 justify-end opacity-0 group-hover:opacity-100">
+                      <Button size="sm" variant="outline" onClick={() => confirmThenDelete(`Xoá tài khoản "${a.username}"?`, () => deleteAccount(a.id))} className="h-7 border-red-500/20 text-red-400 hover:bg-red-500/10 px-2 gap-1 cursor-pointer">
+                        <Trash2 className="w-3 h-3" /> Xoá
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         {filtered.length === 0 && <div className="text-center py-12 text-sm text-gray-500">Chưa có tài khoản nào</div>}
+
+        {/* Pagination Controls */}
+        {totalItems > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-white/5 bg-[#0e1018]/80 text-xs text-gray-400">
+            <div className="flex flex-wrap items-center gap-3">
+              <span>
+                Hiển thị <strong className="text-white font-mono">{startIndex + 1}</strong> – <strong className="text-white font-mono">{Math.min(startIndex + pageSize, totalItems)}</strong> trong tổng <strong className="text-orange-400 font-mono">{totalItems}</strong> tài khoản
+              </span>
+              <span className="text-gray-600 hidden sm:inline">|</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-500">Hiển thị:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-[#131520] border border-white/10 rounded-md px-2 py-1 text-xs text-gray-200 cursor-pointer focus:outline-none focus:border-orange-500"
+                >
+                  <option value={10}>10 / trang</option>
+                  <option value={20}>20 / trang</option>
+                  <option value={50}>50 / trang</option>
+                  <option value={100}>100 / trang</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={safeCurrentPage <= 1}
+                onClick={() => setCurrentPage(1)}
+                className="h-8 px-2.5 border-white/10 text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 cursor-pointer"
+                title="Trang đầu"
+              >
+                «
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={safeCurrentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="h-8 px-2.5 border-white/10 text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 cursor-pointer flex items-center gap-1"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Trước</span>
+              </Button>
+
+              {/* Page number buttons */}
+              <div className="flex items-center gap-1 px-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((page) => {
+                    return (
+                      page === 1 ||
+                      page === totalPages ||
+                      Math.abs(page - safeCurrentPage) <= 1
+                    );
+                  })
+                  .reduce((acc: (number | string)[], page, idx, arr) => {
+                    if (idx > 0 && page - (arr[idx - 1] as number) > 1) {
+                      acc.push("...");
+                    }
+                    acc.push(page);
+                    return acc;
+                  }, [])
+                  .map((item, idx) =>
+                    typeof item === "string" ? (
+                      <span key={`acc-ellipsis-${idx}`} className="px-1 text-gray-600 select-none">
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => setCurrentPage(item)}
+                        className={`h-8 min-w-8 px-2 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                          item === safeCurrentPage
+                            ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/20"
+                            : "text-gray-400 hover:text-white hover:bg-white/5 border border-transparent"
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    )
+                  )}
+              </div>
+
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={safeCurrentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="h-8 px-2.5 border-white/10 text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 cursor-pointer flex items-center gap-1"
+              >
+                <span className="hidden sm:inline">Sau</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={safeCurrentPage >= totalPages}
+                onClick={() => setCurrentPage(totalPages)}
+                className="h-8 px-2.5 border-white/10 text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 cursor-pointer"
+                title="Trang cuối"
+              >
+                »
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

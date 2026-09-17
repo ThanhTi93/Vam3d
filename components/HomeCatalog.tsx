@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Flame, Award, Film, Tv, TrendingUp, Camera, Play, Clock, ArrowRight } from "lucide-react";
 import MovieCard from "@/components/MovieCard";
-import MovieSection from "@/components/MovieSection";
 import RankingsSidebar from "@/components/RankingsSidebar";
 import { HomeGallerySection, GalleryDetailModal } from "@/components/GalleryComponents";
 import Link from "next/link";
@@ -129,24 +128,6 @@ function HomeCatalogContent({
           ) : (
             /* Standard Homepage Sections */
             <>
-              {/* Hot picks */}
-              <MovieSection
-                title="Phim Đề Cử Mới Nhất"
-                icon={<Flame className="w-4 h-4 md:w-5 md:h-5 text-orange-500 fill-orange-500/20" />}
-                movies={movies.slice(0, 4)}
-                viewAllHref="/phim-hot"
-              />
-
-              {/* Most Viewed Episodes */}
-              {mostViewedEpisodes.length > 0 && (
-                <LatestEpisodesSection
-                  title="Tập Phim Xem Nhiều Nhất"
-                  episodes={mostViewedEpisodes}
-                  showViews={true}
-                  viewAllHref="/tap-phim?sort=views"
-                />
-              )}
-
               {/* Latest Episodes */}
               {latestEpisodes.length > 0 && (
                 <LatestEpisodesSection
@@ -159,8 +140,18 @@ function HomeCatalogContent({
                     </span>
                   }
                   episodes={latestEpisodes}
-                  showViews={false}
+                  showViews={true}
                   viewAllHref="/tap-phim?sort=newest"
+                />
+              )}
+
+              {/* Most Viewed Episodes */}
+              {mostViewedEpisodes.length > 0 && (
+                <LatestEpisodesSection
+                  title="Tập Phim Xem Nhiều Nhất"
+                  episodes={mostViewedEpisodes}
+                  showViews={true}
+                  viewAllHref="/tap-phim?sort=views"
                 />
               )}
 
@@ -288,10 +279,12 @@ function LatestEpisodesSection({
               <div className="p-2.5 flex-grow flex flex-col justify-between">
                 <div className="min-w-0">
                   <h3 className="text-xs font-bold text-gray-100 line-clamp-1 group-hover:text-orange-400 transition-colors">
-                    {ep.movie?.name || "Phim"}
+                    {ep.name || `Tập ${ep.id}`}
                   </h3>
                   <div className="text-[9px] text-gray-400 font-medium mt-1.5 line-clamp-1 flex items-center gap-1 flex-wrap">
-                    <span className="text-gray-300 bg-white/5 border border-white/10 px-1 rounded-sm text-[8px] max-w-[80px] truncate">{ep.name}</span>
+                    <span className="text-gray-300 bg-white/5 border border-white/10 px-1 rounded-sm text-[8px] max-w-[110px] truncate" title={ep.movie?.name}>
+                      {ep.movie?.name || "Phim"}
+                    </span>
                     {ep.duration > 0 && (
                       <>
                         <span>•</span>
@@ -304,7 +297,7 @@ function LatestEpisodesSection({
                     {showViews && (
                       <>
                         <span>•</span>
-                        <span>👁️ {ep.views || 0}</span>
+                        <span>👁️ {(ep.views || 0).toLocaleString()}</span>
                       </>
                     )}
                     {!ep.duration && !showViews && (

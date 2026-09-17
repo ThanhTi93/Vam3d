@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { getHotMovies, getAllMovies, getMostViewedEpisodes, getLatestEpisodes, getLatestGalleries } from "@/lib/db/queries";
-import HeroCarousel from "@/components/HeroCarousel";
+import { getAllMovies, getMostViewedEpisodes, getLatestEpisodes, getLatestGalleries } from "@/lib/db/queries";
 import HomeCatalog from "@/components/HomeCatalog";
 
 export const metadata: Metadata = {
@@ -168,7 +167,6 @@ export default async function Home() {
         }}
       />
       <div className="flex-1 flex flex-col animate-in fade-in duration-300">
-        <HeroCarousel hotMovies={formattedHotMovies} />
         <HomeCatalog 
           movies={formattedAllMovies} 
           galleries={galleries || []} 
