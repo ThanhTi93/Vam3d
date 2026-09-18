@@ -5,16 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { TrendingUp, Eye, Heart, Clock, Play } from "lucide-react";
 import { useWatchlist } from "@/app/context/watchlistContext";
-import { getBunnyImageUrl, formatDuration } from "@/lib/utils";
+import { getBunnyImageUrl, formatDuration, formatNumber } from "@/lib/utils";
 import { Movie } from "@/types";
 
 interface RankingsSidebarProps {
   movies: Movie[];
   episodes?: any[];
-}
-
-function formatNumber(num: number): string {
-  return (num || 0).toLocaleString();
 }
 
 interface RankedEpisode {

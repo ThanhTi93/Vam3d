@@ -15,6 +15,9 @@ import { db, schema } from "@/lib/db";
 import { eq, and, ne, sql, ilike, or, inArray, count, isNull } from "drizzle-orm";
 import crypto from "crypto";
 import { slugify } from "@/lib/utils";
+import { generateAiSeoDescription } from "@/lib/aiDescription";
+import { getCategoryDetails } from "@/lib/categories";
+import { generateCharacterTranslations, generateCharacterSeoDescription } from "@/lib/characterAi";
 
 // ─────────────────────────────────────────────────────────────────
 // MOVIES
@@ -1789,6 +1792,68 @@ export async function getRealtimeAnalytics(
     };
   }
 }
+
+// ─────────────────────────────────────────────────────────────────
+// AI SEO GENERATOR ACTION
+// ─────────────────────────────────────────────────────────────────
+export async function generateGalleryDescriptionAction(params: {
+  title: string;
+  characterNames?: string[];
+  movieName?: string;
+}) {
+  await verifyAdmin();
+  try {
+    const description = await generateAiSeoDescription({
+      title: params.title,
+      characterNames: params.characterNames,
+      movieName: params.movieName,
+      type: "gallery",
+    });
+    return { success: true, description };
+  } catch (error: any) {
+    console.error("Error generating AI description:", error);
+    return { success: false, error: error.message || "Lỗi khi sinh mô tả AI" };
+  }
+}
+
+export async function generateCategoryDescriptionAction(categoryName: string) {
+  await verifyAdmin();
+  try {
+    const details = getCategoryDetails(categoryName);
+    return { success: true, description: details.description };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Lỗi khi sinh mô tả thể loại" };
+  }
+}
+
+export async function generateCharacterTranslationsAction(nameVi: string): Promise<{ success: boolean; nameEn: string; nameZh: string; error?: string }> {
+  await verifyAdmin();
+  try {
+    const result = await generateCharacterTranslations(nameVi);
+    return { success: true, nameEn: result.nameEn, nameZh: result.nameZh };
+  } catch (error: any) {
+    console.error("Error translating character name:", error);
+    return { success: false, error: error.message || "Lỗi khi dịch tên nhân vật", nameEn: "", nameZh: "" };
+  }
+}
+
+export async function generateCharacterDescriptionAction(params: {
+  name: string;
+  movieName?: string;
+  nameEn?: string;
+  nameZh?: string;
+}) {
+  await verifyAdmin();
+  try {
+    const description = await generateCharacterSeoDescription(params);
+    return { success: true, description };
+  } catch (error: any) {
+    console.error("Error generating character SEO description:", error);
+    return { success: false, error: error.message || "Lỗi khi sinh mô tả nhân vật" };
+  }
+}
+
+
 
 
 

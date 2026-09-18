@@ -9,7 +9,7 @@ import { HomeGallerySection, GalleryDetailModal } from "@/components/GalleryComp
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { getBunnyImageUrl, formatRelativeTime, formatDuration, slugify } from "@/lib/utils";
+import { getBunnyImageUrl, formatRelativeTime, formatDuration, formatNumber, slugify } from "@/lib/utils";
 import { Movie } from "@/types";
 import { incrementGalleryViews } from "@/app/admin/actions";
 import { useAuth } from "@/app/context/AuthContext";
@@ -297,7 +297,7 @@ function LatestEpisodesSection({
                     {showViews && (
                       <>
                         <span>•</span>
-                        <span>👁️ {(ep.views || 0).toLocaleString()}</span>
+                        <span>👁️ {formatNumber(ep.views || 0)}</span>
                       </>
                     )}
                     {!ep.duration && !showViews && (

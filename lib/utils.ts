@@ -128,4 +128,10 @@ export function formatNumber(num: number | null | undefined): string {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
+export function formatFullNumber(num: number | null | undefined): string {
+  if (!num || num <= 0) return "0";
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+
 

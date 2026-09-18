@@ -41,23 +41,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
   const categoryUrl = `${siteUrl}/${encodeURIComponent(categoryName)}`;
   
-  const title = `Phim ${titleName} Mới Nhất 2026 – Tuyển Tập Phim ${titleName} Vietsub HD | Vam3D`;
+  const isImageCategory = titleName.toLowerCase().startsWith("ảnh") || titleName.toLowerCase().includes("bộ sưu tập");
+  const title = isImageCategory
+    ? `${titleName} Sắc Nét 4K Mới Nhất 2026 – Kho Ảnh 3D Tuyệt Đẹp | Vam3D`
+    : `Phim ${titleName} Mới Nhất 2026 – Tuyển Tập Phim ${titleName} Vietsub HD | Vam3D`;
+
   const description = (
     categoryDetails.description ||
-    `Tuyển tập phim ${titleName} chất lượng cao Vietsub Full HD, thuyết minh cập nhật nhanh nhất tại Vam3D.`
+    `Tuyển tập ${isImageCategory ? "ảnh" : "phim"} ${titleName} chất lượng cao 4K / Full HD, cập nhật nhanh nhất tại Vam3D.`
   ).slice(0, 160);
 
-  const keywords = [
-    titleName,
-    `phim ${titleName}`,
-    `phim ${titleName} vietsub`,
-    `xem phim ${titleName}`,
-    `phim ${titleName} moi nhat`,
-    `phim 3d ${titleName}`,
-    `hoat hinh 3d ${titleName}`,
-    "vam3d",
-    "phim 3d online",
-  ];
+  const keywords = categoryDetails.keywords && categoryDetails.keywords.length > 0
+    ? categoryDetails.keywords
+    : [
+        titleName,
+        `phim ${titleName}`,
+        `phim ${titleName} vietsub`,
+        `xem phim ${titleName}`,
+        `phim ${titleName} moi nhat`,
+        `phim 3d ${titleName}`,
+        `hoat hinh 3d ${titleName}`,
+        "vam3d",
+        "phim 3d online",
+      ];
 
   return {
     title,

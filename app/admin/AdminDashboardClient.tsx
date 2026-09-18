@@ -7,7 +7,8 @@ import {
   Plus, Pencil, Trash2, Check, X, RefreshCw, Search,
   ChevronDown, Eye, Star, Flame, Save, Loader2, BookOpen,
   Shield, Settings, Camera, ChevronLeft, ChevronRight, FolderOpen,
-  Tv, Play, Info, MousePointerClick, Globe, Smartphone, Monitor, BarChart3, TrendingUp
+  Tv, Play, Info, MousePointerClick, Globe, Smartphone, Monitor, BarChart3, TrendingUp,
+  Sparkles, Wand2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,10 @@ import {
   getFreeVipModeAction, toggleFreeVipModeAction,
   getTurnstileModeAction, toggleTurnstileModeAction,
   getRealtimeAnalytics,
+  generateGalleryDescriptionAction,
+  generateCategoryDescriptionAction,
+  generateCharacterTranslationsAction,
+  generateCharacterDescriptionAction,
 } from "./actions";
 import { ImagePicker } from "@/components/ui/image-picker";
 import { uploadFileToBunny } from "@/lib/uploadClient";
@@ -1575,6 +1580,7 @@ function MoviesTab({ movies, categories, actors, characters, authors, search, se
 function CategoriesTab({ categories, search, setSearch, isPending, startTransition, onRefresh, show, confirmThenDelete }: any) {
   const [form, setForm] = useState({ name: "", description: "" });
   const [editing, setEditing] = useState<number | null>(null);
+  const [generatingDesc, setGeneratingDesc] = useState(false);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -1584,6 +1590,27 @@ function CategoriesTab({ categories, search, setSearch, isPending, startTransiti
   useEffect(() => {
     setCurrentPage(1);
   }, [search]);
+
+  const handleAiGenerateCategoryDesc = async () => {
+    if (!form.name || !form.name.trim()) {
+      show("Vui lòng nhập Tên thể loại trước", "error");
+      return;
+    }
+    setGeneratingDesc(true);
+    try {
+      const res = await generateCategoryDescriptionAction(form.name.trim());
+      if (res.success && res.description) {
+        setForm(p => ({ ...p, description: res.description! }));
+        show("✨ Đã tạo mô tả SEO cho thể loại thành công!");
+      } else {
+        show(res.error || "Không thể tạo mô tả", "error");
+      }
+    } catch (err: any) {
+      show(err.message || "Lỗi khi gọi AI sinh mô tả", "error");
+    } finally {
+      setGeneratingDesc(false);
+    }
+  };
 
   const filtered = categories.filter((c: any) => c.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -1621,8 +1648,19 @@ function CategoriesTab({ categories, search, setSearch, isPending, startTransiti
             <Input value={form.name} onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))} required className="bg-[#090a0f] border-white/5 text-sm h-9" />
           </div>
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">Mô tả</label>
-            <Textarea value={form.description} onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))} className="bg-[#090a0f] border-white/5 text-sm min-h-[80px]" />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs text-gray-400 block font-medium">Mô tả chuẩn SEO</label>
+              <button
+                type="button"
+                disabled={generatingDesc}
+                onClick={handleAiGenerateCategoryDesc}
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold rounded-lg bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 border border-orange-500/40 text-orange-400 hover:text-orange-300 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {generatingDesc ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 text-amber-400" />}
+                <span>{generatingDesc ? "Đang viết..." : "✨ AI viết mô tả (SEO)"}</span>
+              </button>
+            </div>
+            <Textarea value={form.description} onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))} className="bg-[#090a0f] border-white/5 text-xs min-h-[80px]" placeholder="Nhập mô tả hoặc bấm 'AI viết mô tả (SEO)'..." />
           </div>
           <div className="flex gap-2">
             <Button type="submit" disabled={isPending} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white border-0 h-9 text-xs gap-1 cursor-pointer">
@@ -2918,6 +2956,9 @@ function CharactersTab({ movies = [], characters, search, setSearch, isPending, 
   const [editing, setEditing] = useState<number | null>(null);
   const [activePreviewIndex, setActivePreviewIndex] = useState<number | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
+  const lastTranslatedNameRef = useRef<string>("");
 
   const filtered = characters.filter((c: any) => {
     const q = search.toLowerCase();
@@ -2929,6 +2970,88 @@ function CharactersTab({ movies = [], characters, search, setSearch, isPending, 
     );
   });
   const charactersWithImages = filtered.filter((c: any) => !!c.imgUrl);
+
+  // Translate character name (Vietnamese -> English & Chinese)
+  const handleTranslateName = async (nameVi?: string, force = false) => {
+    const targetName = (nameVi !== undefined ? nameVi : form.name).trim();
+    if (!targetName || targetName.length < 2) return;
+    if (!force && lastTranslatedNameRef.current.toLowerCase() === targetName.toLowerCase()) return;
+
+    setIsTranslating(true);
+    try {
+      const res = await generateCharacterTranslationsAction(targetName);
+      if (res.success && (res.nameEn || res.nameZh)) {
+        lastTranslatedNameRef.current = targetName;
+        setForm(prev => ({
+          ...prev,
+          nameEn: res.nameEn || prev.nameEn,
+          nameZh: res.nameZh || prev.nameZh,
+        }));
+      }
+    } catch (err) {
+      console.error("Translation error:", err);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  // Debounced auto-translate when typing Vietnamese name
+  useEffect(() => {
+    if (!isFormOpen) return;
+    const target = form.name.trim();
+    if (!target || target.length < 2) return;
+
+    const timer = setTimeout(() => {
+      if (lastTranslatedNameRef.current.toLowerCase() !== target.toLowerCase()) {
+        handleTranslateName(target);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [form.name, isFormOpen]);
+
+  // Generate SEO Description based on Character name & Movie
+  const handleGenerateDescription = async (overrideMovieId?: number, overrideName?: string) => {
+    const targetName = (overrideName !== undefined ? overrideName : form.name).trim();
+    const targetMovieId = overrideMovieId !== undefined ? overrideMovieId : form.idMovie;
+
+    if (!targetName) {
+      show("Vui lòng nhập tên nhân vật trước khi tạo mô tả", "error");
+      return;
+    }
+
+    const movieObj = movies.find((m: any) => m.id === targetMovieId);
+    const movieName = movieObj ? (movieObj.name || movieObj.title) : undefined;
+
+    setIsGeneratingDesc(true);
+    try {
+      const res = await generateCharacterDescriptionAction({
+        name: targetName,
+        movieName,
+        nameEn: form.nameEn,
+        nameZh: form.nameZh,
+      });
+
+      if (res.success && res.description) {
+        setForm(prev => ({ ...prev, description: res.description! }));
+        show("✨ Đã tự sinh mô tả SEO cho nhân vật!");
+      } else {
+        show(res.error || "Không thể sinh mô tả", "error");
+      }
+    } catch (err: any) {
+      show(err.message || "Lỗi khi sinh mô tả", "error");
+    } finally {
+      setIsGeneratingDesc(false);
+    }
+  };
+
+  // When movie changes in dropdown
+  const handleMovieChange = (newMovieId: number) => {
+    setForm(prev => ({ ...prev, idMovie: newMovieId }));
+    if (newMovieId > 0 && form.name.trim()) {
+      handleGenerateDescription(newMovieId, form.name);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2953,6 +3076,7 @@ function CharactersTab({ movies = [], characters, search, setSearch, isPending, 
         else { await createCharacter(submitData); }
         await onRefresh();
         setForm({ name: "", nameEn: "", nameZh: "", idMovie: 0, imgUrl: "", description: "" });
+        lastTranslatedNameRef.current = "";
         setEditing(null);
         setIsFormOpen(false);
         show(isEdit ? "Đã cập nhật nhân vật!" : "Đã thêm nhân vật!");
@@ -2969,7 +3093,12 @@ function CharactersTab({ movies = [], characters, search, setSearch, isPending, 
           <Input placeholder="Tìm nhân vật (Việt, Anh, Trung, Phim)…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-[#090a0f] border-white/5 text-sm h-9 w-full" />
         </div>
         <Button
-          onClick={() => { setEditing(null); setForm({ name: "", nameEn: "", nameZh: "", idMovie: 0, imgUrl: "", description: "" }); setIsFormOpen(true); }}
+          onClick={() => {
+            setEditing(null);
+            setForm({ name: "", nameEn: "", nameZh: "", idMovie: 0, imgUrl: "", description: "" });
+            lastTranslatedNameRef.current = "";
+            setIsFormOpen(true);
+          }}
           className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold h-9 text-xs px-4 rounded-xl shadow-lg border-0 gap-1.5 flex items-center justify-center shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
@@ -3024,7 +3153,12 @@ function CharactersTab({ movies = [], characters, search, setSearch, isPending, 
 
               <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-md rounded-lg p-1 border border-white/10 shadow-lg z-20">
                 <button
-                  onClick={() => { setEditing(c.id); setForm({ name: c.name, nameEn: c.nameEn ?? "", nameZh: c.nameZh ?? "", idMovie: c.idMovie ?? c.movie?.id ?? 0, imgUrl: c.imgUrl ?? "", description: c.description ?? "" }); setIsFormOpen(true); }}
+                  onClick={() => {
+                    setEditing(c.id);
+                    setForm({ name: c.name, nameEn: c.nameEn ?? "", nameZh: c.nameZh ?? "", idMovie: c.idMovie ?? c.movie?.id ?? 0, imgUrl: c.imgUrl ?? "", description: c.description ?? "" });
+                    lastTranslatedNameRef.current = c.name;
+                    setIsFormOpen(true);
+                  }}
                   className="p-1 text-gray-400 hover:text-white rounded-md transition-colors cursor-pointer"
                   title="Sửa nhân vật"
                 >
@@ -3050,51 +3184,134 @@ function CharactersTab({ movies = [], characters, search, setSearch, isPending, 
       </div>
 
       {/* Add / Edit Character Modal */}
-      <Dialog open={isFormOpen} onOpenChange={(open) => { if (!open) { setIsFormOpen(false); setEditing(null); setForm({ name: "", nameEn: "", nameZh: "", idMovie: 0, imgUrl: "", description: "" }); } }}>
+      <Dialog
+        open={isFormOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsFormOpen(false);
+            setEditing(null);
+            setForm({ name: "", nameEn: "", nameZh: "", idMovie: 0, imgUrl: "", description: "" });
+            lastTranslatedNameRef.current = "";
+          }
+        }}
+      >
         <DialogContent className="bg-[#131520] border border-white/10 rounded-2xl max-w-md p-6 text-gray-100 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
           <form onSubmit={handleSubmit} className="space-y-4">
             <h3 className="text-base font-bold text-white mb-2">{editing !== null ? "✏️ Sửa nhân vật" : "➕ Thêm nhân vật"}</h3>
+            
+            {/* Tên nhân vật Tiếng Việt + Auto Translate button */}
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">Tên nhân vật (Tiếng Việt) <span className="text-red-400">*</span></label>
-              <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required className="bg-[#090a0f] border-white/5 text-sm h-9" />
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs text-gray-400">
+                  Tên nhân vật (Tiếng Việt) <span className="text-red-400">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => handleTranslateName(form.name, true)}
+                  disabled={isTranslating || !form.name.trim()}
+                  className="text-[11px] text-orange-400 hover:text-orange-300 font-medium flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-40"
+                  title="Tự động dịch sang tên Tiếng Anh và Tiếng Trung"
+                >
+                  {isTranslating ? <Loader2 className="w-3 h-3 animate-spin text-orange-400" /> : <Sparkles className="w-3 h-3" />}
+                  <span>{isTranslating ? "Đang dịch..." : "✨ Dịch tên Trung/Anh"}</span>
+                </button>
+              </div>
+              <Input
+                value={form.name}
+                onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                onBlur={() => handleTranslateName(form.name)}
+                placeholder="vd: Mỹ Đỗ Toa, Tiêu Viêm, Tiểu Vũ, Tifa..."
+                required
+                className="bg-[#090a0f] border-white/5 text-sm h-9"
+              />
             </div>
+
+            {/* Tên Tiếng Anh & Tiếng Trung */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Tên Tiếng Anh (EN)</label>
-                <Input value={form.nameEn} onChange={e => setForm(p => ({ ...p, nameEn: e.target.value }))} placeholder="Ex: Tifa Lockhart" className="bg-[#090a0f] border-white/5 text-sm h-9" />
+                <Input
+                  value={form.nameEn}
+                  onChange={e => setForm(p => ({ ...p, nameEn: e.target.value }))}
+                  placeholder="Ex: Medusa / Xiao Yan"
+                  className="bg-[#090a0f] border-white/5 text-sm h-9"
+                />
               </div>
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Tên Tiếng Trung (ZH)</label>
-                <Input value={form.nameZh} onChange={e => setForm(p => ({ ...p, nameZh: e.target.value }))} placeholder="Ex: 蒂法" className="bg-[#090a0f] border-white/5 text-sm h-9" />
+                <Input
+                  value={form.nameZh}
+                  onChange={e => setForm(p => ({ ...p, nameZh: e.target.value }))}
+                  placeholder="Ex: 美杜莎 / 萧炎"
+                  className="bg-[#090a0f] border-white/5 text-sm h-9"
+                />
               </div>
             </div>
+
+            {/* Thuộc phim */}
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">Thuộc Phim</label>
+              <label className="text-xs text-gray-400 mb-1 block">
+                Thuộc Phim <span className="text-[11px] text-gray-500">(chọn phim để tự sinh giới thiệu nhân vật)</span>
+              </label>
               <select
                 value={form.idMovie}
-                onChange={e => setForm(p => ({ ...p, idMovie: parseInt(e.target.value) || 0 }))}
-                className="w-full bg-[#090a0f] border border-white/5 rounded-lg h-9 px-3 text-sm text-gray-200"
+                onChange={e => handleMovieChange(parseInt(e.target.value) || 0)}
+                className="w-full bg-[#090a0f] border border-white/5 rounded-lg h-9 px-3 text-sm text-gray-200 focus:outline-none focus:border-orange-500/50"
               >
-                <option value={0}>-- Chọn phim --</option>
+                <option value={0}>-- Chọn phim liên kết --</option>
                 {movies.map((m: any) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
+                  <option key={m.id} value={m.id}>{m.name || m.title}</option>
                 ))}
               </select>
             </div>
+
+            {/* Ảnh đại diện */}
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Ảnh đại diện (Đứng)</label>
               <ImagePicker value={form.imgUrl} onChange={val => setForm(p => ({ ...p, imgUrl: val }))} aspectRatio="portrait" className="w-32 h-48 rounded-xl mx-auto" />
             </div>
+
+            {/* Giới thiệu nhân vật + AI button */}
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">Giới thiệu</label>
-              <Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="bg-[#090a0f] border-white/5 text-sm min-h-[80px]" />
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs text-gray-400">Giới thiệu nhân vật</label>
+                <button
+                  type="button"
+                  onClick={() => handleGenerateDescription()}
+                  disabled={isGeneratingDesc || !form.name.trim()}
+                  className="text-[11px] text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-40"
+                  title="Tự sinh tóm tắt tiểu sử và đặc điểm nhân vật"
+                >
+                  {isGeneratingDesc ? <Loader2 className="w-3 h-3 animate-spin text-amber-400" /> : <Wand2 className="w-3 h-3" />}
+                  <span>{isGeneratingDesc ? "Đang viết..." : "✨ AI viết giới thiệu"}</span>
+                </button>
+              </div>
+              <Textarea
+                value={form.description}
+                onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                placeholder="Tóm tắt tiểu sử, lai lịch, nét đẹp và tính cách nhân vật (tự động sinh khi chọn phim hoặc bấm AI viết giới thiệu)..."
+                className="bg-[#090a0f] border-white/5 text-sm min-h-[92px] leading-relaxed"
+              />
             </div>
+
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={isPending} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white border-0 h-9 text-xs gap-1 cursor-pointer font-bold">
                 {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                 {editing !== null ? "Lưu thay đổi" : "Thêm nhân vật"}
               </Button>
-              <Button type="button" variant="outline" onClick={() => { setIsFormOpen(false); setEditing(null); setForm({ name: "", nameEn: "", nameZh: "", idMovie: 0, imgUrl: "", description: "" }); }} className="border-white/10 text-gray-400 h-9 text-xs cursor-pointer">Huỷ</Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsFormOpen(false);
+                  setEditing(null);
+                  setForm({ name: "", nameEn: "", nameZh: "", idMovie: 0, imgUrl: "", description: "" });
+                  lastTranslatedNameRef.current = "";
+                }}
+                className="border-white/10 text-gray-400 h-9 text-xs cursor-pointer"
+              >
+                Huỷ
+              </Button>
             </div>
           </form>
         </DialogContent>
@@ -4155,6 +4372,102 @@ function GalleryCard({ g, onSelect, onEdit, onDelete }: any) {
   );
 }
 
+// ─── AI SEO Standard Title Generator Helpers (Diverse Patterns & High SEO Value) ───
+const CHARACTERISTIC_THEMES = [
+  "Nữ Đế Quyến Rũ",
+  "Cosplay Siêu Nóng Bỏng",
+  "Waifu Gợi Cảm Khó Cưỡng",
+  "Nữ Thần Tuyệt Mỹ",
+  "Tạo Hình 18+ Bốc Lửa",
+  "Dáng Chuẩn Không Che",
+  "Vẻ Đẹp Kiêu Sa Khó Cưỡng",
+  "Body Sexy Gợi Cảm",
+  "Thần Thái Đỉnh Cao Mê Hoặc",
+  "Tạo Hình Độc Quyền",
+  "Khung Hình 18+ Cực Phẩm",
+  "Đường Cong Nghẹt Thở",
+  "Trang Phục Xuyên Thấu Táo Bạo",
+  "Khoảnh Khắc Khiêu Gợi",
+  "Bộ Đồ Thiếu Vải Sexy",
+  "Nét Đẹp Tiên Tử Hút Hồn",
+  "Bộ Ảnh Bán Khỏa Thân Nghệ Thuật",
+  "Phong Cách Ngự Tỷ Quyến Rũ",
+  "Bikini Nóng Bỏng Hút Mắt",
+  "Tạo Hình Mê Ly Khó Rời Mắt",
+  "Cực Phẩm 3D Sắc Nét",
+  "Vóc Dáng Đồng Hồ Cát Siêu Chuẩn",
+  "Vẻ Đẹp Động Lòng Người",
+  "Táo Bạo Đầy Mê Hoặc",
+  "Nữ Hoàng Bốc Lửa",
+  "Đường Nét Hoàn Mỹ Không Tỳ Vết",
+  "Bộ Cánh Gợi Cảm Đốt Mắt",
+  "Tạo Dáng Khiêu Khích Đỉnh Cao",
+  "Thân Hình Bốc Lửa Cực Phẩm",
+  "Hút Mắt Từng Góc Nhìn",
+  "Nhan Sắc Tuyệt Thế Đỉnh Cao"
+];
+
+const SEO_SUFFIXES = [
+  "| Ảnh Sex AI 3D 4K Vam3D",
+  "| Kho Ảnh Sex 3D Vam3D Hentai",
+  "| Sex AI Vietsub 4K Vam3D",
+  "| Hentai 3D Trung Quốc Vam 3D",
+  "| Bộ Sưu Tập Ảnh 18+ Vam3D",
+  "| Ảnh AI 3D Không Che Siêu Nét Vam3D",
+  "| Cosplay 18+ Độc Quyền Vam3D",
+  "| Ảnh Sex Vam 3D Mới Nhất",
+  "| Phim & Ảnh Sex 3D Thuyết Minh Vam3D",
+  "| Vam3D Sex AI 4K Full HD"
+];
+
+function buildStandardGalleryTitle(characterNames: string[] = [], movieName: string = "", previousTitle: string = ""): string {
+  const charText = characterNames.length > 0 ? characterNames.join(", ") : "";
+  
+  // Filter out the theme from previousTitle to ensure diversity
+  const availableThemes = CHARACTERISTIC_THEMES.filter(t => !previousTitle.includes(t));
+  const chosenThemes = availableThemes.length > 0 ? availableThemes : CHARACTERISTIC_THEMES;
+  const theme = chosenThemes[Math.floor(Math.random() * chosenThemes.length)];
+
+  // Filter out previous suffix if possible
+  const availableSuffixes = SEO_SUFFIXES.filter(s => !previousTitle.endsWith(s));
+  const chosenSuffixes = availableSuffixes.length > 0 ? availableSuffixes : SEO_SUFFIXES;
+  const suffix = chosenSuffixes[Math.floor(Math.random() * chosenSuffixes.length)];
+
+  // Diverse templates
+  const templates: string[] = [];
+
+  if (charText && movieName) {
+    templates.push(`${charText} – ${movieName} – ${theme} ${suffix}`);
+    templates.push(`Cosplay 18+ ${charText} (${movieName}) – ${theme} ${suffix}`);
+    templates.push(`Bộ Ảnh Sex AI ${charText} – ${movieName} ${theme} ${suffix}`);
+    templates.push(`Hentai 3D ${charText} – Tuyệt Phẩm ${movieName} – ${theme} ${suffix}`);
+    templates.push(`Ngắm ${charText} (${movieName}) – ${theme} ${suffix}`);
+    templates.push(`Kho Ảnh 18+ ${charText} – ${movieName} – ${theme} ${suffix}`);
+    templates.push(`Tuyệt Tác AI ${charText} (${movieName}) – ${theme} ${suffix}`);
+    templates.push(`${charText} – ${movieName} – ${theme} 4K ${suffix}`);
+  } else if (charText) {
+    templates.push(`${charText} – ${theme} ${suffix}`);
+    templates.push(`Cosplay 18+ ${charText} – ${theme} ${suffix}`);
+    templates.push(`Bộ Ảnh Sex AI ${charText} – ${theme} ${suffix}`);
+    templates.push(`Hentai 3D ${charText} – ${theme} ${suffix}`);
+    templates.push(`Kho Ảnh 18+ ${charText} Siêu Nóng Bỏng ${suffix}`);
+    templates.push(`Tuyệt Tác AI ${charText} – ${theme} ${suffix}`);
+  } else if (movieName) {
+    templates.push(`${movieName} – ${theme} ${suffix}`);
+    templates.push(`Bộ Ảnh Sex AI ${movieName} – ${theme} ${suffix}`);
+    templates.push(`Hentai 3D ${movieName} – ${theme} ${suffix}`);
+    templates.push(`Kho Ảnh Cosplay 18+ ${movieName} ${suffix}`);
+  } else {
+    templates.push(`Bộ Sưu Tập Ảnh Sex AI 3D – ${theme} ${suffix}`);
+    templates.push(`Kho Ảnh Cosplay 18+ – ${theme} ${suffix}`);
+  }
+
+  // Filter templates that match previous title exactly
+  const candidateTemplates = templates.filter(t => t !== previousTitle);
+  const selectedTemplateList = candidateTemplates.length > 0 ? candidateTemplates : templates;
+  return selectedTemplateList[Math.floor(Math.random() * selectedTemplateList.length)];
+}
+
 function GalleriesTab({ movies, characters, plans, collections = [], isPending, startTransition, onRefresh, show, confirmThenDelete, onCountChange }: any) {
   const [galleries, setGalleries] = useState<any[]>([]);
   const [page, setPage] = useState(1);
@@ -4182,6 +4495,72 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
   const [characterSearch, setCharacterSearch] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(24);
+  const [generatingDesc, setGeneratingDesc] = useState(false);
+
+  // AI SEO Title Generator Handler (auto-resolves movie linked with character & diverse patterns)
+  const handleAutoGenerateTitle = (charIds = form.characterIds) => {
+    const selectedCharObjs = characters
+      ? characters.filter((c: any) => charIds.includes(c.id))
+      : [];
+    const selectedChars = selectedCharObjs.map((c: any) => c.name);
+    
+    // Auto-detect movie from selected character
+    const charWithMovie = selectedCharObjs.find((c: any) => c.movie?.name || c.idMovie);
+    const resolvedMovieId = form.idMovie || charWithMovie?.idMovie || 0;
+    const selectedMovie = charWithMovie?.movie?.name 
+      || (movies && resolvedMovieId > 0 ? (movies.find((m: any) => m.id === resolvedMovieId)?.name || movies.find((m: any) => m.id === resolvedMovieId)?.title) : "") || "";
+
+    if (selectedChars.length === 0 && !selectedMovie) {
+      show("Vui lòng chọn ít nhất 1 Nhân vật để tự sinh tiêu đề chuẩn SEO", "error");
+      return;
+    }
+
+    const newTitle = buildStandardGalleryTitle(selectedChars, selectedMovie, form.name);
+    setForm(p => ({
+      ...p,
+      idMovie: resolvedMovieId,
+      name: newTitle,
+      slug: slugify(newTitle)
+    }));
+    show("✨ Đã tạo tiêu đề chuẩn SEO!");
+  };
+
+  // AI SEO Description Generator Handler
+  const handleAiGenerateDescription = async () => {
+    if (!form.name || !form.name.trim()) {
+      show("Vui lòng nhập Tên bộ sưu tập trước khi bấm tạo mô tả AI", "error");
+      return;
+    }
+    setGeneratingDesc(true);
+    try {
+      const selectedChars = characters
+        ? characters
+            .filter((c: any) => form.characterIds.includes(c.id))
+            .map((c: any) => c.name)
+        : [];
+      
+      const relatedMovie = movies && form.idMovie > 0
+        ? movies.find((m: any) => m.id === form.idMovie)?.name || movies.find((m: any) => m.id === form.idMovie)?.title
+        : undefined;
+
+      const res = await generateGalleryDescriptionAction({
+        title: form.name.trim(),
+        characterNames: selectedChars,
+        movieName: relatedMovie,
+      });
+
+      if (res.success && res.description) {
+        setForm(p => ({ ...p, description: res.description! }));
+        show("✨ Đã tạo mô tả SEO bằng AI thành công!");
+      } else {
+        show(res.error || "Không thể tạo mô tả AI", "error");
+      }
+    } catch (err: any) {
+      show(err.message || "Lỗi khi gọi AI sinh mô tả", "error");
+    } finally {
+      setGeneratingDesc(false);
+    }
+  };
 
   // Debounce search input
   useEffect(() => {
@@ -4539,64 +4918,11 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
               {editing !== null ? "📝 Sửa bộ sưu tập AI" : "➕ Thêm bộ sưu tập AI"}
             </h3>
             
+            {/* Characters selector (Auto-links with movie and generates SEO Title) */}
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">Tên bộ sưu tập <span className="text-red-400">*</span></label>
-              <Input
-                value={form.name}
-                onChange={e => {
-                  const val = e.target.value;
-                  setForm(p => ({
-                    ...p,
-                    name: val,
-                    slug: editing === null ? slugify(val) : p.slug
-                  }));
-                }}
-                required
-                className="bg-[#090a0f] border-white/5 text-sm h-9"
-                placeholder="Bộ sưu tập Cosplay Dune"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs text-gray-400 block">Đường dẫn (Slug)</label>
-                <button
-                  type="button"
-                  onClick={() => setForm(p => ({ ...p, slug: slugify(p.name) }))}
-                  className="text-[10px] text-orange-400 hover:text-orange-300 cursor-pointer"
-                >
-                  Tự tạo từ tên
-                </button>
-              </div>
-              <Input
-                value={form.slug}
-                onChange={e => setForm(p => ({ ...p, slug: e.target.value }))}
-                className="bg-[#090a0f] border-white/5 text-sm h-9 font-mono"
-                placeholder="bo-suu-tap-cosplay-dune"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-gray-400 mb-1 block">Mô tả bộ sưu tập</label>
-              <Textarea
-                value={form.description}
-                onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                rows={3}
-                className="bg-[#090a0f] border-white/5 text-xs rounded-lg resize-none"
-                placeholder="Nhập đoạn mô tả ngắn hấp dẫn cho bộ sưu tập..."
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-gray-400 mb-1 block">Yêu cầu Gói xem (Plan)</label>
-              <select value={form.idPlan} onChange={e => setForm(p => ({ ...p, idPlan: parseInt(e.target.value) }))} className="w-full bg-[#090a0f] border border-white/5 rounded-lg h-9 px-3 text-sm text-gray-200">
-                <option value={0}>-- Miễn phí --</option>
-                {plans.map((p: any) => <option key={p.id} value={p.id}>{p.name} (Cấp {p.level})</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs text-gray-400 mb-2 block">Nhân vật trong ảnh (chọn nhiều)</label>
+              <label className="text-xs text-gray-400 mb-2 block font-medium">
+                Chọn nhân vật trong ảnh <span className="text-orange-400 font-normal">(hệ thống tự động liên kết phim & tạo tiêu đề SEO)</span>
+              </label>
               <div className="relative mb-2">
                 <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-gray-500" />
                 <Input
@@ -4615,7 +4941,26 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
                     onClick={() => {
                       const current = form.characterIds;
                       const next = current.includes(c.id) ? current.filter(id => id !== c.id) : [...current, c.id];
-                      setForm(p => ({ ...p, characterIds: next }));
+                      let nextMovieId = form.idMovie;
+                      if (nextMovieId === 0 && c.idMovie) {
+                        nextMovieId = c.idMovie;
+                      }
+                      const selectedChars = characters ? characters.filter((char: any) => next.includes(char.id)).map((char: any) => char.name) : [];
+                      const movieObj = movies?.find((m: any) => m.id === nextMovieId);
+                      const movieName = movieObj?.name || movieObj?.title || "";
+
+                      const shouldAutoUpdate = editing === null && (form.name === "" || form.name.includes("Vam3D") || form.name.includes("Vam 3D") || form.name.includes("Bộ sưu tập"));
+                      const newTitle = shouldAutoUpdate && (selectedChars.length > 0 || movieName)
+                        ? buildStandardGalleryTitle(selectedChars, movieName, form.name)
+                        : form.name;
+
+                      setForm(p => ({
+                        ...p,
+                        characterIds: next,
+                        idMovie: nextMovieId,
+                        name: newTitle,
+                        slug: shouldAutoUpdate && newTitle ? slugify(newTitle) : p.slug
+                      }));
                     }}
                     className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
                       form.characterIds.includes(c.id)
@@ -4630,6 +4975,97 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
                   <span className="text-xs text-gray-500 p-1">Không tìm thấy nhân vật nào</span>
                 )}
               </div>
+            </div>
+
+            {/* Gallery Title with Auto SEO Button */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs text-gray-400 block font-medium">
+                  Tên bộ sưu tập <span className="text-red-400">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => handleAutoGenerateTitle()}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 hover:from-amber-500/30 hover:via-orange-500/30 hover:to-red-500/30 border border-amber-500/40 text-amber-400 hover:text-amber-300 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-amber-500/10 active:scale-95"
+                  title="Tự động sinh tiêu đề chuẩn: [Tên Nhân Vật] – [Tên Phim] – [Đặc điểm] | Ảnh Sex AI 3D 4K Vam3D"
+                >
+                  <Wand2 className="w-3 h-3 text-amber-400 animate-pulse" />
+                  <span>✨ Tự tạo tiêu đề SEO</span>
+                </button>
+              </div>
+              <Input
+                value={form.name}
+                onChange={e => {
+                  const val = e.target.value;
+                  setForm(p => ({
+                    ...p,
+                    name: val,
+                    slug: editing === null ? slugify(val) : p.slug
+                  }));
+                }}
+                required
+                className="bg-[#090a0f] border-white/5 text-sm h-9"
+                placeholder="Ví dụ: Mỹ Đỗ Toa – Đấu Phá Thương Khung – Nữ Đế Quyến Rũ | Ảnh Sex AI 3D 4K Vam3D"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs text-gray-400 block">Đường dẫn (Slug)</label>
+                <button
+                  type="button"
+                  onClick={() => setForm(p => ({ ...p, slug: slugify(p.name) }))}
+                  className="text-[10px] text-orange-400 hover:text-orange-300 cursor-pointer"
+                >
+                  Tự tạo từ tên
+                </button>
+              </div>
+              <Input
+                value={form.slug}
+                onChange={e => setForm(p => ({ ...p, slug: e.target.value }))}
+                className="bg-[#090a0f] border-white/5 text-sm h-9 font-mono"
+                placeholder="my-do-toa-dau-pha-thuong-khung-nu-de-quyen-ru"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs text-gray-400 block font-medium">Mô tả bộ sưu tập</label>
+                <button
+                  type="button"
+                  disabled={generatingDesc}
+                  onClick={handleAiGenerateDescription}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gradient-to-r from-orange-500/20 via-amber-500/20 to-yellow-500/20 hover:from-orange-500/30 hover:via-amber-500/30 hover:to-yellow-500/30 border border-orange-500/40 text-orange-400 hover:text-orange-300 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-orange-500/10 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Tự động tạo mô tả chuẩn SEO bằng AI dựa trên tên bộ sưu tập và nhân vật đã chọn"
+                >
+                  {generatingDesc ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin text-orange-400" />
+                      <span>Đang viết SEO...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
+                      <span>✨ AI viết mô tả (SEO)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <Textarea
+                value={form.description}
+                onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                rows={3}
+                className="bg-[#090a0f] border-white/5 text-xs rounded-lg resize-none focus:border-orange-500/50"
+                placeholder="Nhập đoạn mô tả ngắn hấp dẫn cho bộ sưu tập hoặc bấm 'AI viết mô tả (SEO)'..."
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">Yêu cầu Gói xem (Plan)</label>
+              <select value={form.idPlan} onChange={e => setForm(p => ({ ...p, idPlan: parseInt(e.target.value) }))} className="w-full bg-[#090a0f] border border-white/5 rounded-lg h-9 px-3 text-sm text-gray-200">
+                <option value={0}>-- Miễn phí --</option>
+                {plans.map((p: any) => <option key={p.id} value={p.id}>{p.name} (Cấp {p.level})</option>)}
+              </select>
             </div>
 
             <div>
