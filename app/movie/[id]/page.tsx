@@ -9,14 +9,11 @@ import { slugify } from "@/lib/utils";
 
 interface MoviePageProps {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 // Generate dynamic metadata for SEO crawling
-export async function generateMetadata({ params, searchParams }: MoviePageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: MoviePageProps): Promise<Metadata> {
   const { id } = await params;
-  const resolvedSearchParams = searchParams ? await searchParams : {};
-  const epParam = typeof resolvedSearchParams?.ep === "string" ? resolvedSearchParams.ep : undefined;
   const movie = await getMovieById(id);
   
   if (!movie) {
@@ -29,54 +26,36 @@ export async function generateMetadata({ params, searchParams }: MoviePageProps)
   const movieData = movie as any;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
   const movieSlug = movieData.slug || slugify(movieData.name) || movieData.id;
+  const movieUrl = `${siteUrl}/movie/${movieSlug}`;
   const posterUrl = movieData.imgUrl || `${siteUrl}/og-image.jpg`;
 
-  let matchedEp: any = null;
-  if (epParam && movieData.episodes && movieData.episodes.length > 0) {
-    const decoded = decodeURIComponent(epParam).trim();
-    const slugParam = slugify(decoded);
-    matchedEp = movieData.episodes.find((e: any) => {
-      const eSlug = e.slug || (e.name ? slugify(e.name) : "");
-      return e.slug === decoded || eSlug === decoded || eSlug === slugParam || slugify(e.name) === slugParam || e.id?.toString() === epParam;
-    });
-    if (!matchedEp && /^\d+$/.test(epParam)) {
-      const idx = parseInt(epParam, 10) - 1;
-      if (idx >= 0 && idx < movieData.episodes.length) matchedEp = movieData.episodes[idx];
-    }
-  }
-
-  const epSlug = matchedEp ? (matchedEp.slug || slugify(matchedEp.name) || matchedEp.id) : epParam;
-  const canonicalUrl = epSlug ? `${siteUrl}/movie/${movieSlug}?ep=${epSlug}` : `${siteUrl}/movie/${movieSlug}`;
-
-  const epTitlePrefix = matchedEp?.name ? `${matchedEp.name} – ` : (epParam ? `Tập ${epParam} – ` : "");
-  const title = `${epTitlePrefix}${movieData.name} (${movieData.originalTitle || ""}) [${movieData.year || 2026}] – Vietsub Thuyết Minh Full HD | Vam3D`;
-  const description = (matchedEp ? `Xem ${matchedEp.name} phim ${movieData.name} chất lượng cao Full HD Vietsub độc quyền tại Vam3D.` : (movieData.description || `Xem phim ${movieData.name} chất lượng cao Full HD Vietsub, Thuyết minh cập nhật nhanh nhất tại Vam3D.`)).substring(0, 160);
+  const title = `${movieData.name} (${movieData.originalTitle || ""}) [${movieData.year || 2026}] – Vietsub Thuyết Minh Full HD | Vam3D`;
+  const description = (movieData.description || `Xem phim ${movieData.name} chất lượng cao Full HD Vietsub, Thuyết minh cập nhật nhanh nhất tại Vam3D.`).substring(0, 160);
 
   return {
     title,
     description,
     keywords: [
       movieData.name,
-      matchedEp?.name ? `${movieData.name} ${matchedEp.name}` : "",
       `${movieData.name} vietsub`,
       `${movieData.name} thuyết minh`,
       `${movieData.name} full hd`,
       "hoat hinh 3d trung quoc",
       "hh3d",
       "vam3d",
-    ].filter(Boolean),
+    ],
     alternates: {
-      canonical: canonicalUrl,
+      canonical: movieUrl,
     },
     openGraph: {
       type: "video.movie",
-      url: canonicalUrl,
+      url: movieUrl,
       title,
       description,
       images: [
         {
-          url: matchedEp?.banner || posterUrl,
-          alt: `${movieData.name} ${matchedEp?.name || ""} Vietsub HD`,
+          url: posterUrl,
+          alt: `${movieData.name} Vietsub HD`,
         },
       ],
     },
@@ -84,34 +63,17 @@ export async function generateMetadata({ params, searchParams }: MoviePageProps)
       card: "summary_large_image",
       title,
       description,
-      images: [matchedEp?.banner || posterUrl],
+      images: [posterUrl],
     },
   };
 }
 
 // Render dynamic JSON-LD structured schema on server-side for search engines
-function MovieSchemaScript({ movie, currentEp }: { movie: any; currentEp?: string }) {
+function MovieSchemaScript({ movie }: { movie: any }) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
   const movieSlug = movie.slug || slugify(movie.title || movie.name) || movie.id;
   const movieUrl = `${siteUrl}/movie/${movieSlug}`;
-
-  let matchedEp: any = null;
-  if (currentEp && movie.episodes && movie.episodes.length > 0) {
-    const decoded = decodeURIComponent(currentEp).trim();
-    const slugParam = slugify(decoded);
-    matchedEp = movie.episodes.find((e: any) => {
-      const eSlug = e.slug || (e.name ? slugify(e.name) : "");
-      return e.slug === decoded || eSlug === decoded || eSlug === slugParam || slugify(e.name) === slugParam || e.id?.toString() === currentEp;
-    });
-    if (!matchedEp && /^\d+$/.test(currentEp)) {
-      const idx = parseInt(currentEp, 10) - 1;
-      if (idx >= 0 && idx < movie.episodes.length) matchedEp = movie.episodes[idx];
-    }
-  }
-
-  const epSlug = matchedEp ? (matchedEp.slug || slugify(matchedEp.name) || matchedEp.id) : currentEp;
-  const currentUrl = epSlug ? `${movieUrl}?ep=${epSlug}` : movieUrl;
-  const posterUrl = matchedEp?.banner || movie.thumbnail || movie.banner || `${siteUrl}/og-image.jpg`;
+  const posterUrl = movie.thumbnail || movie.banner || `${siteUrl}/og-image.jpg`;
 
   const isSeries = movie.category === "phim-bo" || movie.category === "hoat-hinh" || (movie.episodes && movie.episodes.length > 1);
 
@@ -160,32 +122,15 @@ function MovieSchemaScript({ movie, currentEp }: { movie: any; currentEp?: strin
         aggregateRating,
       };
 
-  const episodeSchema = epSlug
-    ? {
-        "@context": "https://schema.org",
-        "@type": "TVEpisode",
-        name: `${movie.title || movie.name} - ${matchedEp?.name || `Tập ${epSlug}`}`,
-        episodeNumber: matchedEp?.id || (parseInt(epSlug, 10) || 1),
-        partOfSeries: {
-          "@type": "TVSeries",
-          name: movie.title || movie.name,
-          url: movieUrl,
-        },
-        description: matchedEp?.name ? `Xem ${matchedEp.name} của phim ${movie.title} Vietsub HD` : (movie.description || `Xem phim ${movie.title} Tập ${epSlug} Vietsub HD`),
-        image: posterUrl,
-        url: currentUrl,
-      }
-    : null;
-
   const videoSchema = {
     "@context": "https://schema.org",
     "@type": "VideoObject",
-    name: matchedEp?.name ? `${movie.title || movie.name} - ${matchedEp.name}` : (epSlug ? `${movie.title || movie.name} Tập ${epSlug}` : (movie.title || movie.name)),
-    description: matchedEp?.name ? `Xem ${matchedEp.name} của phim ${movie.title} Full HD Vietsub tại Vam3D.` : (movie.description || `Xem phim ${movie.title} Vietsub HD`),
+    name: movie.title || movie.name,
+    description: movie.description || `Xem phim ${movie.title || movie.name} Vietsub HD`,
     thumbnailUrl: [posterUrl],
-    uploadDate: matchedEp?.createdAt ? new Date(matchedEp.createdAt).toISOString() : (movie.createdAt ? new Date(movie.createdAt).toISOString() : "2026-01-01T00:00:00.000Z"),
-    contentUrl: movie.videoUrl || currentUrl,
-    embedUrl: currentUrl,
+    uploadDate: movie.createdAt ? new Date(movie.createdAt).toISOString() : "2026-01-01T00:00:00.000Z",
+    contentUrl: movie.videoUrl || movieUrl,
+    embedUrl: movieUrl,
   };
 
   const categoryLabel = movie.category === "phim-bo" ? "Phim Bộ" : movie.category === "hoat-hinh" ? "Hoạt Hình 3D" : movie.category === "chieu-rap" ? "Chiếu Rạp" : "Phim Lẻ";
@@ -211,15 +156,6 @@ function MovieSchemaScript({ movie, currentEp }: { movie: any; currentEp?: strin
     },
   ];
 
-  if (currentEp) {
-    breadcrumbItems.push({
-      "@type": "ListItem",
-      position: 4,
-      name: `Tập ${currentEp}`,
-      item: currentUrl,
-    });
-  }
-
   const breadcrumbSchema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -234,14 +170,6 @@ function MovieSchemaScript({ movie, currentEp }: { movie: any; currentEp?: strin
           __html: JSON.stringify(mainSchema).replace(/</g, "\\u003c"),
         }}
       />
-      {episodeSchema && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(episodeSchema).replace(/</g, "\\u003c"),
-          }}
-        />
-      )}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -276,11 +204,9 @@ export async function generateStaticParams() {
   }
 }
 
-export default async function MovieDetailPage({ params, searchParams }: MoviePageProps) {
+export default async function MovieDetailPage({ params }: MoviePageProps) {
   try {
     const { id } = await params;
-    const resolvedSearchParams = searchParams ? await searchParams : {};
-    const epParam = typeof resolvedSearchParams?.ep === "string" ? resolvedSearchParams.ep : undefined;
     const movie = await getMovieById(id);
 
     if (!movie) {
@@ -427,7 +353,7 @@ export default async function MovieDetailPage({ params, searchParams }: MoviePag
 
     return (
       <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6">
-        <MovieSchemaScript movie={formattedMovie} currentEp={epParam} />
+        <MovieSchemaScript movie={formattedMovie} />
 
         <Breadcrumbs items={breadcrumbItems} />
 
@@ -440,7 +366,7 @@ export default async function MovieDetailPage({ params, searchParams }: MoviePag
                 <p className="text-gray-400 text-sm">Đang chuẩn bị trình phát...</p>
               </div>
             }>
-              <MoviePageClient movie={formattedMovie} relatedEpisodes={relatedEpisodes} initialEp={epParam} />
+              <MoviePageClient movie={formattedMovie} relatedEpisodes={relatedEpisodes} />
             </Suspense>
           </div>
 
