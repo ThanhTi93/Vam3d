@@ -233,7 +233,8 @@ function LatestEpisodesSection({
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
         {episodes.map((ep) => {
           const movieSlug = ep.movie?.slug || ep.idMovie || ep.movie?.id;
-          const playUrl = `/movie/${movieSlug}?ep=${ep.id}`;
+          const epSlug = ep.slug || (ep.name ? slugify(ep.name) : ep.id);
+          const playUrl = `/movie/${movieSlug}?ep=${epSlug}`;
           
           const displayImage = ep.banner || ep.movie?.imgUrl || ep.movie?.bannerUrl || "";
 

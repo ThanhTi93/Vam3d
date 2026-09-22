@@ -214,7 +214,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           const movieSlug = ep.movie?.slug || (ep.movie?.name ? slugify(ep.movie.name) : ep.movie?.id.toString());
           const epSlug = ep.slug || (ep.name ? slugify(ep.name) : ep.id.toString());
           return {
-            url: movieSlug ? `${siteUrl}/movie/${movieSlug}?ep=${ep.id}` : `${siteUrl}/tap/${epSlug}`,
+            url: movieSlug ? `${siteUrl}/movie/${movieSlug}?ep=${epSlug}` : `${siteUrl}/movie/${ep.movie?.id || ep.id}?ep=${epSlug}`,
             lastModified: ep.createdAt ? new Date(ep.createdAt) : new Date(),
             changeFrequency: "weekly",
             priority: 0.7,

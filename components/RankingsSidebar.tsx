@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { TrendingUp, Eye, Heart, Clock, Play } from "lucide-react";
 import { useWatchlist } from "@/app/context/watchlistContext";
-import { getBunnyImageUrl, formatDuration, formatNumber } from "@/lib/utils";
+import { getBunnyImageUrl, formatDuration, formatNumber, slugify } from "@/lib/utils";
 import { Movie } from "@/types";
 
 interface RankingsSidebarProps {
@@ -25,8 +25,9 @@ interface RankedEpisode {
 }
 
 export default function RankingsSidebar({ movies, episodes }: RankingsSidebarProps) {
-  const { watchlist } = useWatchlist();
+  const { watchlist, toggleWatchlist, isInWatchlist } = useWatchlist();
   const [rankingTab, setRankingTab] = useState<"day" | "week" | "month">("day");
+  const [activeTab, setActiveTab] = useState<"episodes" | "movies">("episodes");
   const [mounted, setMounted] = useState(false);
 
   React.useEffect(() => {
@@ -36,8 +37,9 @@ export default function RankingsSidebar({ movies, episodes }: RankingsSidebarPro
   // Extract all episodes from movies or provided episodes prop
   const allEpisodes = useMemo<RankedEpisode[]>(() => {
     if (episodes && episodes.length > 0) {
-      return episodes.map((ep) => {
+      return episodes.map((ep: any) => {
         const movieSlug = ep.movie?.slug || ep.idMovie || ep.movie?.id || "";
+        const epSlug = ep.slug || (ep.name ? slugify(ep.name) : ep.id);
         return {
           id: ep.id,
           name: ep.name || `Tập ${ep.id}`,
@@ -46,7 +48,7 @@ export default function RankingsSidebar({ movies, episodes }: RankingsSidebarPro
           duration: ep.duration || 0,
           movieSlug: String(movieSlug),
           movieTitle: ep.movie?.name || ep.movie?.title || "Phim",
-          url: `/movie/${movieSlug}?ep=${ep.id}`,
+          url: `/movie/${movieSlug}?ep=${epSlug}`,
         };
       });
     }
@@ -61,6 +63,7 @@ export default function RankingsSidebar({ movies, episodes }: RankingsSidebarPro
 
       if (m.episodes && m.episodes.length > 0) {
         m.episodes.forEach((ep: any) => {
+          const epSlug = ep.slug || (ep.name ? slugify(ep.name) : (ep.id || 1));
           extracted.push({
             id: ep.id || ep.name,
             name: ep.name || `Tập ${ep.id}`,
@@ -69,7 +72,7 @@ export default function RankingsSidebar({ movies, episodes }: RankingsSidebarPro
             duration: ep.duration || 0,
             movieSlug: String(movieSlug),
             movieTitle,
-            url: `/movie/${movieSlug}?ep=${ep.id || 1}`,
+            url: `/movie/${movieSlug}?ep=${epSlug}`,
           });
         });
       } else {

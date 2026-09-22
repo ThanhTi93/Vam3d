@@ -9,7 +9,19 @@ async function verifyAdmin() {
 import { revalidatePath, revalidateTag } from "next/cache";
 
 function revalidateAdmin() {
-  revalidateTag("admin-data", "default");
+  try {
+    revalidatePath("/", "layout");
+    revalidatePath("/");
+    revalidatePath("/tap-phim");
+    revalidatePath("/admin");
+    revalidateTag("admin-data", "default");
+    revalidateTag("episodes:latest", "default");
+    revalidateTag("episodes:most-viewed", "default");
+    revalidateTag("movies:all", "default");
+    revalidateTag("movies:hot", "default");
+  } catch (err) {
+    console.error("Revalidation error:", err);
+  }
 }
 import { db, schema } from "@/lib/db";
 import { eq, and, ne, sql, ilike, or, inArray, count, isNull } from "drizzle-orm";

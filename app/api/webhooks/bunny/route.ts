@@ -43,7 +43,9 @@ export async function POST(req: Request) {
 
     console.log(`Updated episodes status for videoId ${videoId}:`, result);
     
+    revalidatePath("/", "layout");
     revalidatePath("/");
+    revalidatePath("/tap-phim");
     revalidatePath("/admin");
     revalidateTag("episodes:latest", "default");
     revalidateTag("episodes:most-viewed", "default");

@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
+import { slugify } from "@/lib/utils";
 
 export async function POST() {
   let siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
@@ -55,16 +56,17 @@ export async function POST() {
 
       // Fetch dynamic movie & episode URLs
       const dbMovies = await db.query.movies.findMany({
-        columns: { id: true, slug: true },
+        columns: { id: true, slug: true, name: true },
         where: (movies, { eq }) => eq(movies.status, 1),
-        with: { episodes: { columns: { id: true } } },
+        with: { episodes: { columns: { id: true, name: true, slug: true } } },
       });
 
       dbMovies?.forEach((movie) => {
-        const movieKey = movie.slug || movie.id;
+        const movieKey = movie.slug || (movie.name ? slugify(movie.name) : movie.id);
         urlList.push(`${siteUrl}/movie/${movieKey}`);
         movie.episodes?.forEach((ep) => {
-          urlList.push(`${siteUrl}/movie/${movieKey}?ep=${ep.id}`);
+          const epSlug = ep.slug || (ep.name ? slugify(ep.name) : ep.id);
+          urlList.push(`${siteUrl}/movie/${movieKey}?ep=${epSlug}`);
         });
       });
     }

@@ -77,6 +77,17 @@ export function slugify(str: string | null | undefined): string {
     .replace(/-+/g, "-");
 }
 
+export function normalizeSearchText(str: string | null | undefined): string {
+  if (!str) return "";
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "d")
+    .toLowerCase()
+    .trim();
+}
+
 
 export function formatRelativeTime(date: string | Date | null | undefined): string {
   if (!date) return "Mới cập nhật";

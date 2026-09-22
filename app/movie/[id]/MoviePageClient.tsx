@@ -7,7 +7,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Play, Heart, Star, Tv, MessageSquare, Clock, Info, Award, Camera, Eye } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useWatchlist } from "@/app/context/watchlistContext";
-import { getBunnyImageUrl, formatRelativeTime, formatDuration, formatNumber } from "@/lib/utils";
+import { getBunnyImageUrl, formatRelativeTime, formatDuration, formatNumber, slugify } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -61,12 +61,30 @@ export default function MoviePageClient({
 
   const resolveEpisodeIndex = (paramVal?: string | null) => {
     if (!paramVal || !movie.episodes || movie.episodes.length === 0) return 0;
-    // 1. Try matching by episode ID
+    const decoded = decodeURIComponent(paramVal).trim();
+    const slugParam = slugify(decoded);
+
+    // 1. Try matching by episode slug or slugified name
+    const bySlug = movie.episodes.findIndex((e: any) => {
+      const eSlug = e.slug || (e.name ? slugify(e.name) : "");
+      return (
+        e.slug === decoded ||
+        eSlug === decoded ||
+        eSlug === slugParam ||
+        slugify(e.name) === slugParam
+      );
+    });
+    if (bySlug !== -1) return bySlug;
+
+    // 2. Try matching by episode ID
     const byId = movie.episodes.findIndex((e: any) => e.id?.toString() === paramVal);
     if (byId !== -1) return byId;
-    // 2. Try matching by 1-based index
-    const byIdx = parseInt(paramVal, 10) - 1;
-    if (byIdx >= 0 && byIdx < movie.episodes.length) return byIdx;
+
+    // 3. Try matching by 1-based index
+    if (/^\d+$/.test(paramVal)) {
+      const byIdx = parseInt(paramVal, 10) - 1;
+      if (byIdx >= 0 && byIdx < movie.episodes.length) return byIdx;
+    }
     return 0;
   };
 
@@ -137,8 +155,10 @@ export default function MoviePageClient({
 
   const handleEpisodeChange = (idx: number) => {
     setActiveEpisode(idx);
+    const targetEp = movie.episodes?.[idx];
+    const epSlug = targetEp?.slug || (targetEp?.name ? slugify(targetEp.name) : (idx + 1).toString());
     const params = new URLSearchParams(window.location.search);
-    params.set("ep", (idx + 1).toString());
+    params.set("ep", epSlug);
     startTransition(() => {
       router.replace(`${window.location.pathname}?${params.toString()}`, { scroll: false });
     });
@@ -161,8 +181,9 @@ export default function MoviePageClient({
     }
 
     // Navigating to a different movie
-    const movieIdentifier = ep.movie?.slug || ep.idMovie;
-    router.push(`/movie/${movieIdentifier}?ep=${ep.id}`);
+    const movieIdentifier = ep.movie?.slug || ep.idMovie || ep.movie?.id;
+    const epSlug = ep.slug || (ep.name ? slugify(ep.name) : ep.id?.toString());
+    router.push(`/movie/${movieIdentifier}?ep=${epSlug}`);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -226,9 +247,11 @@ export default function MoviePageClient({
       }
     }
     setShowPlayer(true);
-    if (!searchParams.get("ep")) {
+    if (!searchParams.get("ep") && movie.episodes && movie.episodes.length > 0) {
+      const firstEp = movie.episodes[0];
+      const epSlug = firstEp.slug || (firstEp.name ? slugify(firstEp.name) : "1");
       const params = new URLSearchParams(window.location.search);
-      params.set("ep", "1");
+      params.set("ep", epSlug);
       startTransition(() => {
         router.replace(`${window.location.pathname}?${params.toString()}`, { scroll: false });
       });
@@ -336,11 +359,11 @@ export default function MoviePageClient({
                       const targetIdx = isSameMovie
                         ? movie.episodes?.findIndex((x: any) => x.id === ep.id)
                         : -1;
-                      const epParamVal = targetIdx !== -1 && targetIdx !== undefined ? targetIdx + 1 : ep.id;
+                      const epSlug = ep.slug || (ep.name ? slugify(ep.name) : (targetIdx !== -1 && targetIdx !== undefined ? (targetIdx + 1).toString() : ep.id));
                       const movieIdentifier = isSameMovie
                         ? (movie.slug || movie.id)
                         : (ep.movie?.slug || ep.idMovie);
-                      const playUrl = `/movie/${movieIdentifier}?ep=${epParamVal}`;
+                      const playUrl = `/movie/${movieIdentifier}?ep=${epSlug}`;
                       const displayImage = ep.banner || ep.movie?.imgUrl || ep.movie?.bannerUrl || "";
 
                       return (
@@ -558,7 +581,8 @@ export default function MoviePageClient({
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {movie.episodes.slice(0, 12).map((ep: any, idx: number) => {
-                  const playUrl = `/movie/${movie.id}?ep=${idx + 1}`;
+                  const epSlug = ep.slug || (ep.name ? slugify(ep.name) : (idx + 1).toString());
+                  const playUrl = `/movie/${movie.slug || movie.id}?ep=${epSlug}`;
                   const displayImage = ep.banner || movie.thumbnail || movie.banner || "";
 
                   return (

@@ -42,7 +42,7 @@ import {
 } from "./actions";
 import { ImagePicker } from "@/components/ui/image-picker";
 import { uploadFileToBunny } from "@/lib/uploadClient";
-import { getBunnyImageUrl, cleanFolderName, slugify } from "@/lib/utils";
+import { getBunnyImageUrl, cleanFolderName, slugify, normalizeSearchText } from "@/lib/utils";
 import * as tus from "tus-js-client";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -1867,6 +1867,10 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
   const [uploading, setUploading] = useState<boolean>(false);
   const [tusUpload, setTusUpload] = useState<any>(null);
 
+  // Search states for relations selector
+  const [charSearch, setCharSearch] = useState<string>("");
+  const [actorSearch, setActorSearch] = useState<string>("");
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -2202,53 +2206,90 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
           )}
 
           <div>
-            <label className="text-xs text-gray-400 mb-2 block">Diễn viên (chọn nhiều)</label>
-            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 bg-[#090a0f] border border-white/5 rounded-lg">
-              {actors.map((a: any) => (
-                <button
-                  type="button"
-                  key={a.id}
-                  onClick={() => setForm(p => ({
-                    ...p,
-                    actorIds: p.actorIds.includes(a.id)
-                      ? p.actorIds.filter(id => id !== a.id)
-                      : [...p.actorIds, a.id]
-                  }))}
-                  className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
-                    form.actorIds.includes(a.id)
-                      ? "bg-orange-500 border-orange-500 text-white"
-                      : "border-white/10 text-gray-400 hover:border-white/30"
-                  }`}
-                >
-                  {a.name}
-                </button>
-              ))}
+            <label className="text-xs text-gray-400 mb-1.5 block">Diễn viên (chọn nhiều)</label>
+            <div className="relative mb-2">
+              <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-gray-500" />
+              <Input
+                type="text"
+                placeholder="Tìm diễn viên..."
+                value={actorSearch}
+                onChange={(e) => setActorSearch(e.target.value)}
+                className="pl-8 bg-[#090a0f] border-white/5 text-[11px] h-8 w-full"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar p-2 bg-[#090a0f] border border-white/5 rounded-lg">
+              {actors
+                .filter((a: any) => {
+                  if (!actorSearch.trim()) return true;
+                  const q = normalizeSearchText(actorSearch);
+                  return normalizeSearchText(a.name).includes(q);
+                })
+                .map((a: any) => (
+                  <button
+                    type="button"
+                    key={a.id}
+                    onClick={() => setForm(p => ({
+                      ...p,
+                      actorIds: p.actorIds.includes(a.id)
+                        ? p.actorIds.filter(id => id !== a.id)
+                        : [...p.actorIds, a.id]
+                    }))}
+                    className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                      form.actorIds.includes(a.id)
+                        ? "bg-orange-500 border-orange-500 text-white"
+                        : "border-white/10 text-gray-400 hover:border-white/30"
+                    }`}
+                  >
+                    {a.name}
+                  </button>
+                ))}
               {actors.length === 0 && <span className="text-xs text-gray-500 p-1">Không có diễn viên nào</span>}
             </div>
           </div>
 
           <div>
-            <label className="text-xs text-gray-400 mb-2 block">Nhân vật (chọn nhiều)</label>
-            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 bg-[#090a0f] border border-white/5 rounded-lg">
-              {characters.map((c: any) => (
-                <button
-                  type="button"
-                  key={c.id}
-                  onClick={() => setForm(p => ({
-                    ...p,
-                    characterIds: p.characterIds.includes(c.id)
-                      ? p.characterIds.filter(id => id !== c.id)
-                      : [...p.characterIds, c.id]
-                  }))}
-                  className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
-                    form.characterIds.includes(c.id)
-                      ? "bg-orange-500 border-orange-500 text-white"
-                      : "border-white/10 text-gray-400 hover:border-white/30"
-                  }`}
-                >
-                  {c.name}
-                </button>
-              ))}
+            <label className="text-xs text-gray-400 mb-1.5 block">Nhân vật (chọn nhiều)</label>
+            <div className="relative mb-2">
+              <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-gray-500" />
+              <Input
+                type="text"
+                placeholder="Tìm nhân vật (Việt, Anh, Trung, Phim)..."
+                value={charSearch}
+                onChange={(e) => setCharSearch(e.target.value)}
+                className="pl-8 bg-[#090a0f] border-white/5 text-[11px] h-8 w-full"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar p-2 bg-[#090a0f] border border-white/5 rounded-lg">
+              {characters
+                .filter((c: any) => {
+                  if (!charSearch.trim()) return true;
+                  const q = normalizeSearchText(charSearch);
+                  return (
+                    normalizeSearchText(c.name).includes(q) ||
+                    normalizeSearchText(c.nameEn).includes(q) ||
+                    normalizeSearchText(c.nameZh).includes(q) ||
+                    normalizeSearchText(c.movie?.name).includes(q)
+                  );
+                })
+                .map((c: any) => (
+                  <button
+                    type="button"
+                    key={c.id}
+                    onClick={() => setForm(p => ({
+                      ...p,
+                      characterIds: p.characterIds.includes(c.id)
+                        ? p.characterIds.filter(id => id !== c.id)
+                        : [...p.characterIds, c.id]
+                    }))}
+                    className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                      form.characterIds.includes(c.id)
+                        ? "bg-orange-500 border-orange-500 text-white"
+                        : "border-white/10 text-gray-400 hover:border-white/30"
+                    }`}
+                  >
+                    {c.name}
+                  </button>
+                ))}
               {characters.length === 0 && <span className="text-xs text-gray-500 p-1">Không có nhân vật nào</span>}
             </div>
           </div>
@@ -2961,12 +3002,13 @@ function CharactersTab({ movies = [], characters, search, setSearch, isPending, 
   const lastTranslatedNameRef = useRef<string>("");
 
   const filtered = characters.filter((c: any) => {
-    const q = search.toLowerCase();
+    if (!search.trim()) return true;
+    const q = normalizeSearchText(search);
     return (
-      c.name?.toLowerCase().includes(q) ||
-      c.nameEn?.toLowerCase().includes(q) ||
-      c.nameZh?.toLowerCase().includes(q) ||
-      c.movie?.name?.toLowerCase().includes(q)
+      normalizeSearchText(c.name).includes(q) ||
+      normalizeSearchText(c.nameEn).includes(q) ||
+      normalizeSearchText(c.nameZh).includes(q) ||
+      normalizeSearchText(c.movie?.name).includes(q)
     );
   });
   const charactersWithImages = filtered.filter((c: any) => !!c.imgUrl);
@@ -4692,9 +4734,16 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
 
   const filtered = galleries;
 
-  const filteredCharacters = characters.filter((c: any) =>
-    c.name?.toLowerCase().includes(characterSearch.toLowerCase())
-  );
+  const filteredCharacters = characters.filter((c: any) => {
+    if (!characterSearch.trim()) return true;
+    const q = normalizeSearchText(characterSearch);
+    return (
+      normalizeSearchText(c.name).includes(q) ||
+      normalizeSearchText(c.nameEn).includes(q) ||
+      normalizeSearchText(c.nameZh).includes(q) ||
+      normalizeSearchText(c.movie?.name).includes(q)
+    );
+  });
 
   const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const filesList = e.target.files;

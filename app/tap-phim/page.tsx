@@ -84,7 +84,7 @@ export default async function TapPhimPage({ searchParams }: PageProps) {
     const [epResults, moviesResult] = await Promise.all([
       getEpisodesPaginated({
         page: pageParam,
-        limit: 24,
+        limit: 12,
         sortBy: sortParam,
         movieId: movieParam,
         search: searchParam,

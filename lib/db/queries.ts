@@ -306,7 +306,7 @@ export async function getEpisodesPaginated(params: {
   search?: string;
 }) {
   const page = Math.max(1, Number(params.page) || 1);
-  const limit = Math.min(48, Math.max(1, Number(params.limit) || 24));
+  const limit = Math.min(48, Math.max(1, Number(params.limit) || 12));
   const sortBy = params.sortBy || "newest";
   const movieId = params.movieId || "all";
   const search = (params.search || "").trim();

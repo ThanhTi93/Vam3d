@@ -217,8 +217,9 @@ export default function CharacterDetailPageClient({ data }: CharacterDetailPageC
         {episodes.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
             {episodes.map((ep: any, idx: number) => {
-              const movieId = ep.idMovie || ep.movie?.id || character.idMovie;
-              const playUrl = `/movie/${movieId}?ep=${ep.id}`;
+              const movieId = ep.movie?.slug || ep.idMovie || ep.movie?.id || character.idMovie;
+              const epSlug = ep.slug || (ep.name ? slugify(ep.name) : ep.id);
+              const playUrl = `/movie/${movieId}?ep=${epSlug}`;
               const displayImage = ep.banner || ep.movie?.imgUrl || character.imgUrl || "";
 
               return (
