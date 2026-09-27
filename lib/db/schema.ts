@@ -530,3 +530,14 @@ export const commentsRelations = relations(comments, ({ one, many }) => ({
   }),
 }));
 
+// 27. Password Resets Table
+export const passwordResets = pgTable("password_resets", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull(),
+  otp: varchar("otp", { length: 10 }).notNull(),
+  resetToken: varchar("reset_token", { length: 255 }),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+

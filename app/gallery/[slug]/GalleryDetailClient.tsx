@@ -26,6 +26,7 @@ import { getBunnyImageUrl, slugify } from "@/lib/utils";
 import { incrementGalleryViews } from "@/app/admin/actions";
 import { HomeGalleryCard, HomeGalleryLightbox } from "@/components/GalleryComponents";
 import MovieComments from "@/components/movie/MovieComments";
+import CultivationLoginNotice from "@/components/ranking/CultivationLoginNotice";
 
 interface GalleryDetailClientProps {
   gallery: any;
@@ -113,6 +114,9 @@ export default function GalleryDetailClient({
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-8">
+        {/* Cultivation Login Notice */}
+        <CultivationLoginNotice />
+
         {/* Gallery Info Hero Card */}
         <div className="relative bg-gradient-to-br from-[#131520] via-[#161826] to-[#0f111c] border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl overflow-hidden">
           {/* Subtle Ambient Glow */}

@@ -18,6 +18,7 @@ import { incrementEpisodeViews, incrementGalleryViews, incrementAccountViews } f
 import { HomeGalleryCard } from "@/components/GalleryComponents";
 import VideoPlayer from "@/components/VideoPlayer";
 import MovieComments from "@/components/movie/MovieComments";
+import CultivationLoginNotice from "@/components/ranking/CultivationLoginNotice";
 
 interface MoviePageClientProps {
   movie: any;
@@ -237,8 +238,12 @@ export default function MoviePageClient({
   };
 
   return (
-    <div className="w-full bg-[#131520] border border-white/10 rounded-2xl shadow-2xl overflow-hidden mt-6 animate-in fade-in duration-300">
-      {/* ── PLAYER VIEW ── */}
+    <div className="space-y-6 mt-6">
+      {/* ── CULTIVATION LOGIN NOTICE (TOP PROMINENT BANNER BEFORE WATCHING) ── */}
+      <CultivationLoginNotice />
+
+      <div className="w-full bg-[#131520] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in duration-300">
+        {/* ── PLAYER VIEW ── */}
       {showPlayer ? (
         <div className="flex flex-col">
           <div className="relative bg-black aspect-video w-full flex items-center justify-center">
@@ -499,6 +504,21 @@ export default function MoviePageClient({
             </div>
 
             <div className="space-y-4">
+              {!user && (
+                <div className="bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-transparent border border-orange-500/30 rounded-xl p-3 flex items-center justify-between gap-2 text-xs animate-in fade-in duration-300">
+                  <div className="flex items-center gap-2 text-orange-300 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-orange-400 animate-ping" />
+                    <span>Đăng nhập trước khi xem để nhận Tu Vi!</span>
+                  </div>
+                  <Link
+                    href={`/login?callbackUrl=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "")}`}
+                    className="font-bold text-orange-400 hover:text-orange-300 hover:underline shrink-0"
+                  >
+                    Đăng nhập →
+                  </Link>
+                </div>
+              )}
+
               <Button
                 id={`modal-play-${movie.id}`}
                 onClick={startPlaying}
@@ -744,6 +764,7 @@ export default function MoviePageClient({
           </DialogContent>
         </Dialog>
       )}
+      </div>
     </div>
   );
 }

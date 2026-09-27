@@ -41,8 +41,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("/api/auth/me", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
-        setUser(data.user || null);
+        const serverUser = data.user || null;
+        setUser(serverUser);
         setFreeVipModeState(!!data.freeVipMode);
+
+        if (serverUser && typeof window !== "undefined") {
+          try {
+            localStorage.setItem("vam3d_user", JSON.stringify(serverUser));
+          } catch (_) {}
+        } else if (typeof window !== "undefined") {
+          try {
+            localStorage.removeItem("vam3d_user");
+          } catch (_) {}
+        }
       }
     } catch (err) {
       console.warn("Auth check fallback:", err);
@@ -60,6 +71,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Instantly restore cached user from localStorage on client side
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("vam3d_user");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.id) {
+            setUser(parsed);
+          }
+        }
+      } catch (_) {}
+    }
+
     setMounted(true);
     fetchAuthData();
   }, []);
@@ -69,10 +93,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const loggedUser = await loginUser(formData);
       setUser(loggedUser);
+      if (loggedUser && typeof window !== "undefined") {
+        try {
+          localStorage.setItem("vam3d_user", JSON.stringify(loggedUser));
+        } catch (_) {}
+      }
       await refreshSettings();
       return loggedUser;
     } catch (error) {
       setUser(null);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem("vam3d_user");
+        } catch (_) {}
+      }
       throw error;
     } finally {
       setLoading(false);
@@ -84,10 +118,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const registeredUser = await registerUser(formData);
       setUser(registeredUser);
+      if (registeredUser && typeof window !== "undefined") {
+        try {
+          localStorage.setItem("vam3d_user", JSON.stringify(registeredUser));
+        } catch (_) {}
+      }
       await refreshSettings();
       return registeredUser;
     } catch (error) {
       setUser(null);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem("vam3d_user");
+        } catch (_) {}
+      }
       throw error;
     } finally {
       setLoading(false);
@@ -99,6 +143,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await logoutUser();
       setUser(null);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem("vam3d_user");
+        } catch (_) {}
+      }
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {

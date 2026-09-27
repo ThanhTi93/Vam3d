@@ -5,13 +5,13 @@ const encodedKey = new TextEncoder().encode(JWT_SECRET);
 
 /**
  * Encrypts a payload into a JWT session token.
- * Expired in 7 days by default.
+ * Defaults to 365 days for long-term persistence (no sudden logout).
  */
-export async function encryptSession(payload: any): Promise<string> {
+export async function encryptSession(payload: any, expiresIn = "365d"): Promise<string> {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime(expiresIn)
     .sign(encodedKey);
 }
 

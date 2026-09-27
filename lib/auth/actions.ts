@@ -1,13 +1,14 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { cache } from "react";
-import { eq } from "drizzle-orm";
+import crypto from "crypto";
+import { eq, and, gt, desc } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { accounts, payments, userSubscriptions } from "@/lib/db/schema";
+import { accounts, payments, userSubscriptions, passwordResets } from "@/lib/db/schema";
 import { registerSchema, loginSchema } from "@/lib/validations/schemas";
 import { hashPassword, comparePassword } from "./password";
 import { encryptSession, decryptSession } from "./session";
+import { sendOtpEmail, sendNewPasswordEmail } from "@/lib/email";
 
 /**
  * Registers a new user. 
@@ -86,7 +87,7 @@ export async function registerUser(formData: any) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24 * 365, // 365 days persistent session
   });
 
   return newUser;
@@ -140,7 +141,7 @@ export async function loginUser(formData: any) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24 * 365, // 365 days persistent session
   });
 
   return {
@@ -253,10 +254,7 @@ export async function getCurrentUser() {
     };
   } catch (error) {
     console.error("Error fetching current user:", error);
-    try {
-      const cookieStore = await cookies();
-      cookieStore.delete("session");
-    } catch (_) {}
+    // Note: Do NOT delete session cookie here to prevent logging out users during transient DB latency
     return null;
   }
 }
@@ -285,4 +283,187 @@ export async function updateUserAvatar(url: string) {
     console.error("Error updating user avatar:", error);
     throw new Error(error.message || "Không thể cập nhật ảnh đại diện");
   }
+}
+
+/**
+ * Step 1: Generates a 6-digit numeric OTP and sends it to user's registered Gmail.
+ */
+export async function requestPasswordResetOtp(email: string) {
+  if (!db) throw new Error("Cơ sở dữ liệu chưa sẵn sàng");
+
+  const cleanEmail = email ? email.trim().toLowerCase() : "";
+  if (!cleanEmail || !cleanEmail.includes("@")) {
+    throw new Error("Vui lòng nhập địa chỉ Gmail hợp lệ");
+  }
+
+  // Find user by email
+  const [user] = await db
+    .select({
+      id: accounts.id,
+      username: accounts.username,
+      email: accounts.email,
+      status: accounts.status,
+    })
+    .from(accounts)
+    .where(eq(accounts.email, cleanEmail))
+    .limit(1);
+
+  if (!user) {
+    throw new Error("Không tìm thấy tài khoản nào gắn với địa chỉ Gmail này");
+  }
+
+  if (user.status === 0) {
+    throw new Error("Tài khoản này hiện đang bị khóa. Vui lòng liên hệ ban quản trị.");
+  }
+
+  // Generate 6-digit numeric OTP
+  const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Invalidate previous un-used OTPs for this email
+  await db
+    .update(passwordResets)
+    .set({ used: true })
+    .where(and(eq(passwordResets.email, cleanEmail), eq(passwordResets.used, false)));
+
+  // Insert new OTP record with 10-minute expiry
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  await db.insert(passwordResets).values({
+    email: cleanEmail,
+    otp: randomOtp,
+    expiresAt,
+    used: false,
+  });
+
+  // Send 6-digit OTP to user's Gmail
+  const emailResult = await sendOtpEmail({
+    to: user.email,
+    username: user.username,
+    otp: randomOtp,
+  });
+
+  return {
+    success: true,
+    email: user.email,
+    sent: emailResult.sent,
+    message: emailResult.sent
+      ? `Mã xác thực OTP 6 số đã được gửi tới Gmail ${user.email}. Vui lòng kiểm tra hộp thư đến (hoặc thư mục Spam).`
+      : `Mã OTP đã được tạo thành công.`,
+    devOtp: emailResult.sent ? undefined : randomOtp,
+  };
+}
+
+/**
+ * Step 2: Verifies the 6-digit OTP code submitted by the user.
+ * If valid, generates a secure reset token for Step 3.
+ */
+export async function verifyPasswordResetOtp(email: string, otp: string) {
+  if (!db) throw new Error("Cơ sở dữ liệu chưa sẵn sàng");
+
+  const cleanEmail = email ? email.trim().toLowerCase() : "";
+  const cleanOtp = otp ? otp.trim().replace(/\s+/g, "") : "";
+
+  if (!cleanEmail || !cleanOtp || cleanOtp.length !== 6) {
+    throw new Error("Mã OTP phải gồm đúng 6 chữ số");
+  }
+
+  const [record] = await db
+    .select()
+    .from(passwordResets)
+    .where(
+      and(
+        eq(passwordResets.email, cleanEmail),
+        eq(passwordResets.otp, cleanOtp),
+        eq(passwordResets.used, false),
+        gt(passwordResets.expiresAt, new Date())
+      )
+    )
+    .orderBy(desc(passwordResets.createdAt))
+    .limit(1);
+
+  if (!record) {
+    throw new Error("Mã OTP không chính xác hoặc đã hết hiệu lực (10 phút). Vui lòng gửi lại mã mới.");
+  }
+
+  // Generate secure reset token
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  // Save reset token into record
+  await db
+    .update(passwordResets)
+    .set({ resetToken })
+    .where(eq(passwordResets.id, record.id));
+
+  return {
+    success: true,
+    resetToken,
+    message: "Xác thực mã OTP thành công. Hãy nhập mật khẩu mới của bạn.",
+  };
+}
+
+/**
+ * Step 3: Resets password using the verified reset token.
+ */
+export async function resetPasswordWithToken({
+  email,
+  resetToken,
+  newPassword,
+}: {
+  email: string;
+  resetToken: string;
+  newPassword: string;
+}) {
+  if (!db) throw new Error("Cơ sở dữ liệu chưa sẵn sàng");
+
+  const cleanEmail = email ? email.trim().toLowerCase() : "";
+  if (!cleanEmail) throw new Error("Thiếu thông tin email");
+  if (!resetToken) throw new Error("Thiếu mã token xác thực");
+
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error("Mật khẩu mới phải có ít nhất 6 ký tự");
+  }
+
+  // Find record
+  const [record] = await db
+    .select()
+    .from(passwordResets)
+    .where(
+      and(
+        eq(passwordResets.email, cleanEmail),
+        eq(passwordResets.resetToken, resetToken),
+        eq(passwordResets.used, false),
+        gt(passwordResets.expiresAt, new Date())
+      )
+    )
+    .limit(1);
+
+  if (!record) {
+    throw new Error("Phiên đặt lại mật khẩu đã hết hạn hoặc không hợp lệ. Vui lòng thao tác lại từ đầu.");
+  }
+
+  // Hash new password
+  const hashedPassword = await hashPassword(newPassword);
+
+  // Update in accounts
+  await db
+    .update(accounts)
+    .set({ password: hashedPassword })
+    .where(eq(accounts.email, cleanEmail));
+
+  // Mark token record as used
+  await db
+    .update(passwordResets)
+    .set({ used: true })
+    .where(eq(passwordResets.id, record.id));
+
+  return {
+    success: true,
+    message: "Đặt lại mật khẩu thành công! Bây giờ bạn có thể đăng nhập bằng mật khẩu mới.",
+  };
+}
+
+/**
+ * Legacy support for direct random password generation if needed
+ */
+export async function requestPasswordReset(email: string) {
+  return requestPasswordResetOtp(email);
 }

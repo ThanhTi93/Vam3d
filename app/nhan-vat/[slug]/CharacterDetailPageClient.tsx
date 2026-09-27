@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/app/context/AuthContext";
 import MovieComments from "@/components/movie/MovieComments";
+import CultivationLoginNotice from "@/components/ranking/CultivationLoginNotice";
 
 interface CharacterDetailPageClientProps {
   data: {
@@ -58,6 +59,9 @@ export default function CharacterDetailPageClient({ data }: CharacterDetailPageC
     <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6 space-y-10 animate-in fade-in duration-300">
       {/* Breadcrumbs */}
       <Breadcrumbs items={breadcrumbs} />
+
+      {/* ─── CULTIVATION LOGIN NOTICE ─── */}
+      <CultivationLoginNotice />
 
       {/* ─── HERO PROFILE HEADER ─── */}
       <section className="relative bg-[#131520] border border-white/10 rounded-3xl overflow-hidden shadow-2xl p-6 sm:p-8 lg:p-10">
