@@ -1,5 +1,5 @@
 import { db, schema } from "./index";
-import { eq, and, or, ilike, inArray, count, isNull, desc, asc, notInArray, ne, sql } from "drizzle-orm";
+import { eq, and, or, ilike, inArray, count, isNull, desc, asc, notInArray, ne, sql, gte } from "drizzle-orm";
 import { slugify } from "@/lib/utils";
 import { cache } from "react";
 
@@ -1123,5 +1123,125 @@ export const getCharacterDetails = cache(async (slugOrId: string) => {
     return null;
   }
 });
+
+// ─── Account Leaderboard (Bảng Xếp Hạng Tu Tiên Phàm Nhân Tu Tiên) ─────────
+import { getCultivationRealm, getNextRealmProgress, CultivationRealm, CULTIVATION_REALMS } from "@/lib/cultivation";
+
+export interface RankedAccount {
+  id: number;
+  username: string;
+  imgUrl: string | null;
+  role: string | null;
+  level: number | null;
+  views: number;
+  rank: number;
+  realm: CultivationRealm;
+  nextRealm: CultivationRealm | null;
+  neededViews: number;
+  progressPercent: number;
+}
+
+export interface LeaderboardPodiumSlot {
+  rank: 1 | 2 | 3;
+  account: RankedAccount | null;
+}
+
+export interface AccountLeaderboardData {
+  top1: LeaderboardPodiumSlot;
+  top2: LeaderboardPodiumSlot;
+  top3: LeaderboardPodiumSlot;
+  rankedList: RankedAccount[];
+  totalAccounts: number;
+  realms: CultivationRealm[];
+}
+
+export const getAccountLeaderboard = cache(async (limit = 100): Promise<AccountLeaderboardData> => {
+  try {
+    if (!db) {
+      return {
+        top1: { rank: 1, account: null },
+        top2: { rank: 2, account: null },
+        top3: { rank: 3, account: null },
+        rankedList: [],
+        totalAccounts: 0,
+        realms: CULTIVATION_REALMS,
+      };
+    }
+
+    // Chỉ các đạo hữu từ cảnh giới NGUYÊN ANH trở lên (>= 10.000 tu vi) mới đủ điều kiện vào Bảng Xếp Hạng
+    const MIN_LEADERBOARD_VIEWS = 10000;
+
+    const allAccounts = await db
+      .select({
+        id: schema.accounts.id,
+        username: schema.accounts.username,
+        imgUrl: schema.accounts.imgUrl,
+        role: schema.accounts.role,
+        level: schema.accounts.level,
+        views: schema.accounts.views,
+        status: schema.accounts.status,
+      })
+      .from(schema.accounts)
+      .where(and(eq(schema.accounts.status, 1), gte(schema.accounts.views, MIN_LEADERBOARD_VIEWS)))
+      .orderBy(desc(schema.accounts.views), asc(schema.accounts.id));
+
+    const totalAccounts = allAccounts.length;
+
+    // Build ranked accounts with cultivation realms
+    const rankedList: RankedAccount[] = allAccounts.map((acc, index) => {
+      const views = Number(acc.views) || 0;
+      const rank = index + 1;
+      const realm = getCultivationRealm(views);
+      const { nextRealm, neededViews, progressPercent } = getNextRealmProgress(views);
+
+      return {
+        id: acc.id,
+        username: acc.username,
+        imgUrl: acc.imgUrl,
+        role: acc.role,
+        level: acc.level,
+        views,
+        rank,
+        realm,
+        nextRealm,
+        neededViews,
+        progressPercent,
+      };
+    });
+
+    const top1Account = rankedList[0] || null;
+    const top2Account = rankedList[1] || null;
+    const top3Account = rankedList[2] || null;
+
+    return {
+      top1: {
+        rank: 1,
+        account: top1Account,
+      },
+      top2: {
+        rank: 2,
+        account: top2Account,
+      },
+      top3: {
+        rank: 3,
+        account: top3Account,
+      },
+      rankedList: rankedList.slice(0, limit),
+      totalAccounts,
+      realms: CULTIVATION_REALMS,
+    };
+  } catch (err) {
+    console.error("Error in getAccountLeaderboard:", err);
+    return {
+      top1: { rank: 1, account: null },
+      top2: { rank: 2, account: null },
+      top3: { rank: 3, account: null },
+      rankedList: [],
+      totalAccounts: 0,
+      realms: CULTIVATION_REALMS,
+    };
+  }
+});
+
 
 

@@ -5,14 +5,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  Search, Heart, Settings, Camera, LogOut, ChevronDown, X, Menu, User
+  Search, Heart, Settings, Camera, LogOut, ChevronDown, X, Menu, User, Trophy
 } from "lucide-react";
 import { useWatchlist } from "@/app/context/watchlistContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { updateUserAvatar } from "@/lib/auth/actions";
-import { getBunnyImageUrl, slugify } from "@/lib/utils";
+import { getBunnyImageUrl, getUserAvatarUrl, slugify } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DEFAULT_CATEGORIES } from "@/lib/categories";
+import AvatarFrame from "@/components/ranking/AvatarFrame";
 
 const AvatarUpload = React.lazy(() => import("@/app/components/AvatarUpload"));
 
@@ -71,7 +72,7 @@ function SearchInput() {
   };
 
   return (
-    <form onSubmit={handleSearchSubmit} className="relative flex-1 md:w-64">
+    <form onSubmit={handleSearchSubmit} className="relative flex-1 md:w-64" suppressHydrationWarning>
       <input
         type="text"
         id="movie-search"
@@ -86,6 +87,7 @@ function SearchInput() {
         type="submit"
         aria-label="Tìm kiếm"
         className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-orange-500 transition-colors cursor-pointer"
+        suppressHydrationWarning
       >
         <Search className="w-4 h-4" />
       </button>
@@ -266,6 +268,19 @@ export default function Header() {
               )}
             </Link>
 
+            <Link
+              href="/bang-xep-hang"
+              prefetch={false}
+              className={`text-sm font-semibold tracking-wide transition-colors duration-200 relative flex items-center gap-1.5 group ${pathname.startsWith("/bang-xep-hang") ? "text-orange-500" : "text-gray-400 hover:text-white"
+                }`}
+            >
+              <Trophy className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+              <span>Xếp Hạng</span>
+              {pathname.startsWith("/bang-xep-hang") && (
+                <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-500 to-amber-400 rounded-full" />
+              )}
+            </Link>
+
             {mounted && !freeVipMode && (
               <Link
                 href="/upgrade"
@@ -354,11 +369,14 @@ export default function Header() {
               <div className="relative" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/5 bg-[#161925] hover:bg-[#1c1f2f] transition-all cursor-pointer"
+                  className="flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-full border border-white/5 bg-[#161925] hover:bg-[#1c1f2f] transition-all cursor-pointer"
                 >
-                  <div className="w-7 h-7 rounded-full overflow-hidden relative border border-orange-500/30">
-                    <Image src={getBunnyImageUrl(user.imgUrl, 'thumb') || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"} alt={user.username} fill className="object-cover" sizes="28px" />
-                  </div>
+                  <AvatarFrame
+                    src={user.imgUrl}
+                    alt={user.username}
+                    views={Number(user.views) || 0}
+                    size="2xs"
+                  />
                   <span className="text-xs font-semibold text-gray-300 max-w-[100px] truncate hidden sm:inline">{user.username}</span>
                   <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
                 </button>
@@ -366,9 +384,12 @@ export default function Header() {
                 {showProfileMenu && (
                   <div className="absolute right-0 top-12 z-50 bg-[#131520] border border-white/10 rounded-2xl p-4 shadow-2xl shadow-black/80 w-56 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="flex items-center gap-3 pb-3 border-b border-white/5 mb-3">
-                      <div className="w-10 h-10 rounded-full overflow-hidden relative border border-orange-500/20 shrink-0">
-                        <Image src={getBunnyImageUrl(user.imgUrl, 'thumb') || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"} alt={user.username} fill className="object-cover" sizes="40px" />
-                      </div>
+                      <AvatarFrame
+                        src={user.imgUrl}
+                        alt={user.username}
+                        views={Number(user.views) || 0}
+                        size="xs"
+                      />
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-white truncate">{user.username}</p>
                         <p className="text-[9px] text-gray-400 truncate">{user.email}</p>
@@ -400,6 +421,16 @@ export default function Header() {
                       >
                         <User className="w-3.5 h-3.5 text-gray-400" />
                         Thông tin tài khoản
+                      </Link>
+
+                      <Link
+                        href="/bang-xep-hang"
+                        prefetch={false}
+                        onClick={() => setShowProfileMenu(false)}
+                        className="w-full text-left text-xs text-amber-300 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-amber-500/10 transition-all flex items-center gap-2 font-semibold"
+                      >
+                        <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                        Bảng Xếp Hạng
                       </Link>
 
                       <button
@@ -490,6 +521,17 @@ export default function Header() {
               }`}
           >
             Phim Hot <span className="bg-red-600 text-white text-[9px] px-1 py-0.5 rounded font-black tracking-wide uppercase leading-none">New</span>
+          </Link>
+
+          <Link
+            href="/bang-xep-hang"
+            prefetch={false}
+            onClick={() => setShowMobileMenu(false)}
+            className={`text-sm font-bold py-1 flex items-center gap-2 ${pathname === "/bang-xep-hang" ? "text-orange-500" : "text-gray-400"
+              }`}
+          >
+            <Trophy className="w-4 h-4 text-amber-400" />
+            <span>Bảng Xếp Hạng</span>
           </Link>
 
           {/* Thể loại mobile với nút Đóng/Mở */}

@@ -52,6 +52,13 @@ export function getBunnyImageUrl(
   return processedUrl;
 }
 
+export function getUserAvatarUrl(url: string | null | undefined): string {
+  if (!url || typeof url !== "string" || !url.trim()) {
+    return "/images/default_avatar.webp";
+  }
+  return getBunnyImageUrl(url, "thumb");
+}
+
 export function cleanFolderName(name: string): string {
   return name
     .normalize("NFD")

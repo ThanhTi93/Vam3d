@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
               phone: accounts.phone,
               status: accounts.status,
               level: accounts.level,
+              views: accounts.views,
               expiredAt: accounts.expiredAt,
             })
             .from(accounts)

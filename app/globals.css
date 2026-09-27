@@ -244,3 +244,82 @@ body {
   90% { opacity: 1; }
   100% { top: 100%; opacity: 0; }
 }
+
+/* ════ RANKING & AVATAR FRAME LUXURY ANIMATIONS ════ */
+@keyframes spin-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes spin-reverse-slow {
+  0% { transform: rotate(360deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes gold-halo {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.6), 0 0 35px rgba(217, 119, 6, 0.35), inset 0 0 12px rgba(251, 191, 36, 0.4);
+    filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.7));
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(251, 191, 36, 0.85), 0 0 50px rgba(245, 158, 11, 0.55), inset 0 0 18px rgba(254, 240, 138, 0.6);
+    filter: drop-shadow(0 0 16px rgba(251, 191, 36, 0.9));
+  }
+}
+
+@keyframes silver-halo {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(186, 230, 253, 0.55), 0 0 30px rgba(148, 163, 184, 0.3), inset 0 0 10px rgba(226, 232, 240, 0.35);
+    filter: drop-shadow(0 0 8px rgba(186, 230, 253, 0.6));
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(224, 242, 254, 0.8), 0 0 42px rgba(148, 163, 184, 0.5), inset 0 0 16px rgba(255, 255, 255, 0.55);
+    filter: drop-shadow(0 0 14px rgba(224, 242, 254, 0.8));
+  }
+}
+
+@keyframes bronze-halo {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(249, 115, 22, 0.5), 0 0 28px rgba(194, 65, 12, 0.3), inset 0 0 10px rgba(253, 186, 116, 0.35);
+    filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.6));
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(251, 146, 60, 0.75), 0 0 40px rgba(234, 88, 12, 0.45), inset 0 0 15px rgba(254, 215, 170, 0.5);
+    filter: drop-shadow(0 0 13px rgba(251, 146, 60, 0.8));
+  }
+}
+
+@keyframes sparkle-float {
+  0%, 100% {
+    transform: translateY(0px) scale(0.9) rotate(0deg);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-4px) scale(1.15) rotate(15deg);
+    opacity: 1;
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+.animate-spin-reverse-slow {
+  animation: spin-reverse-slow 12s linear infinite;
+}
+
+.animate-gold-halo {
+  animation: gold-halo 2.8s ease-in-out infinite;
+}
+
+.animate-silver-halo {
+  animation: silver-halo 3s ease-in-out infinite;
+}
+
+.animate-bronze-halo {
+  animation: bronze-halo 3.2s ease-in-out infinite;
+}
+
+.animate-sparkle-float {
+  animation: sparkle-float 2.2s ease-in-out infinite;
+}

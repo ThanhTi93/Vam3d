@@ -88,6 +88,7 @@ export const moviesRelations = relations(movies, ({ one, many }) => ({
   likes: many(like),
   favorites: many(favorites),
   aiGalleries: many(aiGalleries),
+  comments: many(comments),
 }));
 
 // 6. Categories Table
@@ -144,6 +145,7 @@ export const charactersRelations = relations(characters, ({ one, many }) => ({
   }),
   episodesCharacters: many(episodesCharacter),
   galleryCharacters: many(galleryCharacter),
+  comments: many(comments),
 }));
 
 // 9. EpisodesCharacter Junction Table
@@ -230,6 +232,7 @@ export const episodesRelations = relations(episodes, ({ one, many }) => ({
   watchHistories: many(watchHistory),
   episodesActors: many(episodesActor),
   episodesCharacters: many(episodesCharacter),
+  comments: many(comments),
 }));
 
 // 13. Accounts Table
@@ -244,6 +247,7 @@ export const accounts = pgTable("accounts", {
   imgUrl: varchar("img_url", { length: 500 }),
   status: integer("status").default(1),
   level: integer("level").default(0),
+  views: integer("views").default(0),
   expiredAt: timestamp("expired_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -253,6 +257,7 @@ export const accountsRelations = relations(accounts, ({ many }) => ({
   likes: many(like),
   favorites: many(favorites),
   watchHistories: many(watchHistory),
+  comments: many(comments),
 }));
 
 // 14. Like Junction Table
@@ -338,6 +343,7 @@ export const aiGalleriesRelations = relations(aiGalleries, ({ one, many }) => ({
   }),
   galleryCharacters: many(galleryCharacter),
   images: many(aiImages),
+  comments: many(comments),
 }));
 
 // 18. Gallery Character Junction Table
@@ -473,4 +479,54 @@ export const trafficLogs = pgTable("traffic_logs", {
   ipHash: varchar("ip_hash", { length: 64 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// 26. Comments Table
+export const comments = pgTable("comments", {
+  id: serial("id").primaryKey(),
+  idMovie: integer("id_movie").references(() => movies.id, { onDelete: "cascade" }),
+  idEpisode: integer("id_episode").references(() => episodes.id, { onDelete: "set null" }),
+  idGallery: integer("id_gallery").references(() => aiGalleries.id, { onDelete: "cascade" }),
+  idCharacter: integer("id_character").references(() => characters.id, { onDelete: "cascade" }),
+  idAccount: integer("id_account").references(() => accounts.id, { onDelete: "set null" }),
+  parentId: integer("parent_id"),
+  authorName: varchar("author_name", { length: 255 }),
+  authorAvatar: varchar("author_avatar", { length: 500 }),
+  content: text("content").notNull(),
+  likes: integer("likes").default(0),
+  status: integer("status").default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Comments Relations
+export const commentsRelations = relations(comments, ({ one, many }) => ({
+  movie: one(movies, {
+    fields: [comments.idMovie],
+    references: [movies.id],
+  }),
+  episode: one(episodes, {
+    fields: [comments.idEpisode],
+    references: [episodes.id],
+  }),
+  gallery: one(aiGalleries, {
+    fields: [comments.idGallery],
+    references: [aiGalleries.id],
+  }),
+  character: one(characters, {
+    fields: [comments.idCharacter],
+    references: [characters.id],
+  }),
+  account: one(accounts, {
+    fields: [comments.idAccount],
+    references: [accounts.id],
+  }),
+  parent: one(comments, {
+    fields: [comments.parentId],
+    references: [comments.id],
+    relationName: "commentReplies",
+  }),
+  replies: many(comments, {
+    relationName: "commentReplies",
+  }),
+}));
 

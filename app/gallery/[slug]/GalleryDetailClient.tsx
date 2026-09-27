@@ -25,6 +25,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { getBunnyImageUrl, slugify } from "@/lib/utils";
 import { incrementGalleryViews } from "@/app/admin/actions";
 import { HomeGalleryCard, HomeGalleryLightbox } from "@/components/GalleryComponents";
+import MovieComments from "@/components/movie/MovieComments";
 
 interface GalleryDetailClientProps {
   gallery: any;
@@ -46,9 +47,9 @@ export default function GalleryDetailClient({
   // Auto count views on page visit
   useEffect(() => {
     if (gallery?.id) {
-      incrementGalleryViews(gallery.id);
+      incrementGalleryViews(gallery.id, user?.id);
     }
-  }, [gallery?.id]);
+  }, [gallery?.id, user?.id]);
 
   // Check VIP access
   const checkAccess = (requiredPlan: any) => {
@@ -298,6 +299,17 @@ export default function GalleryDetailClient({
               </Button>
             </div>
           )}
+        </div>
+
+        {/* Comments Section */}
+        <div className="pt-10 border-t border-white/5">
+          <div className="bg-[#131520]/60 border border-white/5 rounded-3xl p-6 sm:p-8">
+            <MovieComments
+              galleryId={gallery.id}
+              title={`Bình luận Bộ Sưu Tập: ${gallery.name}`}
+              subtitle="Đàm đạo về nhan sắc, phong cách tranh ảnh cùng các đạo hữu"
+            />
+          </div>
         </div>
 
         {/* Related Galleries Section */}

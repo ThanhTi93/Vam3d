@@ -1,15 +1,17 @@
 "use client";
 
 import React, { useState, Suspense } from "react";
-import { User, Award, History, ArrowLeft, ShieldCheck, Mail, AlertTriangle, CreditCard, ExternalLink } from "lucide-react";
+import { User, Award, History, ArrowLeft, ShieldCheck, Mail, AlertTriangle, CreditCard, ExternalLink, Trophy, Flame } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { updateUserAvatar } from "@/lib/auth/actions";
-import { getBunnyImageUrl } from "@/lib/utils";
-import Image from "next/image";
+import { getBunnyImageUrl, formatNumber } from "@/lib/utils";
+import AvatarFrame from "@/components/ranking/AvatarFrame";
+import RankBadge from "@/components/ranking/RankBadge";
+import { getCultivationRealm } from "@/lib/cultivation";
 
 const AvatarUpload = React.lazy(() => import("@/app/components/AvatarUpload"));
 
@@ -22,7 +24,12 @@ interface ProfilePageClientProps {
 
 export default function ProfilePageClient({ currentUser, initialPlans, initialPayments, initialSubscriptions = [] }: ProfilePageClientProps) {
   const { user: authUser, refreshUser, freeVipMode } = useAuth();
-  const user = currentUser || authUser;
+  // Merge authUser with currentUser so dynamic fields (views, avatar) stay strictly synchronized
+  const user = {
+    ...(currentUser || {}),
+    ...(authUser || {}),
+    views: authUser?.views !== undefined && authUser?.views !== null ? authUser.views : (currentUser?.views ?? 0),
+  };
   const [plans] = useState<any[]>(initialPlans);
   const [payments] = useState<any[]>(initialPayments);
   const [subscriptions] = useState<any[]>(initialSubscriptions);
@@ -47,6 +54,8 @@ export default function ProfilePageClient({ currentUser, initialPlans, initialPa
   });
 
   const currentPlan = isVip && !isExpired ? plans.find(p => p.level === user.level) : null;
+  const userViews = Number(user.views) || 0;
+  const userRealm = getCultivationRealm(userViews);
 
   return (
     <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-12 space-y-8 animate-in fade-in duration-300">
@@ -73,22 +82,38 @@ export default function ProfilePageClient({ currentUser, initialPlans, initialPa
           <Card className="bg-[#131520] border-white/5 p-6 rounded-2xl flex flex-col items-center text-center relative overflow-hidden shadow-xl">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-500/5 to-transparent rounded-bl-full pointer-events-none" />
 
-            {/* User Avatar */}
-            <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-orange-500/20 group shadow-lg mb-4 bg-[#1a1d2e]">
-              <Image
-                src={getBunnyImageUrl(user.imgUrl, 'thumb') || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200"}
+            {/* User Avatar with Cultivation Frame */}
+            <div className="mb-4 pt-1">
+              <AvatarFrame
+                src={user.imgUrl}
                 alt={user.username}
-                fill
-                className="object-cover"
-                sizes="96px"
+                views={userViews}
+                size="lg"
+                onEditClick={() => setShowProfileUploader(true)}
               />
             </div>
 
             <h2 className="text-base font-black text-white truncate max-w-full">{user.username}</h2>
-            <p className="text-xs text-gray-400 flex items-center gap-1.5 justify-center mb-4 truncate max-w-full">
+            <p className="text-xs text-gray-400 flex items-center gap-1.5 justify-center mb-3 truncate max-w-full">
               <Mail className="w-3.5 h-3.5 text-gray-500" />
               {user.email}
             </p>
+
+            {/* Cultivation Realm Badge and Views */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+              <RankBadge views={userViews} size="sm" showLabel={true} />
+              <span className="text-[11px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5 text-orange-500 fill-current" />
+                {formatNumber(userViews)} tu vi
+              </span>
+              <Link
+                href="/bang-xep-hang"
+                className="text-[11px] font-bold text-amber-300 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1 rounded-full flex items-center gap-1.5 transition-colors"
+              >
+                <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                Bảng Tu Tiên
+              </Link>
+            </div>
             <button
               onClick={() => setShowProfileUploader(true)}
               className="text-xs font-bold text-orange-500 hover:text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 px-4 py-2 rounded-xl transition-all cursor-pointer w-full"

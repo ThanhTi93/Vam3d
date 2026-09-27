@@ -14,30 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { incrementEpisodeViews, incrementGalleryViews } from "@/app/admin/actions";
+import { incrementEpisodeViews, incrementGalleryViews, incrementAccountViews } from "@/app/admin/actions";
 import { HomeGalleryCard } from "@/components/GalleryComponents";
 import VideoPlayer from "@/components/VideoPlayer";
-
-interface LocalComment {
-  id: string;
-  name: string;
-  avatar: string;
-  content: string;
-  time: string;
-}
-
-const defaultComments: Record<string, LocalComment[]> = {
-  "dune-part-two": [
-    { id: "1", name: "Nguyễn Minh", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100", content: "Kỹ xảo điện ảnh đỉnh cao! Đoạn Paul cưỡi sâu cát xem mà nổi hết da gà.", time: "1 giờ trước" },
-    { id: "2", name: "Trần Hằng", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100", content: "Diễn xuất của Timothée quá tuyệt vời. Bản Vietsub dịch rất mượt!", time: "4 giờ trước" },
-  ],
-  "lat-mat-7": [
-    { id: "1", name: "Quốc Đạt", avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100", content: "Xem mà khóc hết nước mắt luôn á. Lý Hải làm phim gia đình ngày càng đỉnh.", time: "30 phút trước" },
-  ],
-  "stranger-things-s4": [
-    { id: "1", name: "Hoàng Long", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100", content: "Tập 4 'Dear Billy' thực sự là một kiệt tác truyền hình!", time: "5 giờ trước" },
-  ],
-};
+import MovieComments from "@/components/movie/MovieComments";
 
 interface MoviePageClientProps {
   movie: any;
@@ -101,7 +81,7 @@ export default function MoviePageClient({
   const handleSelectGallery = (g: any) => {
     setSelectedGallery(g);
     if (g && g.id) {
-      incrementGalleryViews(g.id);
+      incrementGalleryViews(g.id, user?.id);
     }
   };
 
@@ -145,13 +125,16 @@ export default function MoviePageClient({
 
   // Increment view count when episode starts playing or changes
   useEffect(() => {
-    if (showPlayer && movie.episodes && movie.episodes[activeEpisode]) {
-      const currentEp = movie.episodes[activeEpisode];
-      if (currentEp.id) {
+    if (showPlayer) {
+      const currentEp = movie.episodes?.[activeEpisode];
+      if (currentEp?.id) {
         incrementEpisodeViews(currentEp.id);
       }
+      if (user?.id) {
+        incrementAccountViews(user.id);
+      }
     }
-  }, [showPlayer, activeEpisode, movie.episodes]);
+  }, [showPlayer, activeEpisode, movie.episodes, user?.id]);
 
   const handleEpisodeChange = (idx: number) => {
     setActiveEpisode(idx);
@@ -190,11 +173,6 @@ export default function MoviePageClient({
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [userRating, setUserRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-
-  // Comments
-  const [commentsMap, setCommentsMap] = useState<Record<string, LocalComment[]>>(defaultComments);
-  const [newComment, setNewComment] = useState("");
-  const [commentName, setCommentName] = useState("");
   
   // Access checking states
   const [restrictedError, setRestrictedError] = useState<string | null>(null);
@@ -256,24 +234,6 @@ export default function MoviePageClient({
         router.replace(`${window.location.pathname}?${params.toString()}`, { scroll: false });
       });
     }
-  };
-
-  const handleAddComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
-    const fresh: LocalComment = {
-      id: Date.now().toString(),
-      name: commentName.trim() || "Người dùng ẩn danh",
-      avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100`,
-      content: newComment,
-      time: "Vừa xong",
-    };
-    setCommentsMap((prev) => ({
-      ...prev,
-      [movie.id]: [fresh, ...(prev[movie.id] || [])],
-    }));
-    setNewComment("");
-    setCommentName("");
   };
 
   return (
@@ -732,63 +692,12 @@ export default function MoviePageClient({
               </div>
             </div>
 
-            {/* Comments */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 border-b border-white/5 pb-2">
-                <MessageSquare className="w-4 h-4 text-orange-500" /> Bình luận & thảo luận
-              </h3>
-
-              <form onSubmit={handleAddComment} className="space-y-3 bg-[#131520] p-4 rounded-xl border border-white/5">
-                <Input
-                  type="text"
-                  placeholder="Tên của bạn (bỏ trống = Ẩn danh)"
-                  value={commentName}
-                  onChange={(e) => setCommentName(e.target.value)}
-                  className="w-full bg-[#090a0f] border border-white/5 rounded-lg h-9 px-3.5 text-xs text-gray-200 placeholder-gray-500 focus-visible:ring-1 focus-visible:ring-orange-500/50"
-                />
-                <div className="relative">
-                  <Textarea
-                    placeholder="Nhận xét của bạn về bộ phim..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className="w-full bg-[#090a0f] border border-white/5 rounded-lg py-2 px-3.5 text-xs text-gray-200 placeholder-gray-500 resize-none min-h-16 focus-visible:ring-1 focus-visible:ring-orange-500/50"
-                    required
-                  />
-                  <Button
-                    type="submit"
-                    size="sm"
-                    className="absolute bottom-3 right-3 bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-bold text-xs px-3.5 py-1.5 rounded-md transition-all cursor-pointer h-7 border-0"
-                  >
-                    Gửi
-                  </Button>
-                </div>
-              </form>
-
-              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                {(commentsMap[movie.id] || []).length > 0 ? (
-                  (commentsMap[movie.id] || []).map((comment) => (
-                    <div key={comment.id} className="flex gap-3 bg-[#131520]/45 p-3 rounded-lg border border-white/5">
-                      <div className="relative w-8 h-8 rounded-full bg-gray-700 flex-shrink-0 overflow-hidden border border-white/5">
-                        <Image src={comment.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"} alt={comment.name} fill className="object-cover" sizes="32px" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2 mb-0.5">
-                          <span className="text-xs font-bold text-gray-300">{comment.name}</span>
-                          <span className="text-[10px] text-gray-500 flex items-center gap-0.5">
-                            <Clock className="w-2.5 h-2.5" /> {comment.time}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-400 leading-relaxed">{comment.content}</p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-6 text-xs text-gray-500 italic">
-                    Chưa có bình luận nào. Hãy là người đầu tiên!
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Realtime Cultivation Comments */}
+            <MovieComments
+              movieId={movie.id}
+              episodeId={movie.episodes?.[activeEpisode]?.id || null}
+              movieTitle={movie.name}
+            />
           </div>
         ) : (
           <div className="p-12 bg-[#0d0e16]/40 flex items-center justify-center min-h-[150px] rounded-2xl border border-white/5">

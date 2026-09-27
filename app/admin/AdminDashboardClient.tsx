@@ -23,7 +23,7 @@ import {
   getAdminActors, createActor, updateActor, deleteActor,
   getAdminPlans, createPlan, updatePlan, deletePlan,
   getAdminAuthors, createAuthor, updateAuthor, deleteAuthor,
-  getAdminAccounts, updateAccountRole, deleteAccount,
+  getAdminAccounts, updateAccountRole, updateAccountViews, deleteAccount,
   getAdminCharacters, createCharacter, updateCharacter, deleteCharacter,
   getAdminFeatures, createFeature, updateFeature, deleteFeature,
   getAdminPackages, createPackage, updatePackage, deletePackage,
@@ -43,6 +43,7 @@ import {
 import { ImagePicker } from "@/components/ui/image-picker";
 import { uploadFileToBunny } from "@/lib/uploadClient";
 import { getBunnyImageUrl, cleanFolderName, slugify, normalizeSearchText } from "@/lib/utils";
+import { getCultivationRealm } from "@/lib/cultivation";
 import * as tus from "tus-js-client";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -3800,6 +3801,7 @@ function AccountsTab({ accounts, search, setSearch, isPending, startTransition, 
               <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Username</th>
               <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Email</th>
               <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Ngày Đăng Ký</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Lượt Xem (Views)</th>
               <th className="text-left px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Role</th>
               <th className="text-right px-4 py-3 text-[11px] font-bold text-gray-500 uppercase">Thao tác</th>
             </tr>
@@ -3807,6 +3809,7 @@ function AccountsTab({ accounts, search, setSearch, isPending, startTransition, 
           <tbody>
             {paginatedAccounts.map((a: any) => {
               const isNew = isRegisteredToday(a.createdAt);
+              const viewsNum = Number(a.views) || 0;
               return (
                 <tr key={a.id} className="border-b border-white/5 hover:bg-white/2 group">
                   <td className="px-4 py-3 text-xs text-gray-500 font-mono">#{a.id}</td>
@@ -3825,6 +3828,42 @@ function AccountsTab({ accounts, search, setSearch, isPending, startTransition, 
                     <span className={isNew ? "text-orange-400 font-semibold" : "text-gray-400"}>
                       {formatRegistrationDate(a.createdAt)}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={0}
+                        defaultValue={viewsNum}
+                        onBlur={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          if (!isNaN(val) && val !== viewsNum) {
+                            startTransition(async () => {
+                              await updateAccountViews(a.id, val);
+                              await onRefresh();
+                              show("Đã cập nhật lượt xem!");
+                            });
+                          }
+                        }}
+                        className="w-24 bg-[#090a0f] border border-white/10 rounded-lg h-7 px-2 text-xs font-mono text-orange-400 focus:outline-none focus:border-orange-500"
+                        title="Nhập số lượt xem và nhấn ra ngoài để lưu"
+                      />
+                      {(() => {
+                        const realm = getCultivationRealm(viewsNum);
+                        return (
+                          <span
+                            className="text-[10px] font-black px-1.5 py-0.5 rounded border select-none whitespace-nowrap"
+                            style={{
+                              background: `${realm.color}20`,
+                              color: realm.color,
+                              borderColor: `${realm.color}40`,
+                            }}
+                          >
+                            {realm.name}
+                          </span>
+                        );
+                      })()}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <select

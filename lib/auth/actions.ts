@@ -150,6 +150,7 @@ export async function loginUser(formData: any) {
     role: user.role,
     imgUrl: user.imgUrl,
     level: user.level,
+    views: user.views,
   };
 }
 
@@ -187,6 +188,7 @@ export async function getCurrentUser() {
         phone: accounts.phone,
         status: accounts.status,
         level: accounts.level,
+        views: accounts.views,
         expiredAt: accounts.expiredAt,
       })
       .from(accounts)

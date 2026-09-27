@@ -949,6 +949,14 @@ export async function updateAccountRole(id: number, role: string) {
   await db.update(schema.accounts).set({ role }).where(eq(schema.accounts.id, id));
 }
 
+export async function updateAccountViews(id: number, views: number) {
+  await verifyAdmin();
+  if (!db) throw new Error("Database not available");
+  await db.update(schema.accounts).set({ views: Math.max(0, views) }).where(eq(schema.accounts.id, id));
+  revalidateAdmin();
+  revalidateTag("movies:all", "default");
+}
+
 export async function deleteAccount(id: number) {
   await verifyAdmin();
   if (!db) throw new Error("Database not available");
@@ -1540,13 +1548,20 @@ export async function getUserSubscriptions(userId?: number) {
     })();
 }
 
-export async function incrementGalleryViews(id: number) {
+export async function incrementGalleryViews(id: number, userId?: number) {
   if (!db) return;
   try {
     await db
       .update(schema.aiGalleries)
-      .set({ views: sql`views + 1` })
+      .set({ views: sql`COALESCE(views, 0) + 1` })
       .where(eq(schema.aiGalleries.id, id));
+
+    if (userId) {
+      await db
+        .update(schema.accounts)
+        .set({ views: sql`COALESCE(views, 0) + 1` })
+        .where(eq(schema.accounts.id, userId));
+    }
   } catch (err) {
     console.error("Error incrementing gallery views:", err);
   }
@@ -1561,6 +1576,18 @@ export async function incrementEpisodeViews(id: number) {
       .where(eq(schema.episodes.id, id));
   } catch (err) {
     console.error("Error incrementing episode views:", err);
+  }
+}
+
+export async function incrementAccountViews(id: number) {
+  if (!db || !id) return;
+  try {
+    await db
+      .update(schema.accounts)
+      .set({ views: sql`COALESCE(views, 0) + 1` })
+      .where(eq(schema.accounts.id, id));
+  } catch (err) {
+    console.error("Error incrementing account views:", err);
   }
 }
 

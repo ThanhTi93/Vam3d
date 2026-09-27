@@ -23,6 +23,7 @@ import { incrementGalleryViews } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/app/context/AuthContext";
+import MovieComments from "@/components/movie/MovieComments";
 
 interface CharacterDetailPageClientProps {
   data: {
@@ -35,13 +36,13 @@ interface CharacterDetailPageClientProps {
 
 export default function CharacterDetailPageClient({ data }: CharacterDetailPageClientProps) {
   const { character, episodes, galleries, otherCharacters } = data;
-  const { freeVipMode } = useAuth();
+  const { freeVipMode, user } = useAuth();
   const [selectedGallery, setSelectedGallery] = useState<any | null>(null);
 
   const handleSelectGallery = (g: any) => {
     setSelectedGallery(g);
     if (g && g.id) {
-      incrementGalleryViews(g.id);
+      incrementGalleryViews(g.id, user?.id);
     }
   };
 
@@ -333,6 +334,15 @@ export default function CharacterDetailPageClient({ data }: CharacterDetailPageC
             <p className="text-xs text-gray-600">Bộ ảnh Cosplay, Anime AI sẽ sớm được bổ sung.</p>
           </div>
         )}
+      </section>
+
+      {/* ─── SECTION: CHARACTER COMMENTS ─── */}
+      <section className="bg-[#131520]/60 border border-white/5 rounded-3xl p-6 sm:p-8">
+        <MovieComments
+          characterId={character.id}
+          title={`Bình luận & Đàm đạo về ${character.name}`}
+          subtitle="Chia sẻ cảm nghĩ về sức mạnh, tạo hình và tính cách nhân vật cùng các đạo hữu"
+        />
       </section>
 
       {/* ─── SECTION 3: OTHER CHARACTERS TO EXPLORE ─── */}

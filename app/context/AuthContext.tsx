@@ -12,6 +12,7 @@ interface UserType {
   gender?: string | null;
   phone?: string | null;
   level?: number | null;
+  views?: number | null;
   expiredAt?: Date | string | null;
   vipDebugInfo?: string;
 }
