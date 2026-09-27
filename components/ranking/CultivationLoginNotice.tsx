@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Flame, Sparkles, LogIn, UserPlus, X, ShieldAlert, Award } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 
@@ -17,15 +17,17 @@ export default function CultivationLoginNotice({
 }: CultivationLoginNoticeProps) {
   const { user, loading } = useAuth();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const [currentUrl, setCurrentUrl] = useState(pathname || "/");
   const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCurrentUrl(`${window.location.pathname}${window.location.search}`);
+    }
+  }, [pathname]);
 
   // If user is logged in or loading or dismissed, don't show
   if (loading || user || dismissed) return null;
-
-  const currentUrl = typeof window !== "undefined"
-    ? `${pathname}${searchParams?.toString() ? `?${searchParams.toString()}` : ""}`
-    : pathname;
 
   const loginUrl = `/login?callbackUrl=${encodeURIComponent(currentUrl)}`;
   const registerUrl = `/register?callbackUrl=${encodeURIComponent(currentUrl)}`;

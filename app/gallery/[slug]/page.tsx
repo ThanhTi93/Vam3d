@@ -141,10 +141,12 @@ export default async function GalleryDetailPage({ params }: PageProps) {
           __html: JSON.stringify(jsonLdGallery).replace(/</g, "\\u003c"),
         }}
       />
-      <GalleryDetailClient
-        gallery={gallery}
-        relatedGalleries={relatedGalleries}
-      />
+      <React.Suspense fallback={<div className="min-h-screen bg-[#090a0f]" />}>
+        <GalleryDetailClient
+          gallery={gallery}
+          relatedGalleries={relatedGalleries}
+        />
+      </React.Suspense>
     </>
   );
 }
