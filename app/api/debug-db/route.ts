@@ -1,10 +1,21 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db, sql } from "@/lib/db";
-import { getHotMovies } from "@/lib/db/queries";
+import { decryptSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Only accessible by verified Admin users
+  const token = request.cookies.get("session")?.value;
+  if (!token) {
+    return new NextResponse(null, { status: 404 });
+  }
+
+  const payload = await decryptSession(token);
+  if (!payload || payload.role !== "admin") {
+    return new NextResponse(null, { status: 404 });
+  }
+
   const cfSymbol = Symbol.for("__cloudflare-context__");
   const cf = (globalThis as any)[cfSymbol];
   const hyperdriveObj = cf?.env?.HYPERDRIVE;
