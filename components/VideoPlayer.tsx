@@ -106,16 +106,20 @@ export default function VideoPlayer({
     }
   }, [progressKey]);
 
-  // Setup HLS / Video source (for fallback direct MP4 / HLS src)
+  const streamHost = process.env.NEXT_PUBLIC_BUNNY_STREAM_HOST || "stream.vam3dhentai.online";
+  const bunnyHlsUrl = bunnyVideoId ? `https://${streamHost}/${bunnyVideoId}/playlist.m3u8` : null;
+  const effectiveSrc = src || bunnyHlsUrl;
+
+  // Setup HLS / Video source (for direct MP4 / Bunny HLS stream)
   useEffect(() => {
     setErrorMsg(null);
     setQualities([]);
     setCurrentQuality(-1);
 
     const video = videoRef.current;
-    if (!video || !src) return;
+    if (!video || !effectiveSrc) return;
 
-    const isHlsStream = src.includes(".m3u8") || src.includes("/hls/");
+    const isHlsStream = effectiveSrc.includes(".m3u8") || effectiveSrc.includes("/hls/");
 
     if (isHlsStream) {
       if (Hls.isSupported()) {
@@ -130,7 +134,7 @@ export default function VideoPlayer({
         });
 
         hlsRef.current = hls;
-        hls.loadSource(src);
+        hls.loadSource(effectiveSrc);
         hls.attachMedia(video);
 
         hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
@@ -173,7 +177,7 @@ export default function VideoPlayer({
           hlsRef.current = null;
         };
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = src;
+        video.src = effectiveSrc;
         if (autoPlay) {
           video.play().catch(() => {});
         }
@@ -181,7 +185,7 @@ export default function VideoPlayer({
         setErrorMsg("Trình duyệt không hỗ trợ phát luồng video HLS.");
       }
     } else {
-      video.src = src;
+      video.src = effectiveSrc;
       if (autoPlay) {
         video.play().catch(() => {});
       }
@@ -193,7 +197,7 @@ export default function VideoPlayer({
         hlsRef.current = null;
       }
     };
-  }, [src, autoPlay]);
+  }, [effectiveSrc, autoPlay]);
 
   const handleQualityChange = (levelIndex: number) => {
     if (!hlsRef.current) return;
@@ -202,7 +206,7 @@ export default function VideoPlayer({
     setShowSettings(false);
   };
 
-  // 1. Bunny Stream Iframe (When bunnyVideoId is available)
+  // 1. Status checks for Bunny processing
   if (bunnyVideoId) {
     if (bunnyStatus === "failed") {
       return (
@@ -223,22 +227,10 @@ export default function VideoPlayer({
         </div>
       );
     }
-
-    return (
-      <div className={`relative w-full aspect-video bg-black rounded-xl overflow-hidden ${className}`}>
-        <iframe
-          src={`https://iframe.mediadelivery.net/embed/${finalLibId}/${bunnyVideoId}?autoplay=${autoPlay}&loop=false&muted=false&preload=true&responsive=true`}
-          loading="lazy"
-          className="w-full h-full border-0 aspect-video"
-          allow="autoplay; fullscreen; picture-in-picture;"
-          allowFullScreen
-        />
-      </div>
-    );
   }
 
   // 2. No source available
-  if (!src) {
+  if (!effectiveSrc) {
     return (
       <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-3 text-orange-400 ${className}`}>
         <span className="text-3xl">🎬</span>

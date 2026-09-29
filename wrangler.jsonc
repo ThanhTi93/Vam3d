@@ -27,6 +27,7 @@
     "BUNNY_STORAGE_ZONE_NAME": "vam3d-gallery",
     "BUNNY_STORAGE_ACCESS_KEY": "a645f8a9-a9e9-4387-ba173cd0f932-39a5-4e31",
     "NEXT_PUBLIC_BUNNY_CDN_URL": "https://cdn.vam3dhentai.online",
+    "NEXT_PUBLIC_BUNNY_STREAM_HOST": "stream.vam3dhentai.online",
     "PAYOS_CLIENT_ID": "385d179f-a75b-4a81-9cfb-0fe91b53f057",
     "PAYOS_API_KEY": "2ad62bb0-47ae-4894-80bc-eccb90cc03a9",
     "PAYOS_CHECKSUM_KEY": "18784dfca6b63087c57842019071274f71622d801338bc522f330f8664b34f59",
