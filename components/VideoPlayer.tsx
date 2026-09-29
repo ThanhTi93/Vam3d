@@ -107,8 +107,23 @@ export default function VideoPlayer({
   }, [progressKey]);
 
   const streamHost = process.env.NEXT_PUBLIC_BUNNY_STREAM_HOST || "stream.vam3dhentai.online";
-  const bunnyHlsUrl = bunnyVideoId ? `https://${streamHost}/${bunnyVideoId}/playlist.m3u8` : null;
-  const effectiveSrc = src || bunnyHlsUrl;
+  
+  // Prioritize custom domain Bunny HLS stream if bunnyVideoId is present
+  let effectiveSrc = bunnyVideoId
+    ? `https://${streamHost}/${bunnyVideoId}/playlist.m3u8`
+    : src;
+
+  // If effectiveSrc is an iframe URL (e.g. from DB), extract video ID to get the HLS stream
+  if (effectiveSrc) {
+    if (effectiveSrc.includes("mediadelivery.net/embed/")) {
+      const match = effectiveSrc.match(/mediadelivery\.net\/embed\/\d+\/([a-zA-Z0-9-]+)/);
+      if (match && match[1]) {
+        effectiveSrc = `https://${streamHost}/${match[1]}/playlist.m3u8`;
+      }
+    } else if (effectiveSrc.includes("b-cdn.net")) {
+      effectiveSrc = effectiveSrc.replace(/https?:\/\/[a-zA-Z0-9._-]*b-cdn\.net/gi, `https://${streamHost}`);
+    }
+  }
 
   // Setup HLS / Video source (for direct MP4 / Bunny HLS stream)
   useEffect(() => {

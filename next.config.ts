@@ -5,6 +5,7 @@ export default (phase: string) => {
   const isBuild = phase === PHASE_PRODUCTION_BUILD;
 
   const nextConfig: NextConfig = {
+    staticPageGenerationTimeout: 180,
     typescript: {
       ignoreBuildErrors: true,
     },

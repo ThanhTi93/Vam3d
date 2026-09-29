@@ -110,24 +110,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
-  try {
-    const categories = (await getAllCategories()) || [];
-    const baseCategories = ["phim-le", "phim-bo", "chieu-rap", "hoat-hinh"];
-    const allSlugs = new Set([
-      ...baseCategories,
-      ...categories.map((c: any) => c.slug || slugify(c.name)).filter(Boolean),
-    ]);
-    return Array.from(allSlugs).map((categoryName) => ({
-      categoryName,
-    }));
-  } catch {
-    return [
-      { categoryName: "phim-le" },
-      { categoryName: "phim-bo" },
-      { categoryName: "chieu-rap" },
-      { categoryName: "hoat-hinh" },
-    ];
-  }
+  return [
+    { categoryName: "phim-le" },
+    { categoryName: "phim-bo" },
+    { categoryName: "chieu-rap" },
+    { categoryName: "hoat-hinh" },
+  ];
 }
 
 export default async function DynamicCategoryPage({ params }: PageProps) {
@@ -158,15 +146,11 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
   let movies: any[] = [];
   let allMovies: any[] = [];
   try {
-    const results = await Promise.all([
-      getMoviesByCategory(targetCategory?.slug || targetCategory?.name || decodedCategory),
-      getAllMovies(60),
-    ]);
-    movies = results[0] || [];
-    allMovies = results[1] || [];
+    movies = (await getMoviesByCategory(targetCategory?.slug || targetCategory?.name || decodedCategory)) || [];
 
-    // Fallback: match by title, category string or originalTitle
-    if (movies.length === 0 && allMovies.length > 0) {
+    // Fallback: match by title, category string or originalTitle only if no movies found
+    if (movies.length === 0) {
+      allMovies = (await getAllMovies(30)) || [];
       const matched = allMovies.filter((m: any) =>
         m?.movieCategories?.some((mc: any) =>
           mc?.category?.name?.toLowerCase().includes(inputSlug) ||
