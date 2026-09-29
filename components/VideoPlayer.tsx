@@ -106,37 +106,31 @@ export default function VideoPlayer({
     }
   }, [progressKey]);
 
-  // Calculate effective stream source
-  const effectiveSrc = bunnyVideoId
-    ? `/api/stream/${bunnyVideoId}/playlist.m3u8`
-    : src;
-
-  // Setup HLS / Video source
+  // Setup HLS / Video source (for fallback direct MP4 / HLS src)
   useEffect(() => {
     setErrorMsg(null);
     setQualities([]);
     setCurrentQuality(-1);
 
     const video = videoRef.current;
-    if (!video || !effectiveSrc) return;
+    if (!video || !src) return;
 
-    const isHlsStream = effectiveSrc.includes(".m3u8") || effectiveSrc.includes("/hls/") || effectiveSrc.includes("/api/stream/");
+    const isHlsStream = src.includes(".m3u8") || src.includes("/hls/");
 
     if (isHlsStream) {
       if (Hls.isSupported()) {
-        // Strict Buffer Capping config to prevent unnecessary bandwidth consumption
         const hls = new Hls({
-          maxBufferLength: 30,           // Only buffer 30 seconds ahead (Saves huge bandwidth)
-          maxMaxBufferLength: 60,        // Max 60 seconds
-          maxBufferSize: 30 * 1024 * 1024, // 30 MB max buffer memory
-          backBufferLength: 30,          // Free old chunks from memory
+          maxBufferLength: 30,
+          maxMaxBufferLength: 60,
+          maxBufferSize: 30 * 1024 * 1024,
+          backBufferLength: 30,
           enableWorker: true,
           lowLatencyMode: false,
-          startLevel: -1,                // Auto bitrate adaptation
+          startLevel: -1,
         });
 
         hlsRef.current = hls;
-        hls.loadSource(effectiveSrc);
+        hls.loadSource(src);
         hls.attachMedia(video);
 
         hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
@@ -146,19 +140,11 @@ export default function VideoPlayer({
             bitrate: lvl.bitrate,
             label: lvl.height ? `${lvl.height}p` : `${Math.round(lvl.bitrate / 1000)} kbps`,
           }));
-          
-          // Sort high to low
           levels.sort((a, b) => b.height - a.height);
           setQualities(levels);
 
           if (autoPlay) {
             video.play().catch(() => {});
-          }
-        });
-
-        hls.on(Hls.Events.LEVEL_SWITCHED, (_, data) => {
-          if (hls.autoLevelEnabled) {
-            // Auto mode active
           }
         });
 
@@ -187,8 +173,7 @@ export default function VideoPlayer({
           hlsRef.current = null;
         };
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        // Native HLS for Safari & iOS
-        video.src = effectiveSrc;
+        video.src = src;
         if (autoPlay) {
           video.play().catch(() => {});
         }
@@ -196,8 +181,7 @@ export default function VideoPlayer({
         setErrorMsg("Trình duyệt không hỗ trợ phát luồng video HLS.");
       }
     } else {
-      // Standard MP4 / WebM direct playback
-      video.src = effectiveSrc;
+      video.src = src;
       if (autoPlay) {
         video.play().catch(() => {});
       }
@@ -209,7 +193,7 @@ export default function VideoPlayer({
         hlsRef.current = null;
       }
     };
-  }, [effectiveSrc, autoPlay]);
+  }, [src, autoPlay]);
 
   const handleQualityChange = (levelIndex: number) => {
     if (!hlsRef.current) return;
@@ -218,56 +202,48 @@ export default function VideoPlayer({
     setShowSettings(false);
   };
 
-  // 1. Video Processing or Failed States
-  if (bunnyStatus === "failed") {
-    return (
-      <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-3 text-red-400 ${className}`}>
-        <AlertCircle className="w-8 h-8" />
-        <h3 className="text-md font-bold">Xử lý video thất bại</h3>
-        <p className="text-xs text-gray-500 max-w-sm">Quá trình xử lý video trên máy chủ gặp sự cố. Vui lòng liên hệ Admin.</p>
-      </div>
-    );
-  }
+  // 1. Bunny Stream Iframe (When bunnyVideoId is available)
+  if (bunnyVideoId) {
+    if (bunnyStatus === "failed") {
+      return (
+        <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-3 text-red-400 ${className}`}>
+          <AlertCircle className="w-8 h-8" />
+          <h3 className="text-md font-bold">Xử lý video thất bại</h3>
+          <p className="text-xs text-gray-500 max-w-sm">Quá trình xử lý video trên máy chủ gặp sự cố. Vui lòng liên hệ Admin.</p>
+        </div>
+      );
+    }
 
-  if (bunnyVideoId && bunnyStatus !== "completed" && bunnyStatus !== undefined && !src) {
+    if (bunnyStatus !== "completed" && bunnyStatus !== undefined) {
+      return (
+        <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-4 ${className}`}>
+          <div className="w-10 h-10 rounded-full border-2 border-t-orange-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+          <h3 className="text-sm font-bold text-gray-300">Tập phim đang được tối ưu HLS...</h3>
+          <p className="text-xs text-gray-500 max-w-xs">Hệ thống đang chia phân đoạn và nén đa độ phân giải để tiết kiệm băng thông. Vui lòng quay lại sau ít phút!</p>
+        </div>
+      );
+    }
+
     return (
-      <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-4 ${className}`}>
-        <div className="w-10 h-10 rounded-full border-2 border-t-orange-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
-        <h3 className="text-sm font-bold text-gray-300">Tập phim đang được tối ưu HLS...</h3>
-        <p className="text-xs text-gray-500 max-w-xs">Hệ thống đang chia phân đoạn và nén đa độ phân giải để tiết kiệm băng thông. Vui lòng quay lại sau ít phút!</p>
+      <div className={`relative w-full aspect-video bg-black rounded-xl overflow-hidden ${className}`}>
+        <iframe
+          src={`https://iframe.mediadelivery.net/embed/${finalLibId}/${bunnyVideoId}?autoplay=${autoPlay}&loop=false&muted=false&preload=true&responsive=true`}
+          loading="lazy"
+          className="w-full h-full border-0 aspect-video"
+          allow="autoplay; fullscreen; picture-in-picture;"
+          allowFullScreen
+        />
       </div>
     );
   }
 
   // 2. No source available
-  if (!effectiveSrc) {
+  if (!src) {
     return (
       <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-3 text-orange-400 ${className}`}>
         <span className="text-3xl">🎬</span>
         <h3 className="text-md font-bold">Video đang được cập nhật</h3>
         <p className="text-xs text-gray-500 max-w-sm">Liên kết video đang được xử lý hoặc cập nhật. Vui lòng quay lại sau!</p>
-      </div>
-    );
-  }
-
-  // 2.5 Iframe Embed fallback for embed URLs (e.g. iframe.mediadelivery.net or external embeds)
-  const isIframeEmbed =
-    typeof effectiveSrc === "string" &&
-    (effectiveSrc.includes("iframe.mediadelivery.net") ||
-      effectiveSrc.includes("/embed/") ||
-      effectiveSrc.includes("youtube.com/embed") ||
-      effectiveSrc.includes("player.vimeo.com"));
-
-  if (isIframeEmbed) {
-    return (
-      <div className={`group relative w-full aspect-video bg-black rounded-xl overflow-hidden ${className}`}>
-        <iframe
-          src={effectiveSrc}
-          loading="lazy"
-          className="w-full h-full border-0"
-          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-          allowFullScreen
-        />
       </div>
     );
   }
