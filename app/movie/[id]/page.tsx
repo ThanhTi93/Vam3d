@@ -38,11 +38,17 @@ export async function generateMetadata({ params }: MoviePageProps): Promise<Meta
     keywords: [
       movieData.name,
       `${movieData.name} vietsub`,
+      `${movieData.name} 4k`,
+      `${movieData.name} cosplay`,
       `${movieData.name} thuyết minh`,
       `${movieData.name} full hd`,
+      "cosplay 18+",
+      `cosplay ${movieData.name}`,
       "hoat hinh 3d trung quoc",
+      "hentai 3d trung quoc",
       "hh3d",
       "vam3d",
+      "vam vietsub",
     ],
     alternates: {
       canonical: movieUrl,

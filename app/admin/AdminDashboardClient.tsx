@@ -8,7 +8,7 @@ import {
   ChevronDown, Eye, Star, Flame, Save, Loader2, BookOpen,
   Shield, Settings, Camera, ChevronLeft, ChevronRight, FolderOpen,
   Tv, Play, Info, MousePointerClick, Globe, Smartphone, Monitor, BarChart3, TrendingUp,
-  Sparkles, Wand2
+  Sparkles, Wand2, Copy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,10 @@ import {
   generateCategoryDescriptionAction,
   generateCharacterTranslationsAction,
   generateCharacterDescriptionAction,
+  generateMovieDescriptionAction,
+  generateAuthorDescriptionAction,
+  analyzeMovieHotKeywordsAction,
+  generateGalleryGeminiAiAction,
 } from "./actions";
 import { ImagePicker } from "@/components/ui/image-picker";
 import { uploadFileToBunny } from "@/lib/uploadClient";
@@ -1215,6 +1219,104 @@ function MoviesTab({ movies, categories, actors, characters, authors, search, se
   const PAGE_SIZE = 10;
   const [previewMovie, setPreviewMovie] = useState<any | null>(null);
   const [previewEpisodeIndex, setPreviewEpisodeIndex] = useState<number>(0);
+  const [generatingMovieDesc, setGeneratingMovieDesc] = useState(false);
+  const [analyzingHotKeywords, setAnalyzingHotKeywords] = useState(false);
+  const [hotKeywordsData, setHotKeywordsData] = useState<any | null>(null);
+  const [selectedHotKeywords, setSelectedHotKeywords] = useState<string[]>([]);
+
+  const handleAnalyzeHotKeywords = async () => {
+    if (!form.name || !form.name.trim()) {
+      show("Vui lòng nhập Tên phim trước", "error");
+      return;
+    }
+    setAnalyzingHotKeywords(true);
+    try {
+      const selectedCatNames = categories
+        ?.filter((c: any) => form.categoryIds.includes(c.id))
+        ?.map((c: any) => c.name);
+      const selectedAuthor = authors?.find((a: any) => a.id === form.idAuthor);
+      const res = await analyzeMovieHotKeywordsAction({
+        name: form.name.trim(),
+        description: form.description,
+        categoryNames: selectedCatNames,
+        authorName: selectedAuthor?.name,
+      });
+      if (res.success && res.data) {
+        setHotKeywordsData(res.data);
+        const initialSelected = res.data.keywords
+          ?.filter((k: any) => k.selected !== false)
+          ?.map((k: any) => k.keyword) || [];
+        setSelectedHotKeywords(initialSelected);
+        show("🔥 Đã phân tích thực tế bộ từ khóa hot (4K, Cosplay, Vietsub...) bằng AI!");
+      } else {
+        show(res.error || "Không thể phân tích từ khóa hot", "error");
+      }
+    } catch (err: any) {
+      show(err.message || "Lỗi khi phân tích từ khóa hot", "error");
+    } finally {
+      setAnalyzingHotKeywords(false);
+    }
+  };
+
+  const toggleHotKeyword = (kw: string) => {
+    setSelectedHotKeywords(prev => 
+      prev.includes(kw) ? prev.filter(k => k !== kw) : [...prev, kw]
+    );
+  };
+
+  const handleApplyKeywordsToDescription = () => {
+    if (!hotKeywordsData) return;
+    if (hotKeywordsData.suggestedSeoDescription) {
+      f("description", hotKeywordsData.suggestedSeoDescription);
+      show("✨ Đã cập nhật mô tả SEO chuẩn xu hướng tìm kiếm thực tế!");
+    } else {
+      const kwString = selectedHotKeywords.slice(0, 6).join(", ");
+      const newDesc = form.description
+        ? `${form.description.trim()} [Từ khóa hot: ${kwString}].`
+        : `Xem trọn bộ phim ${form.name} chất lượng 4K Vietsub, Thuyết minh và trọn bộ ảnh Cosplay 18+ cực hot tại Vam3D. [${kwString}]`;
+      f("description", newDesc);
+      show("✨ Đã chèn các từ khóa hot vào mô tả phim!");
+    }
+  };
+
+  const handleCopyHotKeywords = () => {
+    if (selectedHotKeywords.length === 0) {
+      show("Chưa có từ khóa nào được chọn", "error");
+      return;
+    }
+    const textToCopy = selectedHotKeywords.join(", ");
+    navigator.clipboard.writeText(textToCopy);
+    show("📋 Đã sao chép bộ từ khóa hot vào clipboard!");
+  };
+
+  const handleAiGenerateMovieDesc = async () => {
+    if (!form.name || !form.name.trim()) {
+      show("Vui lòng nhập Tên phim trước", "error");
+      return;
+    }
+    setGeneratingMovieDesc(true);
+    try {
+      const selectedCatNames = categories
+        ?.filter((c: any) => form.categoryIds.includes(c.id))
+        ?.map((c: any) => c.name);
+      const selectedAuthor = authors?.find((a: any) => a.id === form.idAuthor);
+      const res = await generateMovieDescriptionAction({
+        name: form.name.trim(),
+        categoryNames: selectedCatNames,
+        authorName: selectedAuthor?.name,
+      });
+      if (res.success && res.description) {
+        f("description", res.description);
+        show("✨ Đã tạo mô tả SEO cho phim thành công bằng Gemini!");
+      } else {
+        show(res.error || "Không thể tạo mô tả", "error");
+      }
+    } catch (err: any) {
+      show(err.message || "Lỗi khi gọi AI sinh mô tả phim", "error");
+    } finally {
+      setGeneratingMovieDesc(false);
+    }
+  };
  
   const f = (k: string, v: any) => setForm(prev => ({ ...prev, [k]: v }));
  
@@ -1256,12 +1358,16 @@ function MoviesTab({ movies, categories, actors, characters, authors, search, se
       displayOrder: m.displayOrder ?? 0,
     });
     setEditing(m.id);
+    setHotKeywordsData(null);
+    setSelectedHotKeywords([]);
     setShowForm(true);
   };
  
   const resetForm = () => {
     setForm(emptyForm);
     setEditing(null);
+    setHotKeywordsData(null);
+    setSelectedHotKeywords([]);
     setShowForm(false);
   };
  
@@ -1330,7 +1436,148 @@ function MoviesTab({ movies, categories, actors, characters, authors, search, se
               </div>
  
               <div className="sm:col-span-2">
-                <label className="text-xs text-gray-400 mb-1 block">Mô tả</label>
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                  <label className="text-xs text-gray-400 block font-medium">Mô tả phim chuẩn SEO</label>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      disabled={analyzingHotKeywords}
+                      onClick={handleAnalyzeHotKeywords}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gradient-to-r from-red-500/20 via-orange-500/20 to-amber-500/20 hover:from-red-500/30 hover:via-orange-500/30 hover:to-amber-500/30 border border-orange-500/40 text-orange-400 hover:text-orange-300 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-orange-500/10 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {analyzingHotKeywords ? <Loader2 className="w-3 h-3 animate-spin text-orange-400" /> : <Flame className="w-3 h-3 text-red-500 animate-pulse" />}
+                      <span>{analyzingHotKeywords ? "AI đang check thực tế..." : "🔥 AI Check Từ Khóa Hot Thực Tế (4K, Cosplay, Vietsub...)"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={generatingMovieDesc}
+                      onClick={handleAiGenerateMovieDesc}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gradient-to-r from-orange-500/20 via-amber-500/20 to-yellow-500/20 hover:from-orange-500/30 hover:via-amber-500/30 hover:to-yellow-500/30 border border-orange-500/40 text-orange-400 hover:text-orange-300 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-orange-500/10 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {generatingMovieDesc ? <Loader2 className="w-3 h-3 animate-spin text-orange-400" /> : <Sparkles className="w-3 h-3 text-amber-400" />}
+                      <span>{generatingMovieDesc ? "Đang viết..." : "✨ AI viết mô tả (Gemini)"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Hot Keywords Panel */}
+                {hotKeywordsData && (
+                  <div className="mb-3 bg-[#090a0f] border border-orange-500/30 rounded-xl p-3.5 space-y-3 shadow-inner animate-in fade-in duration-300">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Flame className="w-4 h-4 text-red-500 fill-red-500/20" />
+                        <span className="text-xs font-bold text-white tracking-wide">
+                          Bộ từ khóa hot thực tế (Google Trends & Search Demand):
+                        </span>
+                        <Badge className="bg-orange-500/20 text-orange-400 border border-orange-500/30 text-[10px] px-1.5 py-0 h-4">
+                          Gợi ý: {hotKeywordsData.recommendedQuality} • {hotKeywordsData.recommendedSub}
+                        </Badge>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setHotKeywordsData(null)}
+                        className="text-gray-500 hover:text-white p-0.5 cursor-pointer"
+                        title="Đóng bảng"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Market Insights */}
+                    {hotKeywordsData.marketInsights && (
+                      <div className="bg-[#131520]/80 border border-white/5 rounded-lg p-2.5 text-[11px] text-gray-300 flex items-start gap-2">
+                        <TrendingUp className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
+                        <p className="leading-relaxed">
+                          <strong className="text-amber-400">Đánh giá xu hướng thực tế: </strong>
+                          {hotKeywordsData.marketInsights}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Hot Keywords Chips */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] text-gray-400">
+                          Nhấp để chọn / bỏ chọn từ khóa ({selectedHotKeywords.length}/{hotKeywordsData.keywords?.length || 0}):
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const allKws = hotKeywordsData.keywords?.map((k: any) => k.keyword) || [];
+                            setSelectedHotKeywords(selectedHotKeywords.length === allKws.length ? [] : allKws);
+                          }}
+                          className="text-[10px] text-orange-400 hover:text-orange-300 underline cursor-pointer"
+                        >
+                          {selectedHotKeywords.length === (hotKeywordsData.keywords?.length || 0) ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+                        </button>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
+                        {hotKeywordsData.keywords?.map((kwItem: any, idx: number) => {
+                          const isSelected = selectedHotKeywords.includes(kwItem.keyword);
+                          const is4kOrQuality = kwItem.category === "resolution";
+                          const isCosplay = kwItem.category === "genre" || kwItem.category === "character";
+                          const isSub = kwItem.category === "translation";
+
+                          const categoryColor = is4kOrQuality
+                            ? "border-amber-500/40 text-amber-400 bg-amber-500/10"
+                            : isCosplay
+                            ? "border-pink-500/40 text-pink-400 bg-pink-500/10"
+                            : isSub
+                            ? "border-blue-500/40 text-blue-400 bg-blue-500/10"
+                            : "border-emerald-500/40 text-emerald-400 bg-emerald-500/10";
+
+                          return (
+                            <button
+                              type="button"
+                              key={idx}
+                              onClick={() => toggleHotKeyword(kwItem.keyword)}
+                              title={`${kwItem.reason} (${kwItem.searchVolumeEstimate || ""})`}
+                              className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                                isSelected
+                                  ? `${categoryColor} ring-1 ring-white/20 shadow-sm font-bold`
+                                  : "bg-white/5 border-white/10 text-gray-500 hover:border-white/20 hover:text-gray-400 opacity-60"
+                              }`}
+                            >
+                              <span>{kwItem.keyword}</span>
+                              <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
+                                isSelected ? "bg-white/10 text-white" : "text-gray-600"
+                              }`}>
+                                🔥 {kwItem.trendScore}
+                              </span>
+                              {isSelected && <Check className="w-2.5 h-2.5 text-current ml-0.5" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-white/5">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleApplyKeywordsToDescription}
+                        className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-[11px] h-7 px-2.5 rounded-lg border-0 gap-1 cursor-pointer font-bold shadow-sm"
+                      >
+                        <Wand2 className="w-3 h-3" />
+                        Áp dụng vào mô tả SEO
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCopyHotKeywords}
+                        className="bg-white/5 hover:bg-white/10 border-white/10 text-gray-300 hover:text-white text-[11px] h-7 px-2.5 rounded-lg gap-1 cursor-pointer"
+                      >
+                        <Copy className="w-3 h-3" />
+                        Sao chép bộ từ khóa ({selectedHotKeywords.length})
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <Textarea value={form.description} onChange={e => f("description", e.target.value)} placeholder="Nội dung phim…" className="bg-[#090a0f] border-white/5 text-sm min-h-16" />
               </div>
               <div className="sm:col-span-2">
@@ -1658,7 +1905,7 @@ function CategoriesTab({ categories, search, setSearch, isPending, startTransiti
                 className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold rounded-lg bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 border border-orange-500/40 text-orange-400 hover:text-orange-300 transition-all cursor-pointer disabled:opacity-50"
               >
                 {generatingDesc ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 text-amber-400" />}
-                <span>{generatingDesc ? "Đang viết..." : "✨ AI viết mô tả (SEO)"}</span>
+                <span>{generatingDesc ? "Đang viết..." : "✨ AI viết mô tả (Gemini)"}</span>
               </button>
             </div>
             <Textarea value={form.description} onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))} className="bg-[#090a0f] border-white/5 text-xs min-h-[80px]" placeholder="Nhập mô tả hoặc bấm 'AI viết mô tả (SEO)'..." />
@@ -3649,6 +3896,28 @@ function PackagesTab({ packages, plans, search, setSearch, isPending, startTrans
 function AuthorsTab({ authors, search, setSearch, isPending, startTransition, onRefresh, show, confirmThenDelete }: any) {
   const [form, setForm] = useState({ name: "", description: "" });
   const [editing, setEditing] = useState<number | null>(null);
+  const [generatingAuthorDesc, setGeneratingAuthorDesc] = useState(false);
+
+  const handleAiGenerateAuthorDesc = async () => {
+    if (!form.name || !form.name.trim()) {
+      show("Vui lòng nhập Tên tác giả trước", "error");
+      return;
+    }
+    setGeneratingAuthorDesc(true);
+    try {
+      const res = await generateAuthorDescriptionAction(form.name.trim());
+      if (res.success && res.description) {
+        setForm(p => ({ ...p, description: res.description! }));
+        show("✨ Đã tạo giới thiệu tác giả thành công bằng Gemini!");
+      } else {
+        show(res.error || "Không thể tạo giới thiệu", "error");
+      }
+    } catch (err: any) {
+      show(err.message || "Lỗi khi gọi AI sinh giới thiệu", "error");
+    } finally {
+      setGeneratingAuthorDesc(false);
+    }
+  };
 
   const filtered = authors.filter((a: any) => a.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -3676,7 +3945,18 @@ function AuthorsTab({ authors, search, setSearch, isPending, startTransition, on
             <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required className="bg-[#090a0f] border-white/5 text-sm h-9" />
           </div>
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">Giới thiệu</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs text-gray-400 block font-medium">Giới thiệu</label>
+              <button
+                type="button"
+                disabled={generatingAuthorDesc}
+                onClick={handleAiGenerateAuthorDesc}
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold rounded-lg bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 border border-orange-500/40 text-orange-400 hover:text-orange-300 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {generatingAuthorDesc ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 text-amber-400" />}
+                <span>{generatingAuthorDesc ? "Đang viết..." : "✨ AI viết giới thiệu (Gemini)"}</span>
+              </button>
+            </div>
             <Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="bg-[#090a0f] border-white/5 text-sm min-h-[80px]" />
           </div>
           <div className="flex gap-2">
@@ -4501,52 +4781,154 @@ const SEO_SUFFIXES = [
   "| Vam3D Sex AI 4K Full HD"
 ];
 
-function buildStandardGalleryTitle(characterNames: string[] = [], movieName: string = "", previousTitle: string = ""): string {
+function buildStandardGalleryHotKeys(characterNames: string[] = [], movieName: string = ""): string[] {
+  const keys: string[] = [
+    "4K",
+    "Cosplay 18+",
+    "Sex AI Vietsub",
+    "Ảnh Sex 3D",
+    "Hentai 3D Trung Quốc",
+    "Waifu 3D",
+    "Không Che Siêu Nét",
+    "Vam3D",
+  ];
+
+  characterNames.forEach((char) => {
+    keys.push(`Cosplay ${char} 18+`);
+    keys.push(`Ảnh 3D ${char} 4K`);
+    keys.push(`Waifu ${char}`);
+  });
+
+  if (movieName) {
+    keys.push(`Cosplay ${movieName}`);
+    keys.push(`${movieName} 4K`);
+  }
+
+  return Array.from(new Set(keys));
+}
+
+function buildStandardGalleryDescription(
+  title: string,
+  characterNames: string[] = [],
+  movieName: string = "",
+  hotKeys: string[] = []
+): string {
   const charText = characterNames.length > 0 ? characterNames.join(", ") : "";
-  
+  const cleanTitle = title.trim();
+
+  const openers = [
+    `Khám phá trọn bộ ảnh sex 3D và album AI ${cleanTitle} với độ phân giải siêu nét 4K tại Vam3D.`,
+    `Chiêm ngưỡng vẻ đẹp quyến rũ đỉnh cao trong album ảnh AI Cosplay 18+ ${cleanTitle} độc quyền trên Vam3D Hentai.`,
+    `Thưởng thức trọn bộ ảnh sex AI Vietsub ${cleanTitle}, tái hiện thần thái gợi cảm và mãn nhãn nhất chỉ có tại Vam 3D.`,
+    `Bộ sưu tập ảnh AI ${cleanTitle} mang đến những thước hình 3D Anime, Hentai 3D Trung Quốc siêu sắc nét và lôi cuốn.`,
+    `Tổng hợp kho ảnh AI sex 3D tuyệt mỹ trong album ${cleanTitle}, tạo hình sống động và sắc nét từng chi tiết tại Vam3D.`,
+  ];
+
+  const middleSentences = [
+    charText
+      ? `Từng khung hình tôn vinh trọn vẹn nét đẹp bốc lửa, kiêu sa của nhân vật ${charText}${movieName ? ` từ siêu phẩm ${movieName}` : ""}, mang lại trải nghiệm thị giác bùng nổ cho fan hoạt hình 3D.`
+      : `Được tạo tác bằng công nghệ AI tiên tiến, từng bức ảnh mang đến góc nhìn chân thực, bốc lửa và đậm chất nghệ thuật 3D đỉnh cao.`,
+    charText
+      ? `Với tạo hình nóng bỏng của ${charText}, album mang đến những khung cảnh gợi cảm khó cưỡng cùng chất lượng hình ảnh Full HD / 4K không watermark.`
+      : `Từng chi tiết phục trang, ánh sáng và đường cong đều đạt chuẩn 4K siêu mượt, thỏa mãn đam mê của mọi tín đồ yêu thích nghệ thuật ảnh AI và Hentai 3D.`,
+    `Sự kết hợp hoàn hảo giữa phong cách anime 3D Trung Quốc sống động và công nghệ AI giúp bộ ảnh trở nên cuốn hút vượt bậc.`,
+  ];
+
+  const closers = [
+    `Truy cập ngay Vam3D để xem và tải trọn bộ ảnh AI 18+ chất lượng cao miễn phí!`,
+    `Khám phá thêm hàng ngàn bộ ảnh sex AI Vietsub và phim hoạt hình 3D thuyết minh đặc sắc tại Vam 3D.`,
+    `Xem ngay album đầy đủ và cập nhật các bộ sưu tập ảnh AI Anime 3D mới nhất hàng ngày trên Vam3D.`,
+    `Đừng bỏ lỡ trọn bộ ảnh độc quyền sắc nét không che – Trải nghiệm ngay trên Vam3D!`,
+  ];
+
+  function getRandomItem<T>(arr: T[]): T {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+  const baseDesc = `${getRandomItem(openers)} ${getRandomItem(middleSentences)} ${getRandomItem(closers)}`;
+
+  if (hotKeys.length > 0) {
+    const keySnippet = hotKeys.slice(0, 5).join(", ");
+    return `${baseDesc} [Từ khóa hot: ${keySnippet}].`;
+  }
+  return baseDesc;
+}
+
+function buildStandardGalleryTitle(
+  characterNames: string[] = [], 
+  movieName: string = "", 
+  previousTitle: string = "", 
+  existingTitles: string[] = []
+): string {
+  const charText = characterNames.length > 0 ? characterNames.join(", ") : "";
+  const existingSet = new Set(existingTitles.map(t => t.toLowerCase().trim()));
+
   // Filter out the theme from previousTitle to ensure diversity
   const availableThemes = CHARACTERISTIC_THEMES.filter(t => !previousTitle.includes(t));
   const chosenThemes = availableThemes.length > 0 ? availableThemes : CHARACTERISTIC_THEMES;
-  const theme = chosenThemes[Math.floor(Math.random() * chosenThemes.length)];
 
   // Filter out previous suffix if possible
   const availableSuffixes = SEO_SUFFIXES.filter(s => !previousTitle.endsWith(s));
   const chosenSuffixes = availableSuffixes.length > 0 ? availableSuffixes : SEO_SUFFIXES;
-  const suffix = chosenSuffixes[Math.floor(Math.random() * chosenSuffixes.length)];
 
-  // Diverse templates
-  const templates: string[] = [];
+  const generateCandidates = (theme: string, suffix: string): string[] => {
+    const templates: string[] = [];
+    if (charText && movieName) {
+      templates.push(`${charText} – ${movieName} – ${theme} ${suffix}`);
+      templates.push(`Cosplay 18+ ${charText} (${movieName}) – ${theme} ${suffix}`);
+      templates.push(`Bộ Ảnh Sex AI ${charText} – ${movieName} ${theme} ${suffix}`);
+      templates.push(`Hentai 3D ${charText} – Tuyệt Phẩm ${movieName} – ${theme} ${suffix}`);
+      templates.push(`Ngắm ${charText} (${movieName}) – ${theme} ${suffix}`);
+      templates.push(`Kho Ảnh 18+ ${charText} – ${movieName} – ${theme} ${suffix}`);
+      templates.push(`Tuyệt Tác AI ${charText} (${movieName}) – ${theme} ${suffix}`);
+      templates.push(`${charText} – ${movieName} – ${theme} 4K ${suffix}`);
+      templates.push(`Album Waifu ${charText} (${movieName}) – ${theme} ${suffix}`);
+      templates.push(`Mỹ Nhân ${charText} – ${movieName} – ${theme} ${suffix}`);
+    } else if (charText) {
+      templates.push(`${charText} – ${theme} ${suffix}`);
+      templates.push(`Cosplay 18+ ${charText} – ${theme} ${suffix}`);
+      templates.push(`Bộ Ảnh Sex AI ${charText} – ${theme} ${suffix}`);
+      templates.push(`Hentai 3D ${charText} – ${theme} ${suffix}`);
+      templates.push(`Kho Ảnh 18+ ${charText} Siêu Nóng Bỏng ${suffix}`);
+      templates.push(`Tuyệt Tác AI ${charText} – ${theme} ${suffix}`);
+      templates.push(`Album Waifu ${charText} – ${theme} 4K ${suffix}`);
+      templates.push(`Mỹ Nhân 3D ${charText} – ${theme} ${suffix}`);
+    } else if (movieName) {
+      templates.push(`${movieName} – ${theme} ${suffix}`);
+      templates.push(`Bộ Ảnh Sex AI ${movieName} – ${theme} ${suffix}`);
+      templates.push(`Hentai 3D ${movieName} – ${theme} ${suffix}`);
+      templates.push(`Kho Ảnh Cosplay 18+ ${movieName} ${suffix}`);
+    } else {
+      templates.push(`Bộ Sưu Tập Ảnh Sex AI 3D – ${theme} ${suffix}`);
+      templates.push(`Kho Ảnh Cosplay 18+ – ${theme} ${suffix}`);
+    }
+    return templates;
+  };
 
-  if (charText && movieName) {
-    templates.push(`${charText} – ${movieName} – ${theme} ${suffix}`);
-    templates.push(`Cosplay 18+ ${charText} (${movieName}) – ${theme} ${suffix}`);
-    templates.push(`Bộ Ảnh Sex AI ${charText} – ${movieName} ${theme} ${suffix}`);
-    templates.push(`Hentai 3D ${charText} – Tuyệt Phẩm ${movieName} – ${theme} ${suffix}`);
-    templates.push(`Ngắm ${charText} (${movieName}) – ${theme} ${suffix}`);
-    templates.push(`Kho Ảnh 18+ ${charText} – ${movieName} – ${theme} ${suffix}`);
-    templates.push(`Tuyệt Tác AI ${charText} (${movieName}) – ${theme} ${suffix}`);
-    templates.push(`${charText} – ${movieName} – ${theme} 4K ${suffix}`);
-  } else if (charText) {
-    templates.push(`${charText} – ${theme} ${suffix}`);
-    templates.push(`Cosplay 18+ ${charText} – ${theme} ${suffix}`);
-    templates.push(`Bộ Ảnh Sex AI ${charText} – ${theme} ${suffix}`);
-    templates.push(`Hentai 3D ${charText} – ${theme} ${suffix}`);
-    templates.push(`Kho Ảnh 18+ ${charText} Siêu Nóng Bỏng ${suffix}`);
-    templates.push(`Tuyệt Tác AI ${charText} – ${theme} ${suffix}`);
-  } else if (movieName) {
-    templates.push(`${movieName} – ${theme} ${suffix}`);
-    templates.push(`Bộ Ảnh Sex AI ${movieName} – ${theme} ${suffix}`);
-    templates.push(`Hentai 3D ${movieName} – ${theme} ${suffix}`);
-    templates.push(`Kho Ảnh Cosplay 18+ ${movieName} ${suffix}`);
-  } else {
-    templates.push(`Bộ Sưu Tập Ảnh Sex AI 3D – ${theme} ${suffix}`);
-    templates.push(`Kho Ảnh Cosplay 18+ – ${theme} ${suffix}`);
+  // Shuffle themes and suffixes for variety
+  const shuffledThemes = [...chosenThemes].sort(() => 0.5 - Math.random());
+  const shuffledSuffixes = [...chosenSuffixes].sort(() => 0.5 - Math.random());
+
+  for (const theme of shuffledThemes) {
+    for (const suffix of shuffledSuffixes) {
+      const candidates = generateCandidates(theme, suffix);
+      for (const cand of candidates) {
+        if (cand !== previousTitle && !existingSet.has(cand.toLowerCase().trim())) {
+          return cand;
+        }
+      }
+    }
   }
 
-  // Filter templates that match previous title exactly
-  const candidateTemplates = templates.filter(t => t !== previousTitle);
-  const selectedTemplateList = candidateTemplates.length > 0 ? candidateTemplates : templates;
-  return selectedTemplateList[Math.floor(Math.random() * selectedTemplateList.length)];
+  // Fallback: If all combinations already exist, append unique volume or part
+  const baseCandidate = generateCandidates(chosenThemes[0], chosenSuffixes[0])[0];
+  for (let vol = 2; vol <= 100; vol++) {
+    const volTitle = baseCandidate.replace(" |", ` (Vol ${vol}) |`);
+    if (!existingSet.has(volTitle.toLowerCase().trim())) {
+      return volTitle;
+    }
+  }
+
+  return `${baseCandidate} #${Date.now().toString().slice(-4)}`;
 }
 
 function GalleriesTab({ movies, characters, plans, collections = [], isPending, startTransition, onRefresh, show, confirmThenDelete, onCountChange }: any) {
@@ -4577,9 +4959,11 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(24);
   const [generatingDesc, setGeneratingDesc] = useState(false);
+  const [generatingGemini, setGeneratingGemini] = useState(false);
+  const [galleryHotKeys, setGalleryHotKeys] = useState<string[]>([]);
 
-  // AI SEO Title Generator Handler (auto-resolves movie linked with character & diverse patterns)
-  const handleAutoGenerateTitle = (charIds = form.characterIds) => {
+  // Truly generative Gemini AI Title, Hot Keys & SEO Description Generator
+  const handleGeminiGenerateGalleryDetails = async (charIds = form.characterIds, overrideMovieId?: number) => {
     const selectedCharObjs = characters
       ? characters.filter((c: any) => charIds.includes(c.id))
       : [];
@@ -4587,23 +4971,63 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
     
     // Auto-detect movie from selected character
     const charWithMovie = selectedCharObjs.find((c: any) => c.movie?.name || c.idMovie);
-    const resolvedMovieId = form.idMovie || charWithMovie?.idMovie || 0;
+    const resolvedMovieId = overrideMovieId !== undefined
+      ? overrideMovieId
+      : (form.idMovie || charWithMovie?.idMovie || 0);
     const selectedMovie = charWithMovie?.movie?.name 
       || (movies && resolvedMovieId > 0 ? (movies.find((m: any) => m.id === resolvedMovieId)?.name || movies.find((m: any) => m.id === resolvedMovieId)?.title) : "") || "";
 
     if (selectedChars.length === 0 && !selectedMovie) {
-      show("Vui lòng chọn ít nhất 1 Nhân vật để tự sinh tiêu đề chuẩn SEO", "error");
+      show("Vui lòng chọn ít nhất 1 Nhân vật để Gemini AI sinh tiêu đề chuẩn SEO", "error");
       return;
     }
 
-    const newTitle = buildStandardGalleryTitle(selectedChars, selectedMovie, form.name);
-    setForm(p => ({
-      ...p,
-      idMovie: resolvedMovieId,
-      name: newTitle,
-      slug: slugify(newTitle)
-    }));
-    show("✨ Đã tạo tiêu đề chuẩn SEO!");
+    setGeneratingGemini(true);
+    const existingTitles = galleries.map((g: any) => (g.name || "").trim()).filter(Boolean);
+    const currentName = form.name?.trim() || "";
+    if (currentName && !existingTitles.includes(currentName)) {
+      existingTitles.push(currentName);
+    }
+
+    try {
+      const res = await generateGalleryGeminiAiAction({
+        characterNames: selectedChars,
+        movieName: selectedMovie,
+        existingTitles,
+        currentTitle: currentName || undefined,
+      });
+
+      if (res.success && res.data) {
+        const { title, slug, hotKeys, description } = res.data;
+        setGalleryHotKeys(hotKeys || []);
+        setForm(p => ({
+          ...p,
+          idMovie: resolvedMovieId,
+          name: title,
+          slug: slug || slugify(title),
+          description: description,
+        }));
+        show("✨ Gemini AI đã tự sáng tạo Tiêu đề, Hot Key & Mô tả SEO độc nhất!");
+      } else {
+        // Fallback to algorithmic synthesizer if AI fails
+        const fallbackTitle = buildStandardGalleryTitle(selectedChars, selectedMovie, form.name, existingTitles.map(t => t.toLowerCase()));
+        const fallbackHotKeys = buildStandardGalleryHotKeys(selectedChars, selectedMovie);
+        const fallbackDesc = buildStandardGalleryDescription(fallbackTitle, selectedChars, selectedMovie, fallbackHotKeys);
+        setGalleryHotKeys(fallbackHotKeys);
+        setForm(p => ({
+          ...p,
+          idMovie: resolvedMovieId,
+          name: fallbackTitle,
+          slug: slugify(fallbackTitle),
+          description: fallbackDesc,
+        }));
+        show(res.error || "Đã áp dụng mẫu SEO dự phòng", "error");
+      }
+    } catch (err: any) {
+      show(err.message || "Lỗi khi kết nối Gemini AI", "error");
+    } finally {
+      setGeneratingGemini(false);
+    }
   };
 
   // AI SEO Description Generator Handler
@@ -4800,6 +5224,9 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
 
   const handleEdit = (g: any) => {
     setEditing(g.id);
+    const charNames = g.galleryCharacters?.map((gc: any) => gc.character?.name).filter(Boolean) || [];
+    const movieName = g.movie?.name || "";
+    setGalleryHotKeys(buildStandardGalleryHotKeys(charNames, movieName));
     setForm({
       name: g.name || "",
       slug: g.slug || "",
@@ -4934,7 +5361,7 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
         </div>
 
         <Button
-          onClick={() => { setEditing(null); setForm({ name: "", slug: "", description: "", idMovie: 0, idPlan: 0, characterIds: [] }); setCharacterSearch(""); setUploadFiles([]); setIsFormOpen(true); }}
+          onClick={() => { setEditing(null); setForm({ name: "", slug: "", description: "", idMovie: 0, idPlan: 0, characterIds: [] }); setGalleryHotKeys([]); setCharacterSearch(""); setUploadFiles([]); setIsFormOpen(true); }}
           className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold h-9 text-xs px-4 rounded-xl shadow-lg border-0 gap-1.5 flex items-center justify-center shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
@@ -5033,22 +5460,16 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
                       if (nextMovieId === 0 && c.idMovie) {
                         nextMovieId = c.idMovie;
                       }
-                      const selectedChars = characters ? characters.filter((char: any) => next.includes(char.id)).map((char: any) => char.name) : [];
-                      const movieObj = movies?.find((m: any) => m.id === nextMovieId);
-                      const movieName = movieObj?.name || movieObj?.title || "";
-
-                      const shouldAutoUpdate = editing === null && (form.name === "" || form.name.includes("Vam3D") || form.name.includes("Vam 3D") || form.name.includes("Bộ sưu tập"));
-                      const newTitle = shouldAutoUpdate && (selectedChars.length > 0 || movieName)
-                        ? buildStandardGalleryTitle(selectedChars, movieName, form.name)
-                        : form.name;
 
                       setForm(p => ({
                         ...p,
                         characterIds: next,
                         idMovie: nextMovieId,
-                        name: newTitle,
-                        slug: shouldAutoUpdate && newTitle ? slugify(newTitle) : p.slug
                       }));
+
+                      if (editing === null && next.length > 0) {
+                        handleGeminiGenerateGalleryDetails(next, nextMovieId);
+                      }
                     }}
                     className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
                       form.characterIds.includes(c.id)
@@ -5065,7 +5486,7 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
               </div>
             </div>
 
-            {/* Gallery Title with Auto SEO Button */}
+            {/* Gallery Title with Gemini AI Generator Button */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs text-gray-400 block font-medium">
@@ -5073,12 +5494,22 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
                 </label>
                 <button
                   type="button"
-                  onClick={() => handleAutoGenerateTitle()}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 hover:from-amber-500/30 hover:via-orange-500/30 hover:to-red-500/30 border border-amber-500/40 text-amber-400 hover:text-amber-300 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-amber-500/10 active:scale-95"
-                  title="Tự động sinh tiêu đề chuẩn: [Tên Nhân Vật] – [Tên Phim] – [Đặc điểm] | Ảnh Sex AI 3D 4K Vam3D"
+                  disabled={generatingGemini}
+                  onClick={() => handleGeminiGenerateGalleryDetails()}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 hover:from-amber-500/30 hover:via-orange-500/30 hover:to-red-500/30 border border-amber-500/40 text-amber-400 hover:text-amber-300 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-amber-500/10 active:scale-95 disabled:opacity-50"
+                  title="Google Gemini AI tự sáng tạo Tiêu đề, Hot Key & Mô tả SEO không trùng lặp"
                 >
-                  <Wand2 className="w-3 h-3 text-amber-400 animate-pulse" />
-                  <span>✨ Tự tạo tiêu đề SEO</span>
+                  {generatingGemini ? (
+                    <>
+                      <Loader2 className="w-3 h-3 text-amber-400 animate-spin" />
+                      <span>Gemini AI đang sinh tiêu đề & mô tả...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
+                      <span>✨ Gemini AI tự sinh Tiêu đề & Mô tả SEO</span>
+                    </>
+                  )}
                 </button>
               </div>
               <Input
@@ -5116,6 +5547,7 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
               />
             </div>
 
+
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs text-gray-400 block font-medium">Mô tả bộ sưu tập</label>
@@ -5134,7 +5566,7 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
                   ) : (
                     <>
                       <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
-                      <span>✨ AI viết mô tả (SEO)</span>
+                      <span>✨ AI viết mô tả (Gemini)</span>
                     </>
                   )}
                 </button>

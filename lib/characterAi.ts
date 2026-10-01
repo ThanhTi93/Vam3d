@@ -5,6 +5,7 @@
  */
 
 import { generateAiSeoDescription } from "./aiDescription";
+import { callGeminiJson, callGeminiText, callOpenAiFallback } from "./gemini";
 
 // ═══════════════════════════════════════════════════════════════════════
 // 1. DICTIONARY OF POPULAR DONGHUA, ANIME & GAME 3D CHARACTERS
@@ -447,15 +448,8 @@ export async function generateCharacterTranslations(nameVi: string): Promise<{ n
     return { nameEn: hit.nameEn, nameZh: hit.nameZh };
   }
 
-  // 2. Try AI Translation if Gemini or OpenAI key exists
-  const geminiApiKey =
-    process.env.GEMINI_API_KEY ||
-    process.env.GOOGLE_API_KEY ||
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  const openAiApiKey = process.env.OPENAI_API_KEY;
-
-  if (geminiApiKey || openAiApiKey) {
-    const prompt = `Bạn là chuyên gia dịch thuật tên nhân vật hoạt hình 3D Donghua, Anime, Game Trung Quốc / Nhật Bản sang tiếng Anh (Pinyin chuẩn hoặc tên phương Tây) và tiếng Trung (chữ Hán giản thể chuẩn).
+  // 2. Try AI Translation with Gemini (with OpenAI fallback)
+  const prompt = `Bạn là chuyên gia dịch thuật tên nhân vật hoạt hình 3D Donghua, Anime, Game Trung Quốc / Nhật Bản sang tiếng Anh (Pinyin chuẩn hoặc tên phương Tây) và tiếng Trung (chữ Hán giản thể chuẩn).
 Tên nhân vật tiếng Việt: "${cleanName}".
 
 Hãy suy đoán chính xác tên gốc của nhân vật trong tác phẩm hoạt hình 3D / Donghua tương ứng.
@@ -464,68 +458,31 @@ Trả về DUY NHẤT một chuỗi JSON hợp lệ với định dạng:
 
 Không thêm bất kỳ giải thích, markdown hay text thừa nào khác.`;
 
-    if (geminiApiKey) {
-      try {
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.2,
-              maxOutputTokens: 100,
-              responseMimeType: "application/json",
-            },
-          }),
-          signal: AbortSignal.timeout(6000),
-        });
+  const geminiData = await callGeminiJson<{ nameEn?: string; nameZh?: string }>({
+    prompt,
+    temperature: 0.2,
+    maxTokens: 120,
+  });
 
-        if (res.ok) {
-          const data = await res.json();
-          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-          if (rawText) {
-            const parsed = JSON.parse(rawText);
-            if (parsed.nameEn && parsed.nameZh) {
-              return { nameEn: String(parsed.nameEn).trim(), nameZh: String(parsed.nameZh).trim() };
-            }
-          }
-        }
-      } catch (e) {
-        console.warn("Gemini translate failed, falling back:", e);
+  if (geminiData?.nameEn && geminiData?.nameZh) {
+    return { nameEn: String(geminiData.nameEn).trim(), nameZh: String(geminiData.nameZh).trim() };
+  }
+
+  // Fallback to OpenAI if configured
+  const openAiRaw = await callOpenAiFallback({
+    prompt,
+    temperature: 0.2,
+    maxTokens: 120,
+    jsonMode: true,
+  });
+  if (openAiRaw) {
+    try {
+      const parsed = JSON.parse(openAiRaw);
+      if (parsed.nameEn && parsed.nameZh) {
+        return { nameEn: String(parsed.nameEn).trim(), nameZh: String(parsed.nameZh).trim() };
       }
-    }
-
-    if (openAiApiKey) {
-      try {
-        const res = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${openAiApiKey}`,
-          },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.2,
-            response_format: { type: "json_object" },
-          }),
-          signal: AbortSignal.timeout(6000),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          const rawText = data?.choices?.[0]?.message?.content?.trim();
-          if (rawText) {
-            const parsed = JSON.parse(rawText);
-            if (parsed.nameEn && parsed.nameZh) {
-              return { nameEn: String(parsed.nameEn).trim(), nameZh: String(parsed.nameZh).trim() };
-            }
-          }
-        }
-      } catch (e) {
-        console.warn("OpenAI translate failed, falling back:", e);
-      }
+    } catch {
+      // Ignore
     }
   }
 
@@ -651,12 +608,6 @@ export async function generateCharacterSeoDescription(
     return CHARACTER_LORE_DATABASE[lowerName];
   }
 
-  const geminiApiKey =
-    process.env.GEMINI_API_KEY ||
-    process.env.GOOGLE_API_KEY ||
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  const openAiApiKey = process.env.OPENAI_API_KEY;
-
   const prompt = `Bạn là chuyên gia am hiểu sâu sắc về hoạt hình 3D Donghua Trung Quốc, Anime và Game 3D.
 Hãy viết một đoạn văn GIỚI THIỆU TIỂU SỬ VÀ ĐẶC ĐIỂM NHÂN VẬT (Character Profile & Lore) chuẩn xác, lôi cuốn cho nhân vật sau:
 
@@ -671,68 +622,26 @@ Yêu cầu nội dung:
 3. Độ dài: 2 đến 3 câu văn (khoảng 50 - 80 từ), giọng văn trang nhã, cuốn hút, súc tích và chuẩn xác theo nguyên tác.
 4. CHỈ TRẢ VỀ DUY NHẤT ĐOẠN VĂN BẢN GIỚI THIỆU NHÂN VẬT (không thêm tiêu đề, không bọc dấu ngoặc kép, không thêm lời dẫn).`;
 
-  if (geminiApiKey) {
-    try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.5,
-            maxOutputTokens: 250,
-          },
-        }),
-        signal: AbortSignal.timeout(8000),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (text) {
-          return text.replace(/^["']|["']$/g, "").trim();
-        }
-      }
-    } catch (e) {
-      console.warn("Gemini Character Lore failed, using algorithmic fallback:", e);
-    }
+  // 2. Try Google Gemini API
+  const geminiResult = await callGeminiText({
+    prompt,
+    temperature: 0.5,
+    maxTokens: 250,
+  });
+  if (geminiResult) {
+    return geminiResult.replace(/^["']|["']$/g, "").trim();
   }
 
-  if (openAiApiKey) {
-    try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${openAiApiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content:
-                "Bạn là chuyên gia về tiểu sử nhân vật hoạt hình 3D Donghua, Anime và Game. Luôn viết lời giới thiệu nhân vật chuẩn xác, hấp dẫn bằng tiếng Việt.",
-            },
-            { role: "user", content: prompt },
-          ],
-          temperature: 0.5,
-          max_tokens: 250,
-        }),
-        signal: AbortSignal.timeout(8000),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const text = data?.choices?.[0]?.message?.content?.trim();
-        if (text) {
-          return text.replace(/^["']|["']$/g, "").trim();
-        }
-      }
-    } catch (e) {
-      console.warn("OpenAI Character Lore failed, using algorithmic fallback:", e);
-    }
+  // 3. Try OpenAI API fallback
+  const openAiResult = await callOpenAiFallback({
+    prompt,
+    systemInstruction:
+      "Bạn là chuyên gia về tiểu sử nhân vật hoạt hình 3D Donghua, Anime và Game. Luôn viết lời giới thiệu nhân vật chuẩn xác, hấp dẫn bằng tiếng Việt.",
+    temperature: 0.5,
+    maxTokens: 250,
+  });
+  if (openAiResult) {
+    return openAiResult.replace(/^["']|["']$/g, "").trim();
   }
 
   return generateAlgorithmicCharacterDescription(params);

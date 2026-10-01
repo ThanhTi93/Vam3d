@@ -27,9 +27,16 @@ import { db, schema } from "@/lib/db";
 import { eq, and, ne, sql, ilike, or, inArray, count, isNull } from "drizzle-orm";
 import crypto from "crypto";
 import { slugify } from "@/lib/utils";
-import { generateAiSeoDescription } from "@/lib/aiDescription";
+import {
+  generateAiSeoDescription,
+  generateCategoryAiDescription,
+  generateMovieAiDescription,
+  generateAuthorAiDescription,
+  generateGalleryGeminiAi,
+} from "@/lib/aiDescription";
 import { getCategoryDetails } from "@/lib/categories";
 import { generateCharacterTranslations, generateCharacterSeoDescription } from "@/lib/characterAi";
+import { analyzeMovieHotKeywords } from "@/lib/movieKeywordAi";
 
 // ─────────────────────────────────────────────────────────────────
 // MOVIES
@@ -1858,9 +1865,10 @@ export async function generateGalleryDescriptionAction(params: {
 export async function generateCategoryDescriptionAction(categoryName: string) {
   await verifyAdmin();
   try {
-    const details = getCategoryDetails(categoryName);
-    return { success: true, description: details.description };
+    const description = await generateCategoryAiDescription(categoryName);
+    return { success: true, description };
   } catch (error: any) {
+    console.error("Error generating category SEO description:", error);
     return { success: false, error: error.message || "Lỗi khi sinh mô tả thể loại" };
   }
 }
@@ -1889,6 +1897,65 @@ export async function generateCharacterDescriptionAction(params: {
   } catch (error: any) {
     console.error("Error generating character SEO description:", error);
     return { success: false, error: error.message || "Lỗi khi sinh mô tả nhân vật" };
+  }
+}
+
+export async function generateMovieDescriptionAction(params: {
+  name: string;
+  categoryNames?: string[];
+  authorName?: string;
+}) {
+  await verifyAdmin();
+  try {
+    const description = await generateMovieAiDescription(params);
+    return { success: true, description };
+  } catch (error: any) {
+    console.error("Error generating movie description:", error);
+    return { success: false, error: error.message || "Lỗi khi sinh mô tả phim" };
+  }
+}
+
+export async function generateAuthorDescriptionAction(authorName: string) {
+  await verifyAdmin();
+  try {
+    const description = await generateAuthorAiDescription(authorName);
+    return { success: true, description };
+  } catch (error: any) {
+    console.error("Error generating author description:", error);
+    return { success: false, error: error.message || "Lỗi khi sinh mô tả tác giả" };
+  }
+}
+
+export async function analyzeMovieHotKeywordsAction(params: {
+  name: string;
+  description?: string;
+  categoryNames?: string[];
+  authorName?: string;
+  characters?: string[];
+}) {
+  await verifyAdmin();
+  try {
+    const result = await analyzeMovieHotKeywords(params);
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error("Error analyzing movie hot keywords:", error);
+    return { success: false, error: error.message || "Lỗi khi phân tích từ khóa hot thực tế" };
+  }
+}
+
+export async function generateGalleryGeminiAiAction(params: {
+  characterNames: string[];
+  movieName?: string;
+  existingTitles?: string[];
+  currentTitle?: string;
+}) {
+  await verifyAdmin();
+  try {
+    const result = await generateGalleryGeminiAi(params);
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error("Error generating gallery Gemini AI:", error);
+    return { success: false, error: error.message || "Lỗi khi gọi Gemini AI sinh tiêu đề và mô tả" };
   }
 }
 
