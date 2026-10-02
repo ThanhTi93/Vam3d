@@ -4,14 +4,16 @@ import * as schema from "./schema";
 
 const cfSymbol = Symbol.for("__cloudflare-context__");
 
-function getDbConfig(): { connStr: string; isHyperdrive: boolean; isCloudflare: boolean } {
+function getDbConfig(): { connStr: string; isHyperdrive: boolean; isCloudflare: boolean; useSsl: boolean } {
   try {
     const cf = (globalThis as any)[cfSymbol];
     if (cf?.env?.HYPERDRIVE?.connectionString) {
-      return { connStr: cf.env.HYPERDRIVE.connectionString, isHyperdrive: true, isCloudflare: true };
+      return { connStr: cf.env.HYPERDRIVE.connectionString, isHyperdrive: true, isCloudflare: true, useSsl: false };
     }
     if (cf?.env?.DATABASE_URL) {
-      return { connStr: cf.env.DATABASE_URL, isHyperdrive: false, isCloudflare: true };
+      const connStr = cf.env.DATABASE_URL;
+      const useSsl = connStr.includes("sslmode=require") || connStr.includes("supabase.com");
+      return { connStr, isHyperdrive: false, isCloudflare: true, useSsl };
     }
   } catch {}
 
@@ -22,8 +24,10 @@ function getDbConfig(): { connStr: string; isHyperdrive: boolean; isCloudflare: 
 
   const connStr =
     process.env.DATABASE_URL ||
-    "postgresql://postgres.qgvklbzwwbzswpivvgsm:149162536Ti%40@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres";
-  return { connStr, isHyperdrive: !connStr.includes("supabase.com"), isCloudflare };
+    "postgresql://vam3d_user:141200Ti%40@51.79.241.5:5432/vam3d";
+  const isHyperdrive = isCloudflare && !connStr.includes("51.79.241.5") && !connStr.includes("localhost");
+  const useSsl = connStr.includes("sslmode=require") || connStr.includes("supabase.com");
+  return { connStr, isHyperdrive, isCloudflare, useSsl };
 }
 
 // Global cache for Node.js / dev / build singleton connection pool
@@ -42,7 +46,7 @@ let cfCachedDb: ReturnType<typeof drizzle<typeof schema>> | null = null;
 let cfCachedConnStr: string = "";
 
 export function getDb() {
-  const { connStr, isHyperdrive, isCloudflare } = getDbConfig();
+  const { connStr, isHyperdrive, isCloudflare, useSsl } = getDbConfig();
 
   if (isCloudflare) {
     // In Cloudflare Workers isolate:
@@ -53,7 +57,7 @@ export function getDb() {
       cfCachedClient = postgres(connStr, {
         prepare: false,
         fetch_types: false,
-        ssl: isHyperdrive ? false : { rejectUnauthorized: false },
+        ssl: isHyperdrive ? false : (useSsl ? { rejectUnauthorized: false } : false),
         max: 2, // Conservative pool per Cloudflare Worker isolate
         idle_timeout: null as any, // Eliminates background timers (fixes Error 1101)
         connect_timeout: 10,
@@ -70,13 +74,12 @@ export function getDb() {
 
   // In Node.js (next build, next dev, SSR, scripts):
   // Maintain a persistent singleton pool of at most 5 connections.
-  // This guarantees build & dev NEVER exceed Supabase's 200 client limit.
   if (!globalThis.__drizzleDb__ || globalThis.__dbConnStr__ !== connStr) {
     globalThis.__dbConnStr__ = connStr;
     globalThis.__postgresClient__ = postgres(connStr, {
       prepare: false,
       fetch_types: false,
-      ssl: isHyperdrive ? false : { rejectUnauthorized: false },
+      ssl: isHyperdrive ? false : (useSsl ? { rejectUnauthorized: false } : false),
       max: 5, // At most 5 concurrent connections across the entire Node process
       idle_timeout: 20, // Reclaim idle connections after 20s
       connect_timeout: 10,
