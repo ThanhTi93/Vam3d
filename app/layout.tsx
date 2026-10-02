@@ -9,6 +9,7 @@ import JsonLd from "./components/JsonLd";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import TrafficTracker from "@/components/TrafficTracker";
+import AdsterraSocialBar from "@/components/AdsterraSocialBar";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -142,6 +143,9 @@ export default function RootLayout({
               {children}
             </div>
             <Footer />
+            <Suspense fallback={null}>
+              <AdsterraSocialBar />
+            </Suspense>
           </WatchlistProvider>
         </AuthProvider>
         <Script
