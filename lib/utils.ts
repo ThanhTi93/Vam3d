@@ -17,20 +17,14 @@ export function getBunnyImageUrl(
   }
 
   let processedUrl = url.trim();
-  const cdnUrl = (process.env.NEXT_PUBLIC_BUNNY_CDN_URL || "https://vam3d.b-cdn.net").replace(/\/$/, "");
+  const cdnUrl = (process.env.NEXT_PUBLIC_BUNNY_CDN_URL || "https://cdn.vam3dhentai.online").replace(/\/$/, "");
 
   // Handle leading protocol-relative //
   if (processedUrl.startsWith("//")) {
     processedUrl = `https:${processedUrl}`;
   }
 
-  // Replace old custom domains with current cdnUrl
-  processedUrl = processedUrl.replace(/https?:\/\/cdn\.vam3dhentai\.online/gi, cdnUrl);
-  processedUrl = processedUrl.replace(/^cdn\.vam3dhentai\.online/gi, cdnUrl);
-  processedUrl = processedUrl.replace(/https?:\/\/[a-zA-Z0-9._-]*vam3dhentai\.online\/cdn/gi, cdnUrl);
-  processedUrl = processedUrl.replace(/https?:\/\/(?:www\.)?vam3dhentai\.online\/(movies|episodes|characters|avatars|gallery|images|banners|storage)\//gi, `${cdnUrl}/$1/`);
-
-  // Replace any *.b-cdn.net hostnames with current cdnUrl
+  // Ensure all images are served from the active cdnUrl
   processedUrl = processedUrl.replace(/https?:\/\/[a-zA-Z0-9._-]*b-cdn\.net/gi, cdnUrl);
   processedUrl = processedUrl.replace(/^[a-zA-Z0-9._-]*b-cdn\.net/gi, cdnUrl);
 
