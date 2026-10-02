@@ -106,7 +106,7 @@ export default function VideoPlayer({
     }
   }, [progressKey]);
 
-  const streamHost = process.env.NEXT_PUBLIC_BUNNY_STREAM_HOST || "stream.vam3dhentai.online";
+  const streamHost = process.env.NEXT_PUBLIC_BUNNY_STREAM_HOST || "vz-df52fbd4-040.b-cdn.net";
   
   // Prioritize custom domain Bunny HLS stream if bunnyVideoId is present
   let effectiveSrc = bunnyVideoId
@@ -123,6 +123,7 @@ export default function VideoPlayer({
     } else if (effectiveSrc.includes("b-cdn.net")) {
       effectiveSrc = effectiveSrc.replace(/https?:\/\/[a-zA-Z0-9._-]*b-cdn\.net/gi, `https://${streamHost}`);
     }
+    effectiveSrc = effectiveSrc.replace(/https?:\/\/stream\.vam3dhentai\.online/gi, `https://${streamHost}`);
   }
 
   // Setup HLS / Video source (for direct MP4 / Bunny HLS stream)

@@ -24,7 +24,13 @@ export function getBunnyImageUrl(
     processedUrl = `https:${processedUrl}`;
   }
 
-  // Replace any *.b-cdn.net hostnames with custom CDN domain
+  // Replace old custom domains with current cdnUrl
+  processedUrl = processedUrl.replace(/https?:\/\/cdn\.vam3dhentai\.online/gi, cdnUrl);
+  processedUrl = processedUrl.replace(/^cdn\.vam3dhentai\.online/gi, cdnUrl);
+  processedUrl = processedUrl.replace(/https?:\/\/[a-zA-Z0-9._-]*vam3dhentai\.online\/cdn/gi, cdnUrl);
+  processedUrl = processedUrl.replace(/https?:\/\/(?:www\.)?vam3dhentai\.online\/(movies|episodes|characters|avatars|gallery|images|banners|storage)\//gi, `${cdnUrl}/$1/`);
+
+  // Replace any *.b-cdn.net hostnames with current cdnUrl
   processedUrl = processedUrl.replace(/https?:\/\/[a-zA-Z0-9._-]*b-cdn\.net/gi, cdnUrl);
   processedUrl = processedUrl.replace(/^[a-zA-Z0-9._-]*b-cdn\.net/gi, cdnUrl);
 
