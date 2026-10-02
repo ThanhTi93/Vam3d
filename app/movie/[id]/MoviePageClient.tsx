@@ -19,6 +19,7 @@ import { HomeGalleryCard } from "@/components/GalleryComponents";
 import VideoPlayer from "@/components/VideoPlayer";
 import MovieComments from "@/components/movie/MovieComments";
 import CultivationLoginNotice from "@/components/ranking/CultivationLoginNotice";
+import AdBanner300x250 from "@/components/AdBanner300x250";
 
 interface MoviePageClientProps {
   movie: any;
@@ -424,6 +425,9 @@ export default function MoviePageClient({
               </Button>
             </div>
 
+            {/* Banner 300x250 Adsterra */}
+            <AdBanner300x250 adKey={`movie-${movie.id}-ep-${activeEpisode}`} />
+
             {/* AI Galleries Section inside Player View */}
             {movie.aiGalleries && movie.aiGalleries.length > 0 && (
               <div className="space-y-4 pt-5 border-t border-white/5 animate-in fade-in duration-300">
@@ -638,6 +642,9 @@ export default function MoviePageClient({
               </div>
             </div>
           )}
+
+          {/* Banner 300x250 Adsterra */}
+          <AdBanner300x250 adKey={`movie-${movie.id}-overview`} />
 
           {/* ─── BỘ SƯU TẬP AI CỦA PHIM (SEO OPTIMIZED SECTION) ─── */}
           {movie.aiGalleries && movie.aiGalleries.length > 0 && (

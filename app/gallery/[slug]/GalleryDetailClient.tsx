@@ -27,6 +27,7 @@ import { incrementGalleryViews } from "@/app/admin/actions";
 import { HomeGalleryCard, HomeGalleryLightbox } from "@/components/GalleryComponents";
 import MovieComments from "@/components/movie/MovieComments";
 import CultivationLoginNotice from "@/components/ranking/CultivationLoginNotice";
+import AdBanner300x250 from "@/components/AdBanner300x250";
 
 interface GalleryDetailClientProps {
   gallery: any;
@@ -241,6 +242,9 @@ export default function GalleryDetailClient({
             </div>
           </div>
         )}
+
+        {/* Banner 300x250 Adsterra */}
+        <AdBanner300x250 adKey={`gallery-${gallery.id}`} />
 
         {/* Images Grid Section */}
         <div className="space-y-4">

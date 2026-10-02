@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/app/context/AuthContext";
 import MovieComments from "@/components/movie/MovieComments";
 import CultivationLoginNotice from "@/components/ranking/CultivationLoginNotice";
+import AdBanner300x250 from "@/components/AdBanner300x250";
 
 interface CharacterDetailPageClientProps {
   data: {
@@ -206,6 +207,9 @@ export default function CharacterDetailPageClient({ data }: CharacterDetailPageC
           </div>
         </div>
       </section>
+
+      {/* Banner 300x250 Adsterra */}
+      <AdBanner300x250 adKey={`character-${character.id}`} />
 
       {/* ─── SECTION 1: EPISODES FEATURING THIS CHARACTER ─── */}
       <section id="tap-phim" className="space-y-6 pt-4 scroll-mt-24">

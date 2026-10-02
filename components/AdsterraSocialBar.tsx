@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 
 const ADSTERRA_SOCIAL_BAR_SRC =
@@ -9,8 +9,9 @@ const ADSTERRA_SOCIAL_BAR_SRC =
 
 export default function AdsterraSocialBar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
-  const loadedRef = useRef(false);
+  const lastUrlRef = useRef<string>("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -31,17 +32,20 @@ export default function AdsterraSocialBar() {
       return;
     }
 
-    // 4. Nếu đã nạp script rồi thì không nạp lại
-    if (loadedRef.current) return;
+    const currentUrl = `${pathname}?${searchParams?.toString() || ""}`;
+    if (lastUrlRef.current === currentUrl) return;
+    lastUrlRef.current = currentUrl;
 
-    // 5. Lazy-load thông minh: Đợi 3.5 giây sau khi trang tải xong hoặc đợi người dùng tương tác đầu tiên
+    let timer: NodeJS.Timeout;
+
+    // 4. Kích hoạt quảng cáo khi người dùng vào tập phim, đổi tập phim, vào bộ sưu tập ảnh, hoặc diễn viên/nhân vật
     const injectScript = () => {
-      if (loadedRef.current) return;
-      loadedRef.current = true;
-
-      // Kiểm tra nếu script đã tồn tại trong DOM
-      if (document.querySelector(`script[src="${ADSTERRA_SOCIAL_BAR_SRC}"]`)) {
-        return;
+      // Dọn dẹp script cũ nếu có để re-trigger mượt mà trên trang / tập phim mới
+      const existingScript = document.querySelector(
+        `script[src*="profitableratecpmnetwork.com"], script[src*="f5225b580cef96483ffa330d0aa0a444.js"]`
+      );
+      if (existingScript) {
+        existingScript.remove();
       }
 
       const script = document.createElement("script");
@@ -50,7 +54,6 @@ export default function AdsterraSocialBar() {
       script.setAttribute("data-cfasync", "false"); // Tương thích Cloudflare
       document.head.appendChild(script);
 
-      // Dọn dẹp listener tương tác
       window.removeEventListener("scroll", onFirstInteraction);
       window.removeEventListener("touchstart", onFirstInteraction);
       window.removeEventListener("click", onFirstInteraction);
@@ -65,8 +68,8 @@ export default function AdsterraSocialBar() {
     window.addEventListener("touchstart", onFirstInteraction, { passive: true, once: true });
     window.addEventListener("click", onFirstInteraction, { passive: true, once: true });
 
-    // Fallback: Tự động nạp sau 3.5s nếu người dùng không cuộn
-    const timer = setTimeout(injectScript, 3500);
+    // Tự động nạp sau 3 giây nếu người dùng chưa tương tác
+    timer = setTimeout(injectScript, 3000);
 
     return () => {
       clearTimeout(timer);
@@ -74,7 +77,7 @@ export default function AdsterraSocialBar() {
       window.removeEventListener("touchstart", onFirstInteraction);
       window.removeEventListener("click", onFirstInteraction);
     };
-  }, [pathname, user]);
+  }, [pathname, searchParams, user]);
 
   return null;
 }
