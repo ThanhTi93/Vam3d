@@ -17,7 +17,7 @@ export function getBunnyImageUrl(
   }
 
   let processedUrl = url.trim();
-  const cdnUrl = (process.env.NEXT_PUBLIC_BUNNY_CDN_URL || "https://cdn.vam3dhentai.online").replace(/\/$/, "");
+  const cdnUrl = (process.env.NEXT_PUBLIC_BUNNY_CDN_URL || "https://vam3d.b-cdn.net").replace(/\/$/, "");
 
   // Handle leading protocol-relative //
   if (processedUrl.startsWith("//")) {

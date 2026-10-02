@@ -35,7 +35,7 @@ export default (phase: string) => {
           },
         ];
 
-        const bunnyCdnUrl = process.env.NEXT_PUBLIC_BUNNY_CDN_URL || "https://cdn.vam3dhentai.online";
+        const bunnyCdnUrl = process.env.NEXT_PUBLIC_BUNNY_CDN_URL || "https://vam3d.b-cdn.net";
         if (bunnyCdnUrl) {
           try {
             const urlObj = new URL(bunnyCdnUrl);
