@@ -3,8 +3,20 @@ import { getGalleriesPublicPaginated, getGalleryFilterOptions } from "@/lib/db/q
 import GalleryPageClient from "./GalleryPageClient";
 
 export const metadata: Metadata = {
-  title: "Bộ Sưu Tập Ảnh AI Độc Quyền | Vam3D",
-  description: "Khám phá kho bộ sưu tập ảnh nhân vật AI, Cosplay chất lượng cao từ các bộ phim bom tấn độc quyền chỉ có tại Vam3D.",
+  title: "Kho Ảnh 3D 18+, Ảnh Sex Vam 3D Hentai Cực Nét 4K | Vam3D",
+  description: "Tổng hợp các bộ sưu tập ảnh 3D 18+, ảnh sex Vam 3D, cosplay AI Hentai 3D Trung Quốc các mỹ nhân hoạt hình sắc nét 4K không che độc quyền tại Vam3D Hentai.",
+  keywords: [
+    "anh sex vam 3d",
+    "anh 18+ 3d",
+    "anh sex 3d",
+    "vam 3d hentai",
+    "vam3d sex",
+    "hentai 3d trung quoc",
+    "hhtq 3d",
+    "anh ai 18+",
+    "cosplay ai 3d",
+    "vam3d",
+  ],
 };
 
 export const revalidate = 3600;

@@ -261,6 +261,7 @@ export interface GenerateGalleryGeminiParams {
   characterNames: string[];
   movieName?: string;
   existingTitles?: string[];
+  existingSlugs?: string[];
   currentTitle?: string;
 }
 
@@ -304,17 +305,95 @@ export const GALLERY_SEO_STYLES = [
   "18+ Táo Bạo Không Che (Uncensored Hardcore Art) – Phá vỡ mọi giới hạn, phô diễn trọn vẹn nét đẹp gợi cảm không che"
 ];
 
+export const GALLERY_HOT_KEYS_TITLES = [
+  "hentai 3d",
+  "hentai 3d trung quoc",
+  "anh 3d 18+",
+  "anh sex 3d",
+  "anh 3d khong che",
+  "anh hentai 3d",
+  "cosplay 3d 18+",
+  "sex 3d khong che",
+  "hoat hinh 3d 18+",
+  "phim hentai 3d",
+  "vam 3d hentai",
+  "hentai 3d vietsub",
+  "anh nude 3d",
+  "anh 3d 18+ 4k",
+  "anh sex 3d trung quoc",
+  "bo suu tap anh 3d 18+",
+  "khong che 4k",
+  "anh 3d cuc net",
+  "anh cosplay 3d 18+",
+  "vam 3d khong che",
+  "sex 3d",
+  "phim sex 3d",
+  "hentai 3d khong che",
+  "anh sex vam 3d",
+];
+
+export function formatGalleryTitleByHotKey(charText: string, hotKey: string): string {
+  const cleanChar = (charText || "").trim();
+  const cleanKey = (hotKey || "hentai 3d").trim();
+
+  if (cleanChar) {
+    return `${cleanChar} ${cleanKey} | Vam 3D Hentai 4K`;
+  }
+  return `${cleanKey} | Vam 3D Hentai 4K`;
+}
+
+export const EPISODE_HOT_KEYS = [
+  "hentai 3d",
+  "hentai 3d vietsub",
+  "hentai 3d vietsub 4k",
+  "phim sex 3d vietsub",
+  "phim sex 3d 4k",
+  "hentai 3d thuyet minh",
+  "hoat hinh 3d 18+",
+  "hentai 3d khong che",
+  "phim hentai 3d",
+  "sex 3d khong che",
+  "hentai 3d vietsub full hd",
+  "video hentai 3d khong che",
+  "hentai 3d trung quoc",
+  "phim sex 3d",
+  "hentai 3d cuc net",
+];
+
+export function formatStandardEpisodeTitle(charText: string, hotKey: string): string {
+  const cleanChar = (charText || "").trim();
+  const cleanKey = (hotKey || "hentai 3d vietsub").trim();
+
+  if (cleanChar) {
+    return `${cleanChar} ${cleanKey} | Vam 3D Hentai 4K`;
+  }
+  return `${cleanKey} | Vam 3D Hentai 4K`;
+}
+
 /**
  * Truly generative Gemini AI Title, Hot Keys & SEO Description Generator for Galleries
  * Guarantees creative, diverse, and 100% non-duplicate content directly from Gemini AI
  */
 export async function generateGalleryGeminiAi(params: GenerateGalleryGeminiParams): Promise<GalleryGeminiResult> {
-  const { characterNames, movieName, existingTitles = [], currentTitle } = params;
+  const { characterNames, movieName, existingTitles = [], existingSlugs = [], currentTitle } = params;
   const charText = characterNames.length > 0 ? characterNames.join(", ") : "Mỹ nhân 3D";
   const movieContext = movieName ? ` thuộc tác phẩm "${movieName}"` : "";
-  
-  // Pick a random style angle from 30 styles to guarantee distinct creative direction on every click
-  const randomStyle = GALLERY_SEO_STYLES[Math.floor(Math.random() * GALLERY_SEO_STYLES.length)];
+
+  const existingTitleSet = new Set(existingTitles.map(t => t.toLowerCase().trim()));
+  const existingSlugSet = new Set(existingSlugs.map(s => s.toLowerCase().trim()));
+
+  // Pick an unused hot key that does not match currentTitle AND does not already exist in database (neither title nor slug)
+  const unusedKeys = GALLERY_HOT_KEYS_TITLES.filter(k => {
+    const candidateTitle = formatGalleryTitleByHotKey(charText, k);
+    const candidateSlug = slugify(candidateTitle);
+    const isCurrent = currentTitle && currentTitle.toLowerCase().includes(k.toLowerCase());
+    const isDuplicateTitle = existingTitleSet.has(candidateTitle.toLowerCase().trim());
+    const isDuplicateSlug = existingSlugSet.has(candidateSlug);
+    return !isCurrent && !isDuplicateTitle && !isDuplicateSlug;
+  });
+
+  const pool = unusedKeys.length > 0 ? unusedKeys : GALLERY_HOT_KEYS_TITLES;
+  const randomHotKey = pool[Math.floor(Math.random() * pool.length)];
 
   // Deduplicate and filter existing titles
   const allExisting = Array.from(new Set([...existingTitles, ...(currentTitle ? [currentTitle] : [])]))
@@ -323,36 +402,48 @@ export async function generateGalleryGeminiAi(params: GenerateGalleryGeminiParam
   const existingListStr = allExisting.map(t => `- "${t}"`).join("\n");
 
   const regenerateDirective = currentTitle
-    ? `\n⚠️ ĐẶC BIỆT CHÚ Ý (NGƯỜI DÙNG BẤM TẠO LẠI ĐỂ TÌM Ý TƯỞNG MỚI LẠ):
+    ? `\n⚠️ ĐẶC BIỆT CHÚ Ý (NGƯỜI DÙNG BẤM TẠO LẠI ĐỂ ĐỔI HOT KEY KHÁC):
 - Tiêu đề hiện tại đang có là: "${currentTitle}".
-- BẠN BẮT BUỘC PHẢI THAY ĐỔI TOÀN DIỆN: Đổi cấu trúc câu, đổi từ ngữ mở đầu, đổi phong cách thần thái sang hướng khác hẳn (ví dụ: nếu trước đó là "Cosplay 18+..." thì lần này đổi sang "Bộ Ảnh Bikini...", "Tuyệt Sắc Nữ Vương...", "Đường Cong Nghẹt Thở...", "Khoảnh Khắc Táo Bạo...", "Ren Mỏng Phòng Ngủ..."). Tuyệt đối không dập khuôn theo tiêu đề cũ!`
+- BẠN BẮT BUỘC PHẢI THAY ĐỔI [Hot Key] SANG MỘT TỪ KHÓA KHÁC HOÀN TOÀN (gợi ý lần này: "${randomHotKey}"). Tuyệt đối không giữ nguyên từ khóa cũ!`
     : "";
 
-  const prompt = `Bạn là Trí tuệ Nhân tạo Google Gemini - Giám đốc Sáng tạo và chuyên gia SEO số 1 cho nền tảng Ảnh AI 3D, Cosplay 18+, Donghua Waifu - Vam3D (Vam 3D).
+  const expectedSample = formatGalleryTitleByHotKey(charText, randomHotKey);
+
+  const prompt = `Bạn là Trí tuệ Nhân tạo Google Gemini - Chuyên gia SEO số 1 cho nền tảng Ảnh AI 3D, Hentai 3D Trung Quốc - Vam3D (Vam 3D).
 
 Thông tin yêu cầu tạo bộ sưu tập:
 - Nhân vật: ${charText}
 ${movieContext}
-- Hướng phong cách nghệ thuật gợi ý cho lần tạo này: ${randomStyle}
+- Từ khóa Hot Key gợi ý lần này: "${randomHotKey}"
 ${regenerateDirective}
 
-🎯 NHIỆM VỤ CỦA BẠN LÀ TỰ DO SÁNG TẠO NỘI DUNG ĐỘC NHẤT (KHÔNG DẬP KHUÔN, KHÔNG GHÉP TỪ MÁY MÓC):
-1. "title": Hãy thỏa sức sáng tạo một Tiêu đề Bộ sưu tập ảnh AI cực kỳ cuốn hút, giật tít thị giác mạnh mẽ, tôn vinh thần thái nhân vật ${charText} theo hướng phong cách "${randomStyle}".
-- Đa dạng hóa linh hoạt cấu trúc tiêu đề: có thể bắt đầu bằng tên nhân vật, hoặc bằng tính từ/chủ đề giật tít (vd: "Tuyệt Sắc...", "Bikini Siêu Nóng Bỏng...", "Đường Cong...", "Khoảnh Khắc...", "Ren Mỏng...", "[Tên Nhân Vật] – Nữ Đế...", v.v.).
-- Khéo léo chứa các từ khóa SEO đắt giá (như Cosplay 18+, Ảnh Sex AI 3D, 4K, Waifu Gợi Cảm, Không Che, Nữ Đế, Bikini...) và kết thúc bằng hậu tố thương hiệu Vam3D.
-- ⚠️ QUY TẮC SỐNG CÒN: Tiêu đề TUYỆT ĐỐI KHÔNG ĐƯỢC TRÙNG HOẶC TƯƠNG TỰ CẤU TRÚC với các tiêu đề đã có sau đây:
+🎯 NHIỆM VỤ BẮT BUỘC (TUÂN THỦ 100% CẤU TRÚC VÀNG SEO GOOGLE):
+1. "title": BẮT BUỘC ĐÚNG ĐỊNH DẠNG:
+[Tên Nhân Vật] [Hot Key] | Vam 3D Hentai 4K
+
+Ví dụ chuẩn mẫu (TUYỆT ĐỐI KHÔNG DÙNG DẤU GẠCH NGANG "–", ĐỘ DÀI DƯỚI 60 KÝ TỰ):
+"${expectedSample}"
+"${charText ? `${charText} hentai 3d | Vam 3D Hentai 4K` : `hentai 3d | Vam 3D Hentai 4K`}"
+"${charText ? `${charText} anh 3d 18+ | Vam 3D Hentai 4K` : `anh 3d 18+ | Vam 3D Hentai 4K`}"
+"${charText ? `${charText} anh sex 3d | Vam 3D Hentai 4K` : `anh sex 3d | Vam 3D Hentai 4K`}"
+"${charText ? `${charText} hentai 3d trung quoc | Vam 3D Hentai 4K` : `hentai 3d trung quoc | Vam 3D Hentai 4K`}"
+"${charText ? `${charText} anh 3d khong che | Vam 3D Hentai 4K` : `anh 3d khong che | Vam 3D Hentai 4K`}"
+
+⚠️ QUY TẮC SỐNG CÒN:
+- Cấu trúc tiêu đề: Tên Nhân Vật đứng đầu, tiếp theo là khoảng trắng rồi đến 1 Hot Key trong danh sách, kết thúc bằng "| Vam 3D Hentai 4K".
+- TUYỆT ĐỐI KHÔNG có dấu gạch ngang "–", KHÔNG thêm từ ngữ miêu tả như "Áo Sơ Mi", "Bung Cúc", "Cổ Trang", "Gợi Cảm", "Nội Y"...
+- Độ dài tiêu đề: Bắt buộc từ 35 đến 58 ký tự (tuyệt đối không dài quá 60 ký tự)!
+- Tiêu đề TUYỆT ĐỐI KHÔNG ĐƯỢC TRÙNG VỚI:
 ${existingListStr || "(Chưa có tiêu đề trùng lặp)"}
 
-2. "slug": Đường dẫn URL không dấu chuẩn SEO tương ứng.
+2. "slug": Đường dẫn URL không dấu chuẩn SEO tương ứng (ngắn gọn, theo title).
 
-3. "hotKeys": Mảng từ 25 đến 30 từ khóa hot search thực tế chuẩn SEO (Google Trends, Ahrefs, tìm kiếm phổ biến nhất) bao quát:
-- Tên nhân vật, phim, phiên âm (vd: "${charText}", "${charText} 3D", "${charText} cosplay", "${movieName || 'hoạt hình 3D'}", v.v.)
-- Từ khóa định dạng & độ phân giải (vd: "4K", "Full HD", "siêu nét", "không watermark", "không che", "uncensored")
-- Từ khóa thể loại hot (vd: "Cosplay 18+", "Ảnh Sex AI 3D", "Waifu gợi cảm", "Donghua 18+", "Hentai 3D Trung Quốc", "Sex AI Vietsub", "Mỹ nhân 3D", "Ngự tỷ", v.v.)
-- Từ khóa theo phong cách (${randomStyle})
-- Hậu tố thương hiệu ("Vam3D", "Vam 3D", v.v.)
+3. "hotKeys": Mảng từ 25 đến 30 từ khóa chuẩn theo dữ liệu Google Search Console thực tế:
+- BẮT BUỘC ĐÚNG THỨ TỰ [Tên Nhân Vật] + [Hot Key]: "${charText}", "${charText} 3D", "${charText} 18+", "${charText} 4K", "${charText} không che", "${charText} ảnh 3d 18+", "${charText} ảnh sex 3d", "${charText} ảnh hentai 3d", "${charText} sex 3d", "${charText} hentai 3d", "${charText} hentai 3d trung quoc", "${charText} hoat hinh 3d 18+", "${charText} vam 3d", "${charText} cosplay 18+"
+- "anh 3d 18+", "anh sex 3d", "anh hentai 3d", "anh 3d khong che", "anh cosplay 3d 18+", "bo suu tap anh 3d 18+", "vam 3d hentai", "vam 3d hentai 4k", "hentai 3d trung quoc", "vam3d", "4K", "không che", "cực nét 4K"
 
-4. "description": Tự viết đoạn mô tả 2 đến 3 câu (60 đến 85 từ) chuẩn SEO Google bám sát trực tiếp vào tiêu đề và phong cách vừa tạo, giọng văn kích thích thị giác, nhấn mạnh độ phân giải 4K siêu nét, không watermark độc quyền tại Vam3D và kêu gọi xem trọn bộ.
+4. "description": Viết đoạn mô tả 2 đến 3 câu (60 đến 80 từ) chuẩn SEO Google:
+"Xem trọn bộ ảnh sex Vam 3D, ảnh 3D 18+ ${charText} cực nét chuẩn 4K không che độc quyền chỉ có tại Vam 3D Hentai. Từng góc ảnh tôn vinh thần thái quyến rũ đỉnh cao${movieName ? ` trong tác phẩm ${movieName}` : ""}. Khám phá ngay!"
 
 CHỈ TRẢ VỀ ĐÚNG ĐỊNH DẠNG JSON HỢP LỆ:
 {
@@ -365,15 +456,48 @@ CHỈ TRẢ VỀ ĐÚNG ĐỊNH DẠNG JSON HỢP LỆ:
   try {
     const aiResult = await callGeminiJson<GalleryGeminiResult>({
       prompt,
-      systemInstruction: "Bạn là Gemini AI sáng tạo tiêu đề và mô tả SEO nghệ thuật 3D Cosplay 18+ độc quyền cho Vam3D. Mỗi lần sinh phải mang một phong cách và cấu trúc tiêu đề hoàn toàn mới lạ. Luôn trả về đúng 25 đến 30 từ khóa hot search trong mảng hotKeys. Luôn trả về JSON hợp lệ.",
-      temperature: 1.0,
+      systemInstruction: "Bạn là Gemini AI sáng tạo tiêu đề SEO chuẩn Google tối đa 58 ký tự cho Vam3D theo đúng cấu trúc: [Tên Nhân Vật] [Hot Key] | Vam 3D Hentai 4K (không có dấu gạch ngang –). Luôn trả về đúng 25 đến 30 từ khóa hotKeys theo thứ tự [Tên Nhân Vật] + [Hot Key]. Luôn trả về JSON hợp lệ.",
+      temperature: 0.9,
       maxTokens: 1500,
     });
 
     if (aiResult && aiResult.title && aiResult.description) {
+      const cleanRawTitle = aiResult.title.replace(/^["']|["']$/g, "").trim();
+      const hasDash = cleanRawTitle.includes("–") || cleanRawTitle.includes(" - ");
+      const endsWithBrand = cleanRawTitle.endsWith("| Vam 3D Hentai 4K");
+      const isUnder60 = cleanRawTitle.length <= 60;
+      const isDuplicateTitle = existingTitleSet.has(cleanRawTitle.toLowerCase().trim());
+      const isDuplicateSlug = existingSlugSet.has(slugify(cleanRawTitle));
+      const isExpectedPattern = !hasDash && endsWithBrand && isUnder60 && !isDuplicateTitle && !isDuplicateSlug;
+
+      let safeTitle = isExpectedPattern
+        ? cleanRawTitle
+        : formatGalleryTitleByHotKey(charText, randomHotKey);
+
+      let safeSlug = slugify(safeTitle);
+
+      // If safeTitle or safeSlug already exists in DB, find any non-duplicate hot key
+      if (existingTitleSet.has(safeTitle.toLowerCase().trim()) || existingSlugSet.has(safeSlug)) {
+        const nonDupKey = GALLERY_HOT_KEYS_TITLES.find(k => {
+          const t = formatGalleryTitleByHotKey(charText, k);
+          return !existingTitleSet.has(t.toLowerCase().trim()) && !existingSlugSet.has(slugify(t));
+        });
+        if (nonDupKey) {
+          safeTitle = formatGalleryTitleByHotKey(charText, nonDupKey);
+          safeSlug = slugify(safeTitle);
+        } else {
+          let part = 2;
+          while (existingTitleSet.has(`${charText} Part ${part} hentai 3d | Vam 3D Hentai 4K`.toLowerCase()) || existingSlugSet.has(slugify(`${charText} Part ${part} hentai 3d | Vam 3D Hentai 4K`))) {
+            part++;
+          }
+          safeTitle = `${charText} Part ${part} hentai 3d | Vam 3D Hentai 4K`;
+          safeSlug = slugify(safeTitle);
+        }
+      }
+
       return {
-        title: aiResult.title.replace(/^["']|["']$/g, "").trim(),
-        slug: aiResult.slug || slugify(aiResult.title),
+        title: safeTitle,
+        slug: aiResult.slug && !existingSlugSet.has(aiResult.slug) ? aiResult.slug : safeSlug,
         hotKeys: Array.isArray(aiResult.hotKeys) && aiResult.hotKeys.length >= 10 ? aiResult.hotKeys : buildDefaultHotKeys(charText, movieName),
         description: aiResult.description.replace(/^["']|["']$/g, "").trim(),
       };
@@ -383,10 +507,30 @@ CHỈ TRẢ VỀ ĐÚNG ĐỊNH DẠNG JSON HỢP LỆ:
   }
 
   // Fallback to algorithmic synthesizer if Gemini is unavailable
-  const fallbackTitle = `Cosplay 18+ ${charText} ${movieName ? `(${movieName}) ` : ""}– Vẻ Đẹp Tuyệt Mỹ | Ảnh Sex AI 3D 4K Vam3D`;
+  let fallbackTitle = formatGalleryTitleByHotKey(charText, randomHotKey);
+  let fallbackSlug = slugify(fallbackTitle);
+
+  if (existingTitleSet.has(fallbackTitle.toLowerCase().trim()) || existingSlugSet.has(fallbackSlug)) {
+    const nonDupKey = GALLERY_HOT_KEYS_TITLES.find(k => {
+      const t = formatGalleryTitleByHotKey(charText, k);
+      return !existingTitleSet.has(t.toLowerCase().trim()) && !existingSlugSet.has(slugify(t));
+    });
+    if (nonDupKey) {
+      fallbackTitle = formatGalleryTitleByHotKey(charText, nonDupKey);
+      fallbackSlug = slugify(fallbackTitle);
+    } else {
+      let part = 2;
+      while (existingTitleSet.has(`${charText} Part ${part} hentai 3d | Vam 3D Hentai 4K`.toLowerCase()) || existingSlugSet.has(slugify(`${charText} Part ${part} hentai 3d | Vam 3D Hentai 4K`))) {
+        part++;
+      }
+      fallbackTitle = `${charText} Part ${part} hentai 3d | Vam 3D Hentai 4K`;
+      fallbackSlug = slugify(fallbackTitle);
+    }
+  }
+
   return {
     title: fallbackTitle,
-    slug: slugify(fallbackTitle),
+    slug: fallbackSlug,
     hotKeys: buildDefaultHotKeys(charText, movieName),
     description: generateAlgorithmicSeoDescription({
       title: fallbackTitle,
@@ -398,16 +542,51 @@ CHỈ TRẢ VỀ ĐÚNG ĐỊNH DẠNG JSON HỢP LỆ:
 
 function buildDefaultHotKeys(charText: string, movieName?: string): string[] {
   return [
+    // 1. Hot keys theo dạng [Tên Nhân Vật] + [Hot Key] (Chuẩn hành vi tìm kiếm)
     `${charText}`,
     `${charText} 3D`,
-    `${charText} cosplay 18+`,
+    `${charText} 18+`,
     `${charText} 4K`,
-    `${charText} bikini`,
     `${charText} không che`,
+    `${charText} ảnh 3d 18+`,
+    `${charText} ảnh sex 3d`,
+    `${charText} ảnh hentai 3d`,
+    `${charText} sex 3d`,
+    `${charText} hentai 3d`,
+    `${charText} hentai 3d trung quoc`,
+    `${charText} hoat hinh 3d 18+`,
+    `${charText} vam 3d`,
+    `${charText} cosplay 18+`,
+    `${charText} bikini`,
     `${charText} gợi cảm`,
     `${charText} waifu`,
-    `${charText} hentai 3D`,
-    ...(movieName ? [`${movieName}`, `${movieName} 3D`, `${charText} ${movieName}`] : []),
+    `${charText} phòng ngủ`,
+    `${charText} bung cúc`,
+    `${charText} đồ ren`,
+    `${charText} lộ nội y`,
+    ...(movieName ? [`${charText} ${movieName}`, `${charText} ${movieName} 3D`] : []),
+
+    // 2. Hot keys ngách ảnh và thể loại
+    "anh 3d 18+",
+    "anh sex 3d",
+    "anh hentai 3d",
+    "anh 3d khong che",
+    "anh cosplay 3d 18+",
+    "bo suu tap anh 3d 18+",
+    "anh sex vam 3d",
+    "anh 18+ 3d",
+    "vam 3d hentai",
+    "vam 3d hentai 4k",
+    "sex vam 3d",
+    "hentai 3d trung quoc",
+    "hhtq 3d",
+    "anh ai 18+",
+    "cosplay ai 3d",
+    "vam3d",
+    "4K",
+    "không che",
+    "cực nét 4K",
+    ...(movieName ? [`${movieName}`, `${movieName} 3D`] : []),
     "Cosplay 18+",
     "Ảnh Sex AI 3D",
     "Sex AI Vietsub",

@@ -36,6 +36,29 @@ export async function generateStaticParams() {
   }
 }
 
+function formatGalleryTitle(gallery: any): string {
+  const rawTitle = gallery.name ? gallery.name.trim() : "";
+  if (rawTitle && (rawTitle.includes("| Vam 3D Hentai") || rawTitle.includes("| Vam3D"))) {
+    return rawTitle;
+  }
+
+  const charNames: string[] = (gallery.galleryCharacters || [])
+    .map((gc: any) => gc.character?.name)
+    .filter(Boolean);
+
+  if (charNames.length > 0) {
+    const mainChar = charNames[0];
+    let cleanBstName = rawTitle;
+    const regex = new RegExp(`^${mainChar}\\s*[-–—:]*\\s*`, "i");
+    cleanBstName = cleanBstName.replace(regex, "").trim();
+
+    const bstPart = cleanBstName ? ` ${cleanBstName}` : " Tuyệt Mỹ";
+    return `${mainChar} – Ảnh 3D 18+${bstPart} | Vam 3D Hentai 4K`;
+  }
+
+  return rawTitle ? `${rawTitle} | Vam 3D Hentai 4K` : `Ảnh 3D 18+ Mỹ Nhân Tuyệt Sắc | Vam 3D Hentai 4K`;
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const data = await getGalleryBySlug(slug);
@@ -53,26 +76,48 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const firstImage = gallery.images?.[0]?.imgUrl;
   const posterUrl = firstImage ? getBunnyImageUrl(firstImage, "display") : `${siteUrl}/og-image.jpg`;
 
-  const movieName = gallery.movie?.name ? ` - Phim ${gallery.movie.name}` : "";
-  const charNames = (gallery.galleryCharacters || [])
+  const title = formatGalleryTitle(gallery);
+
+  const charNames: string[] = (gallery.galleryCharacters || [])
     .map((gc: any) => gc.character?.name)
     .filter(Boolean);
-  const charText = charNames.length > 0 ? ` [${charNames.join(", ")}]` : "";
+  const charListStr = charNames.length > 0 ? `nhân vật ${charNames.join(", ")}` : "";
+  const movieStr = gallery.movie?.name ? `trong phim ${gallery.movie.name}` : "";
 
-  const title = `${gallery.name}${charText}${movieName} – Bộ Sưu Tập Ảnh AI Sắc Nét Full HD | Vam3D`;
   const description = gallery.description
-    ? `${gallery.description}${movieName ? ` Phim ${gallery.movie?.name}.` : ""} Xem trọn bộ chất lượng cao tại Vam3D.`
-    : `Khám phá bộ sưu tập ảnh AI ${gallery.name} gồm ${gallery.imageCount || gallery.images?.length || 0} ảnh chất lượng cao 4K độc quyền${movieName ? ` từ ${gallery.movie?.name}` : ""} chỉ có tại Vam3D.`;
+    ? `${gallery.description} Trọn bộ ảnh sex Vam 3D, ảnh 3D 18+ ${charListStr} ${movieStr} sắc nét 4K không che độc quyền tại Vam 3D.`
+    : `Xem trọn bộ ảnh sex Vam 3D, ảnh 3D 18+ ${charNames[0] || gallery.name} ${movieStr} gồm ${gallery.imageCount || gallery.images?.length || 0} ảnh sắc nét full HD 4K không che độc quyền tại Vam 3D Hentai.`;
 
   return {
     title,
     description,
     keywords: [
       gallery.name,
-      ...charNames,
-      ...(gallery.movie?.name ? [gallery.movie.name] : []),
-      "anh ai",
-      "bo suu tap ai",
+      ...charNames.flatMap((c) => [
+        c,
+        `anh sex ${c}`,
+        `anh hentai ${c}`,
+        `sex ${c}`,
+        `hentai ${c}`,
+        `${c} 3d`,
+      ]),
+      ...(gallery.movie?.name
+        ? [
+            gallery.movie.name,
+            `hentai ${gallery.movie.name}`,
+            `sex ${gallery.movie.name}`,
+            `anh sex ${gallery.movie.name}`,
+          ]
+        : []),
+      "anh sex vam 3d",
+      "anh 18+ 3d",
+      "anh sex 3d",
+      "hentai vam3d",
+      "vam 3d hentai",
+      "sex vam 3d",
+      "hentai 3d trung quoc",
+      "hhtq 3d",
+      "anh ai 18+",
       "cosplay ai 3d",
       "vam3d",
     ],
@@ -87,7 +132,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       images: [
         {
           url: posterUrl,
-          alt: gallery.name,
+          alt: title,
         },
       ],
     },
@@ -116,12 +161,14 @@ export default async function GalleryDetailPage({ params }: PageProps) {
   const firstImage = gallery.images?.[0]?.imgUrl;
   const posterUrl = firstImage ? getBunnyImageUrl(firstImage, "display") : `${siteUrl}/og-image.jpg`;
 
+  const galleryTitle = formatGalleryTitle(gallery);
+
   // JSON-LD ImageGallery Schema
   const jsonLdGallery = {
     "@context": "https://schema.org",
     "@type": "ImageGallery",
-    name: gallery.name,
-    description: gallery.description || `Bộ sưu tập ảnh AI ${gallery.name} gồm ${gallery.imageCount || gallery.images?.length || 0} ảnh sắc nét tại Vam3D.`,
+    name: galleryTitle,
+    description: gallery.description || `Trọn bộ ${galleryTitle} sắc nét 4K tại Vam 3D Hentai.`,
     url: galleryUrl,
     image: posterUrl,
     numberOfItems: gallery.imageCount || gallery.images?.length || 0,
@@ -129,7 +176,7 @@ export default async function GalleryDetailPage({ params }: PageProps) {
       "@type": "ImageObject",
       contentUrl: getBunnyImageUrl(img.imgUrl, "display"),
       thumbnailUrl: getBunnyImageUrl(img.imgUrl, "thumb"),
-      name: `${gallery.name} - Ảnh #${idx + 1}`,
+      name: `${galleryTitle} - Ảnh #${idx + 1}`,
     })),
   };
 

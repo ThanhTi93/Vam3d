@@ -33,6 +33,8 @@ import {
   generateMovieAiDescription,
   generateAuthorAiDescription,
   generateGalleryGeminiAi,
+  EPISODE_HOT_KEYS,
+  formatStandardEpisodeTitle,
 } from "@/lib/aiDescription";
 import { getCategoryDetails } from "@/lib/categories";
 import { generateCharacterTranslations, generateCharacterSeoDescription } from "@/lib/characterAi";
@@ -392,6 +394,21 @@ export async function createEpisode(data: {
   if (!db) throw new Error("Database not available");
   const { actorIds = [], characterIds = [], ...episodeData } = data;
 
+  if (episodeData.name) {
+    const epSlug = slugify(episodeData.name.trim());
+    const existingCheck = await db.select({ id: schema.episodes.id, name: schema.episodes.name })
+      .from(schema.episodes)
+      .where(or(
+        ilike(schema.episodes.name, episodeData.name.trim()),
+        eq(schema.episodes.slug, epSlug)
+      ))
+      .limit(1);
+
+    if (existingCheck.length > 0) {
+      throw new Error(`Tập phim "${episodeData.name}" hoặc Slug "${epSlug}" đã tồn tại trong database! Vui lòng chọn Hot Key khác.`);
+    }
+  }
+
   const [inserted] = await db.insert(schema.episodes).values({
     ...episodeData,
     slug: slugify(episodeData.name || "tap"),
@@ -447,6 +464,24 @@ export async function updateEpisode(
 
   if (!existing) {
     throw new Error("Episode not found");
+  }
+
+  if (data.name) {
+    const epSlug = slugify(data.name.trim());
+    const existingCheck = await db.select({ id: schema.episodes.id })
+      .from(schema.episodes)
+      .where(and(
+        ne(schema.episodes.id, id),
+        or(
+          ilike(schema.episodes.name, data.name.trim()),
+          eq(schema.episodes.slug, epSlug)
+        )
+      ))
+      .limit(1);
+
+    if (existingCheck.length > 0) {
+      throw new Error(`Tập phim "${data.name}" hoặc Slug "${epSlug}" đã tồn tại trên một tập phim khác trong database!`);
+    }
   }
 
   // If a new bunnyVideoId is uploaded/provided, delete the old one from Bunny Stream to avoid wasting storage
@@ -1131,6 +1166,18 @@ export async function createGallery(data: {
   const rawSlug = data.slug?.trim() || slugify(name);
   const slug = rawSlug || `gallery-${Date.now()}`;
 
+  const existingCheck = await db.select({ id: schema.aiGalleries.id, name: schema.aiGalleries.name })
+    .from(schema.aiGalleries)
+    .where(or(
+      ilike(schema.aiGalleries.name, name.trim()),
+      eq(schema.aiGalleries.slug, slug)
+    ))
+    .limit(1);
+
+  if (existingCheck.length > 0) {
+    throw new Error(`Bộ sưu tập "${name}" hoặc Slug "${slug}" đã tồn tại trong database! Vui lòng chọn Hot Key khác.`);
+  }
+
   const [inserted] = await db.insert(schema.aiGalleries).values({
     name,
     slug,
@@ -1176,6 +1223,21 @@ export async function updateGallery(
   const { name, slug, description, idMovie, idPlan, characterIds = [], imageUrls = [] } = data;
 
   const targetSlug = slug?.trim() || slugify(name);
+
+  const existingCheck = await db.select({ id: schema.aiGalleries.id })
+    .from(schema.aiGalleries)
+    .where(and(
+      ne(schema.aiGalleries.id, id),
+      or(
+        ilike(schema.aiGalleries.name, name.trim()),
+        eq(schema.aiGalleries.slug, targetSlug)
+      )
+    ))
+    .limit(1);
+
+  if (existingCheck.length > 0) {
+    throw new Error(`Bộ sưu tập "${name}" hoặc Slug "${targetSlug}" đã tồn tại trên một bộ sưu tập khác trong database!`);
+  }
 
   await db
     .update(schema.aiGalleries)
@@ -1950,12 +2012,146 @@ export async function generateGalleryGeminiAiAction(params: {
   currentTitle?: string;
 }) {
   await verifyAdmin();
+  if (!db) throw new Error("Database not available");
+
   try {
-    const result = await generateGalleryGeminiAi(params);
+    // 1. Fetch ALL existing gallery titles and slugs from Database!
+    const dbGalleries = await db.select({
+      name: schema.aiGalleries.name,
+      slug: schema.aiGalleries.slug,
+    }).from(schema.aiGalleries);
+
+    const allExistingTitles = Array.from(new Set([
+      ...dbGalleries.map(g => (g.name || "").trim()).filter(Boolean),
+      ...(params.existingTitles || [])
+    ]));
+
+    const allExistingSlugs = Array.from(new Set(
+      dbGalleries.map(g => (g.slug || "").trim()).filter(Boolean)
+    ));
+
+    const result = await generateGalleryGeminiAi({
+      ...params,
+      existingTitles: allExistingTitles,
+      existingSlugs: allExistingSlugs,
+    });
     return { success: true, data: result };
   } catch (error: any) {
     console.error("Error generating gallery Gemini AI:", error);
     return { success: false, error: error.message || "Lỗi khi gọi Gemini AI sinh tiêu đề và mô tả" };
+  }
+}
+
+export async function generateEpisodeTitleAction(params: {
+  characterNames: string[];
+  movieName?: string;
+  currentTitle?: string;
+}) {
+  await verifyAdmin();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Fetch all existing episode titles and slugs from Database!
+    const dbEpisodes = await db.select({
+      name: schema.episodes.name,
+      slug: schema.episodes.slug,
+    }).from(schema.episodes);
+
+    const existingTitleSet = new Set(dbEpisodes.map(e => (e.name || "").toLowerCase().trim()).filter(Boolean));
+    const existingSlugSet = new Set(dbEpisodes.map(e => (e.slug || "").toLowerCase().trim()).filter(Boolean));
+
+    const charText = params.characterNames.length > 0 ? params.characterNames[0] : (params.movieName || "Mỹ Nhân 3D");
+    const prevLower = (params.currentTitle || "").toLowerCase().trim();
+
+    // Filter hot keys that DO NOT exist in database (neither title nor slug)
+    const availableHotKeys = EPISODE_HOT_KEYS.filter(key => {
+      const candidateTitle = formatStandardEpisodeTitle(charText, key);
+      const candidateSlug = slugify(candidateTitle);
+      const titleLower = candidateTitle.toLowerCase().trim();
+      const isCurrent = titleLower === prevLower;
+      const isDupTitle = existingTitleSet.has(titleLower);
+      const isDupSlug = existingSlugSet.has(candidateSlug);
+      return !isCurrent && !isDupTitle && !isDupSlug;
+    });
+
+    const pool = availableHotKeys.length > 0 ? availableHotKeys : EPISODE_HOT_KEYS;
+    const shuffled = [...pool].sort(() => 0.5 - Math.random());
+
+    let chosenTitle = formatStandardEpisodeTitle(charText, shuffled[0] || "hentai 3d vietsub");
+    let chosenSlug = slugify(chosenTitle);
+
+    if (existingTitleSet.has(chosenTitle.toLowerCase().trim()) || existingSlugSet.has(chosenSlug)) {
+      let part = 2;
+      while (existingTitleSet.has(`${charText} Part ${part} hentai 3d vietsub | Vam 3D Hentai 4K`.toLowerCase()) || existingSlugSet.has(slugify(`${charText} Part ${part} hentai 3d vietsub | Vam 3D Hentai 4K`))) {
+        part++;
+      }
+      chosenTitle = `${charText} Part ${part} hentai 3d vietsub | Vam 3D Hentai 4K`;
+      chosenSlug = slugify(chosenTitle);
+    }
+
+    return { success: true, title: chosenTitle, slug: chosenSlug };
+  } catch (error: any) {
+    console.error("Error generating episode title:", error);
+    return { success: false, error: error.message || "Lỗi khi tạo tiêu đề tập phim" };
+  }
+}
+
+export async function checkTitleExistsAction(params: {
+  type: "gallery" | "episode";
+  title: string;
+  excludeId?: number;
+}) {
+  await verifyAdmin();
+  if (!db) return { exists: false };
+  const cleanTitle = (params.title || "").trim();
+  if (!cleanTitle) return { exists: false };
+  const targetSlug = slugify(cleanTitle);
+
+  try {
+    if (params.type === "gallery") {
+      const conditions = [
+        or(
+          ilike(schema.aiGalleries.name, cleanTitle),
+          eq(schema.aiGalleries.slug, targetSlug)
+        )
+      ];
+      if (params.excludeId) {
+        conditions.push(ne(schema.aiGalleries.id, params.excludeId));
+      }
+      const [found] = await db.select({ id: schema.aiGalleries.id, name: schema.aiGalleries.name, slug: schema.aiGalleries.slug })
+        .from(schema.aiGalleries)
+        .where(and(...conditions))
+        .limit(1);
+
+      return {
+        exists: !!found,
+        matchedTitle: found?.name,
+        matchedSlug: found?.slug
+      };
+    } else {
+      const conditions = [
+        or(
+          ilike(schema.episodes.name, cleanTitle),
+          eq(schema.episodes.slug, targetSlug)
+        )
+      ];
+      if (params.excludeId) {
+        conditions.push(ne(schema.episodes.id, params.excludeId));
+      }
+      const [found] = await db.select({ id: schema.episodes.id, name: schema.episodes.name, slug: schema.episodes.slug })
+        .from(schema.episodes)
+        .where(and(...conditions))
+        .limit(1);
+
+      return {
+        exists: !!found,
+        matchedTitle: found?.name,
+        matchedSlug: found?.slug
+      };
+    }
+  } catch (err) {
+    console.error("Error checking title exists:", err);
+    return { exists: false };
   }
 }
 

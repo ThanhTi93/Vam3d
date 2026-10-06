@@ -70,10 +70,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const charUrl = `${siteUrl}/nhan-vat/${encodeURIComponent(canonicalSlug)}`;
   const subNames = [character.nameEn, character.nameZh].filter(Boolean).join(" · ");
   
-  const title = `Nhân Vật ${character.name}${subNames ? ` (${subNames})` : ""} – Tập Phim & Bộ Sưu Tập AI | Vam3D`;
+  const title = `Ảnh 3D 18+ ${character.name}${subNames ? ` (${subNames})` : ""} – Phim Hentai & Bộ Sưu Tập Sex Vam 3D | Vam3D`;
   const description = (
-    character.description ||
-    `Khám phá thông tin nhân vật ${character.name}, tổng hợp các tập phim có mặt và kho bộ sưu tập ảnh Cosplay, Anime AI chất lượng cao tại Vam3D.`
+    character.description
+      ? `${character.description} Tuyển tập ảnh 3D 18+, ảnh sex Vam 3D và các tập phim hentai 3D của ${character.name} sắc nét 4K tại Vam3D.`
+      : `Tuyển tập trọn bộ ảnh sex Vam 3D, ảnh 3D 18+ và phim hentai 3D nhân vật ${character.name} sắc nét full HD 4K không che độc quyền chỉ có tại Vam3D Hentai.`
   ).substring(0, 160);
 
   const posterUrl = character.imgUrl
@@ -87,9 +88,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       character.name,
       character.nameEn,
       character.nameZh,
+      `anh sex ${character.name}`,
+      `anh hentai ${character.name}`,
+      `sex ${character.name}`,
+      `hentai ${character.name}`,
+      `${character.name} 3d`,
+      `anh 18+ ${character.name}`,
       `nhan vat ${character.name}`,
-      `anh ai ${character.name}`,
-      `cosplay ${character.name}`,
+      "anh sex vam 3d",
+      "hentai 3d trung quoc",
+      "hhtq 3d",
+      "vam 3d hentai",
       "vam3d",
     ].filter(Boolean) as string[],
     alternates: {

@@ -43,6 +43,8 @@ import {
   generateAuthorDescriptionAction,
   analyzeMovieHotKeywordsAction,
   generateGalleryGeminiAiAction,
+  generateEpisodeTitleAction,
+  checkTitleExistsAction,
 } from "./actions";
 import { ImagePicker } from "@/components/ui/image-picker";
 import { uploadFileToBunny } from "@/lib/uploadClient";
@@ -2084,6 +2086,58 @@ function CategoriesTab({ categories, search, setSearch, isPending, startTransiti
 // ═══════════════════════════════════════════════════════════════════════
 // EPISODES TAB
 // ═══════════════════════════════════════════════════════════════════════
+const EPISODE_HOT_KEYS = [
+  "hentai 3d",
+  "hentai 3d vietsub",
+  "hentai 3d vietsub 4k",
+  "phim sex 3d vietsub",
+  "phim sex 3d 4k",
+  "hentai 3d thuyet minh",
+  "hoat hinh 3d 18+",
+  "hentai 3d khong che",
+  "phim hentai 3d",
+  "sex 3d khong che",
+  "hentai 3d vietsub full hd",
+  "video hentai 3d khong che",
+  "hentai 3d trung quoc",
+  "phim sex 3d",
+  "hentai 3d cuc net",
+];
+
+function formatStandardEpisodeTitle(charText: string, hotKey: string): string {
+  const cleanChar = (charText || "").trim();
+  const cleanKey = (hotKey || "hentai 3d vietsub").trim();
+
+  if (cleanChar) {
+    return `${cleanChar} ${cleanKey} | Vam 3D Hentai 4K`;
+  }
+  return `${cleanKey} | Vam 3D Hentai 4K`;
+}
+
+function buildStandardEpisodeTitle(
+  characterNames: string[] = [], 
+  movieName: string = "", 
+  existingTitles: string[] = [],
+  previousTitle: string = ""
+): string {
+  const charText = characterNames.length > 0 ? characterNames[0] : (movieName || "Mỹ Nhân 3D");
+  const existingSet = new Set(existingTitles.map(t => t.toLowerCase().trim()));
+
+  const prevLower = (previousTitle || "").toLowerCase();
+  const availableKeys = EPISODE_HOT_KEYS.filter(k => !prevLower.includes(k.toLowerCase()));
+  const pool = availableKeys.length > 0 ? availableKeys : EPISODE_HOT_KEYS;
+  const shuffled = [...pool].sort(() => 0.5 - Math.random());
+
+  for (const key of shuffled) {
+    const candidate = formatStandardEpisodeTitle(charText, key);
+    if (candidate !== previousTitle && !existingSet.has(candidate.toLowerCase().trim())) {
+      return candidate;
+    }
+  }
+
+  return formatStandardEpisodeTitle(charText, shuffled[0] || "hentai 3d vietsub");
+}
+
 function EpisodesTab({ episodes, movies, actors, characters, plans = [], search, setSearch, isPending, startTransition, onRefresh, show, confirmThenDelete }: any) {
   const [form, setForm] = useState({ name: "", banner: "" as string | File | null, url: "", idMovie: 0, idPlan: 0, duration: 0, bunnyVideoId: "", bunnyStatus: "", actorIds: [] as number[], characterIds: [] as number[] });
   const durationHours = Math.floor((form.duration || 0) / 3600);
@@ -2103,9 +2157,64 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
     setForm(prev => ({ ...prev, duration: total }));
   };
 
+  const handleAutoGenerateEpisodeTitle = async () => {
+    const selectedMovieObj = movies.find((m: any) => m.id === form.idMovie);
+    const selectedChars = characters
+      ? characters.filter((c: any) => form.characterIds.includes(c.id)).map((c: any) => c.name)
+      : [];
+
+    if (selectedChars.length === 0 && form.idMovie) {
+      const movieChars = characters.filter((c: any) => c.idMovie === form.idMovie || c.movie?.id === form.idMovie);
+      if (movieChars.length > 0) {
+        selectedChars.push(movieChars[0].name);
+      }
+    }
+
+    try {
+      const res = await generateEpisodeTitleAction({
+        characterNames: selectedChars,
+        movieName: selectedMovieObj?.name || "",
+        currentTitle: form.name
+      });
+      if (res.success && res.title) {
+        setForm(p => ({ ...p, name: res.title }));
+        setDuplicateCheck({ exists: false });
+        show(`✨ Đã tạo tiêu đề tập phim chuẩn SEO (${res.title.length} ký tự)!`);
+      } else {
+        const fallback = buildStandardEpisodeTitle(
+          selectedChars,
+          selectedMovieObj?.name || "",
+          episodes.map((ep: any) => ep.name),
+          form.name
+        );
+        setForm(p => ({ ...p, name: fallback }));
+        show(res.error || "Đã áp dụng mẫu SEO dự phòng", "error");
+      }
+    } catch (err: any) {
+      show(err.message || "Lỗi khi tạo tiêu đề", "error");
+    }
+  };
+
   const [editing, setEditing] = useState<number | null>(null);
   const [filterMovie, setFilterMovie] = useState<number>(0);
   const [showForm, setShowForm] = useState(false);
+  const [duplicateCheck, setDuplicateCheck] = useState<{ exists: boolean; matchedTitle?: string | null; matchedSlug?: string | null } | null>(null);
+
+  useEffect(() => {
+    if (!form.name || !form.name.trim()) {
+      setDuplicateCheck(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      const res = await checkTitleExistsAction({
+        type: "episode",
+        title: form.name.trim(),
+        excludeId: editing !== null ? editing : undefined
+      });
+      setDuplicateCheck(res);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [form.name, editing]);
 
   // Upload States
   const [uploadMode, setUploadMode] = useState<"url" | "bunny">("url");
@@ -2238,6 +2347,11 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
       return;
     }
 
+    if (duplicateCheck?.exists) {
+      show("Tiêu đề hoặc Slug tập phim đã tồn tại trong database! Vui lòng chọn Hot Key khác.", "error");
+      return;
+    }
+
     startTransition(async () => {
       try {
         let finalBanner = form.banner;
@@ -2304,8 +2418,39 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
             </div>
           )}
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">Tên tập phim <span className="text-red-400">*</span></label>
-            <Input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required placeholder="Ví dụ: Tập 1, Tập đặc biệt..." className="bg-[#090a0f] border-white/5 text-sm h-9" />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs text-gray-400 block font-medium">
+                Tên tập phim <span className="text-red-400">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleAutoGenerateEpisodeTitle}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 hover:from-amber-500/30 hover:via-orange-500/30 hover:to-red-500/30 border border-amber-500/40 text-amber-400 hover:text-amber-300 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-amber-500/10 active:scale-95"
+                title="Tự động tạo Tiêu đề tập phim chuẩn SEO theo Nhân vật + Từ khóa hot + Vam 3D Hentai 4K"
+              >
+                <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
+                <span>✨ Tạo Title SEO [Nhân vật + List Hot]</span>
+              </button>
+            </div>
+            <Input
+              type="text"
+              value={form.name}
+              onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+              required
+              placeholder="Ví dụ: Huân Nhi hentai 3d vietsub | Vam 3D Hentai 4K"
+              className={`bg-[#090a0f] text-sm h-9 ${duplicateCheck?.exists ? "border-red-500 focus-visible:ring-red-500" : "border-white/5"}`}
+            />
+            {form.name && (
+              <p className="text-[10px] text-gray-500 mt-1 flex items-center justify-between">
+                <span>Độ dài: <strong className={form.name.length > 60 ? "text-red-400" : "text-green-400"}>{form.name.length}</strong> ký tự</span>
+                <span className="text-gray-400 font-mono text-[9px]">Google chuẩn: 50-60 ký tự (≤ 60)</span>
+              </p>
+            )}
+            {duplicateCheck?.exists && (
+              <p className="text-[11px] text-red-400 mt-1 font-semibold flex items-center gap-1">
+                ⚠️ Tiêu đề này hoặc slug ({duplicateCheck.matchedSlug}) đã tồn tại trong database! Hãy chọn Hot Key khác.
+              </p>
+            )}
           </div>
 
           <div>
@@ -4782,27 +4927,66 @@ const SEO_SUFFIXES = [
 ];
 
 function buildStandardGalleryHotKeys(characterNames: string[] = [], movieName: string = ""): string[] {
-  const keys: string[] = [
-    "4K",
-    "Cosplay 18+",
-    "Sex AI Vietsub",
-    "Ảnh Sex 3D",
-    "Hentai 3D Trung Quốc",
-    "Waifu 3D",
-    "Không Che Siêu Nét",
-    "Vam3D",
-  ];
+  const keys: string[] = [];
 
+  // 1. Hot keys theo dạng [Tên Nhân Vật] + [Hot Key] (Chuẩn hành vi tìm kiếm Google)
   characterNames.forEach((char) => {
-    keys.push(`Cosplay ${char} 18+`);
-    keys.push(`Ảnh 3D ${char} 4K`);
-    keys.push(`Waifu ${char}`);
+    keys.push(char);
+    keys.push(`${char} 3D`);
+    keys.push(`${char} 18+`);
+    keys.push(`${char} 4K`);
+    keys.push(`${char} không che`);
+    keys.push(`${char} ảnh 3d 18+`);
+    keys.push(`${char} ảnh sex 3d`);
+    keys.push(`${char} ảnh hentai 3d`);
+    keys.push(`${char} sex 3d`);
+    keys.push(`${char} hentai 3d`);
+    keys.push(`${char} hentai 3d trung quoc`);
+    keys.push(`${char} hoat hinh 3d 18+`);
+    keys.push(`${char} vam 3d`);
+    keys.push(`${char} cosplay 18+`);
+    keys.push(`${char} bikini`);
+    keys.push(`${char} gợi cảm`);
+    keys.push(`${char} waifu`);
+    keys.push(`${char} phòng ngủ`);
+    keys.push(`${char} bung cúc`);
+    keys.push(`${char} đồ ren`);
+    keys.push(`${char} lộ nội y`);
   });
 
   if (movieName) {
-    keys.push(`Cosplay ${movieName}`);
-    keys.push(`${movieName} 4K`);
+    keys.push(movieName);
+    keys.push(`hentai ${movieName}`);
+    keys.push(`sex ${movieName}`);
+    keys.push(`anh 3d ${movieName}`);
   }
+
+  // 2. Danh sách Hot Key ngách và hệ thống
+  const genericKeys = [
+    "anh 3d 18+",
+    "anh sex 3d",
+    "anh hentai 3d",
+    "anh 3d khong che",
+    "anh cosplay 3d 18+",
+    "bo suu tap anh 3d 18+",
+    "anh sex vam 3d",
+    "anh 18+ 3d",
+    "vam 3d hentai",
+    "vam 3d hentai 4k",
+    "sex vam 3d",
+    "hentai 3d trung quoc",
+    "hhtq 3d",
+    "anh ai 18+",
+    "cosplay ai 3d",
+    "vam3d",
+    "4K",
+    "không che",
+    "cực nét 4K",
+    "anh 3d cuc net",
+    "anh nude 3d",
+    "anh sex 3d trung quoc",
+  ];
+  genericKeys.forEach(k => keys.push(k));
 
   return Array.from(new Set(keys));
 }
@@ -4814,43 +4998,46 @@ function buildStandardGalleryDescription(
   hotKeys: string[] = []
 ): string {
   const charText = characterNames.length > 0 ? characterNames.join(", ") : "";
-  const cleanTitle = title.trim();
+  const movieContext = movieName ? ` trong phim ${movieName}` : " hoạt hình 3D Trung Quốc";
 
-  const openers = [
-    `Khám phá trọn bộ ảnh sex 3D và album AI ${cleanTitle} với độ phân giải siêu nét 4K tại Vam3D.`,
-    `Chiêm ngưỡng vẻ đẹp quyến rũ đỉnh cao trong album ảnh AI Cosplay 18+ ${cleanTitle} độc quyền trên Vam3D Hentai.`,
-    `Thưởng thức trọn bộ ảnh sex AI Vietsub ${cleanTitle}, tái hiện thần thái gợi cảm và mãn nhãn nhất chỉ có tại Vam 3D.`,
-    `Bộ sưu tập ảnh AI ${cleanTitle} mang đến những thước hình 3D Anime, Hentai 3D Trung Quốc siêu sắc nét và lôi cuốn.`,
-    `Tổng hợp kho ảnh AI sex 3D tuyệt mỹ trong album ${cleanTitle}, tạo hình sống động và sắc nét từng chi tiết tại Vam3D.`,
-  ];
+  return `Xem trọn bộ ảnh sex Vam 3D, ảnh 3D 18+ ${charText || title}${movieContext} cực nét chuẩn 4K không che độc quyền chỉ có tại Vam 3D Hentai. Từng góc ảnh tôn vinh thần thái quyến rũ, đường cong bốc lửa đỉnh cao. Khám phá ngay!`;
+}
 
-  const middleSentences = [
-    charText
-      ? `Từng khung hình tôn vinh trọn vẹn nét đẹp bốc lửa, kiêu sa của nhân vật ${charText}${movieName ? ` từ siêu phẩm ${movieName}` : ""}, mang lại trải nghiệm thị giác bùng nổ cho fan hoạt hình 3D.`
-      : `Được tạo tác bằng công nghệ AI tiên tiến, từng bức ảnh mang đến góc nhìn chân thực, bốc lửa và đậm chất nghệ thuật 3D đỉnh cao.`,
-    charText
-      ? `Với tạo hình nóng bỏng của ${charText}, album mang đến những khung cảnh gợi cảm khó cưỡng cùng chất lượng hình ảnh Full HD / 4K không watermark.`
-      : `Từng chi tiết phục trang, ánh sáng và đường cong đều đạt chuẩn 4K siêu mượt, thỏa mãn đam mê của mọi tín đồ yêu thích nghệ thuật ảnh AI và Hentai 3D.`,
-    `Sự kết hợp hoàn hảo giữa phong cách anime 3D Trung Quốc sống động và công nghệ AI giúp bộ ảnh trở nên cuốn hút vượt bậc.`,
-  ];
+const GALLERY_HOT_KEYS_TITLES = [
+  "hentai 3d",
+  "hentai 3d trung quoc",
+  "anh 3d 18+",
+  "anh sex 3d",
+  "anh 3d khong che",
+  "anh hentai 3d",
+  "cosplay 3d 18+",
+  "sex 3d khong che",
+  "hoat hinh 3d 18+",
+  "phim hentai 3d",
+  "vam 3d hentai",
+  "hentai 3d vietsub",
+  "anh nude 3d",
+  "anh 3d 18+ 4k",
+  "anh sex 3d trung quoc",
+  "bo suu tap anh 3d 18+",
+  "khong che 4k",
+  "anh 3d cuc net",
+  "anh cosplay 3d 18+",
+  "vam 3d khong che",
+  "sex 3d",
+  "phim sex 3d",
+  "hentai 3d khong che",
+  "anh sex vam 3d",
+];
 
-  const closers = [
-    `Truy cập ngay Vam3D để xem và tải trọn bộ ảnh AI 18+ chất lượng cao miễn phí!`,
-    `Khám phá thêm hàng ngàn bộ ảnh sex AI Vietsub và phim hoạt hình 3D thuyết minh đặc sắc tại Vam 3D.`,
-    `Xem ngay album đầy đủ và cập nhật các bộ sưu tập ảnh AI Anime 3D mới nhất hàng ngày trên Vam3D.`,
-    `Đừng bỏ lỡ trọn bộ ảnh độc quyền sắc nét không che – Trải nghiệm ngay trên Vam3D!`,
-  ];
+function formatGalleryTitle(charText: string, hotKey: string): string {
+  const cleanChar = (charText || "").trim();
+  const cleanKey = (hotKey || "hentai 3d").trim();
 
-  function getRandomItem<T>(arr: T[]): T {
-    return arr[Math.floor(Math.random() * arr.length)];
+  if (cleanChar) {
+    return `${cleanChar} ${cleanKey} | Vam 3D Hentai 4K`;
   }
-  const baseDesc = `${getRandomItem(openers)} ${getRandomItem(middleSentences)} ${getRandomItem(closers)}`;
-
-  if (hotKeys.length > 0) {
-    const keySnippet = hotKeys.slice(0, 5).join(", ");
-    return `${baseDesc} [Từ khóa hot: ${keySnippet}].`;
-  }
-  return baseDesc;
+  return `${cleanKey} | Vam 3D Hentai 4K`;
 }
 
 function buildStandardGalleryTitle(
@@ -4859,76 +5046,22 @@ function buildStandardGalleryTitle(
   previousTitle: string = "", 
   existingTitles: string[] = []
 ): string {
-  const charText = characterNames.length > 0 ? characterNames.join(", ") : "";
+  const charText = characterNames.length > 0 ? characterNames[0] : (movieName || "Mỹ Nhân 3D");
   const existingSet = new Set(existingTitles.map(t => t.toLowerCase().trim()));
 
-  // Filter out the theme from previousTitle to ensure diversity
-  const availableThemes = CHARACTERISTIC_THEMES.filter(t => !previousTitle.includes(t));
-  const chosenThemes = availableThemes.length > 0 ? availableThemes : CHARACTERISTIC_THEMES;
+  const prevLower = (previousTitle || "").toLowerCase();
+  const availableKeys = GALLERY_HOT_KEYS_TITLES.filter(k => !prevLower.includes(k.toLowerCase()));
+  const pool = availableKeys.length > 0 ? availableKeys : GALLERY_HOT_KEYS_TITLES;
+  const shuffledKeys = [...pool].sort(() => 0.5 - Math.random());
 
-  // Filter out previous suffix if possible
-  const availableSuffixes = SEO_SUFFIXES.filter(s => !previousTitle.endsWith(s));
-  const chosenSuffixes = availableSuffixes.length > 0 ? availableSuffixes : SEO_SUFFIXES;
-
-  const generateCandidates = (theme: string, suffix: string): string[] => {
-    const templates: string[] = [];
-    if (charText && movieName) {
-      templates.push(`${charText} – ${movieName} – ${theme} ${suffix}`);
-      templates.push(`Cosplay 18+ ${charText} (${movieName}) – ${theme} ${suffix}`);
-      templates.push(`Bộ Ảnh Sex AI ${charText} – ${movieName} ${theme} ${suffix}`);
-      templates.push(`Hentai 3D ${charText} – Tuyệt Phẩm ${movieName} – ${theme} ${suffix}`);
-      templates.push(`Ngắm ${charText} (${movieName}) – ${theme} ${suffix}`);
-      templates.push(`Kho Ảnh 18+ ${charText} – ${movieName} – ${theme} ${suffix}`);
-      templates.push(`Tuyệt Tác AI ${charText} (${movieName}) – ${theme} ${suffix}`);
-      templates.push(`${charText} – ${movieName} – ${theme} 4K ${suffix}`);
-      templates.push(`Album Waifu ${charText} (${movieName}) – ${theme} ${suffix}`);
-      templates.push(`Mỹ Nhân ${charText} – ${movieName} – ${theme} ${suffix}`);
-    } else if (charText) {
-      templates.push(`${charText} – ${theme} ${suffix}`);
-      templates.push(`Cosplay 18+ ${charText} – ${theme} ${suffix}`);
-      templates.push(`Bộ Ảnh Sex AI ${charText} – ${theme} ${suffix}`);
-      templates.push(`Hentai 3D ${charText} – ${theme} ${suffix}`);
-      templates.push(`Kho Ảnh 18+ ${charText} Siêu Nóng Bỏng ${suffix}`);
-      templates.push(`Tuyệt Tác AI ${charText} – ${theme} ${suffix}`);
-      templates.push(`Album Waifu ${charText} – ${theme} 4K ${suffix}`);
-      templates.push(`Mỹ Nhân 3D ${charText} – ${theme} ${suffix}`);
-    } else if (movieName) {
-      templates.push(`${movieName} – ${theme} ${suffix}`);
-      templates.push(`Bộ Ảnh Sex AI ${movieName} – ${theme} ${suffix}`);
-      templates.push(`Hentai 3D ${movieName} – ${theme} ${suffix}`);
-      templates.push(`Kho Ảnh Cosplay 18+ ${movieName} ${suffix}`);
-    } else {
-      templates.push(`Bộ Sưu Tập Ảnh Sex AI 3D – ${theme} ${suffix}`);
-      templates.push(`Kho Ảnh Cosplay 18+ – ${theme} ${suffix}`);
-    }
-    return templates;
-  };
-
-  // Shuffle themes and suffixes for variety
-  const shuffledThemes = [...chosenThemes].sort(() => 0.5 - Math.random());
-  const shuffledSuffixes = [...chosenSuffixes].sort(() => 0.5 - Math.random());
-
-  for (const theme of shuffledThemes) {
-    for (const suffix of shuffledSuffixes) {
-      const candidates = generateCandidates(theme, suffix);
-      for (const cand of candidates) {
-        if (cand !== previousTitle && !existingSet.has(cand.toLowerCase().trim())) {
-          return cand;
-        }
-      }
+  for (const key of shuffledKeys) {
+    const candidate = formatGalleryTitle(charText, key);
+    if (candidate !== previousTitle && !existingSet.has(candidate.toLowerCase().trim())) {
+      return candidate;
     }
   }
 
-  // Fallback: If all combinations already exist, append unique volume or part
-  const baseCandidate = generateCandidates(chosenThemes[0], chosenSuffixes[0])[0];
-  for (let vol = 2; vol <= 100; vol++) {
-    const volTitle = baseCandidate.replace(" |", ` (Vol ${vol}) |`);
-    if (!existingSet.has(volTitle.toLowerCase().trim())) {
-      return volTitle;
-    }
-  }
-
-  return `${baseCandidate} #${Date.now().toString().slice(-4)}`;
+  return formatGalleryTitle(charText, shuffledKeys[0] || "hentai 3d");
 }
 
 function GalleriesTab({ movies, characters, plans, collections = [], isPending, startTransition, onRefresh, show, confirmThenDelete, onCountChange }: any) {
@@ -4961,6 +5094,23 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
   const [generatingDesc, setGeneratingDesc] = useState(false);
   const [generatingGemini, setGeneratingGemini] = useState(false);
   const [galleryHotKeys, setGalleryHotKeys] = useState<string[]>([]);
+  const [galleryDuplicateCheck, setGalleryDuplicateCheck] = useState<{ exists: boolean; matchedTitle?: string | null; matchedSlug?: string | null } | null>(null);
+
+  useEffect(() => {
+    if (!form.name || !form.name.trim()) {
+      setGalleryDuplicateCheck(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      const res = await checkTitleExistsAction({
+        type: "gallery",
+        title: form.name.trim(),
+        excludeId: editing !== null ? editing : undefined
+      });
+      setGalleryDuplicateCheck(res);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [form.name, editing]);
 
   // Truly generative Gemini AI Title, Hot Keys & SEO Description Generator
   const handleGeminiGenerateGalleryDetails = async (charIds = form.characterIds, overrideMovieId?: number) => {
@@ -5244,6 +5394,11 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
     e.preventDefault();
     const isEdit = editing !== null;
 
+    if (galleryDuplicateCheck?.exists) {
+      show(`Tiêu đề hoặc Slug "${form.name}" đã tồn tại trong database! Vui lòng chọn Hot Key khác.`, "error");
+      return;
+    }
+
     if (!isEdit && uploadFiles.length === 0) {
       show("Vui lòng chọn thư mục chứa ảnh trước", "error");
       return;
@@ -5523,9 +5678,20 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
                   }));
                 }}
                 required
-                className="bg-[#090a0f] border-white/5 text-sm h-9"
-                placeholder="Ví dụ: Mỹ Đỗ Toa – Đấu Phá Thương Khung – Nữ Đế Quyến Rũ | Ảnh Sex AI 3D 4K Vam3D"
+                className={`bg-[#090a0f] text-sm h-9 ${galleryDuplicateCheck?.exists ? "border-red-500 focus-visible:ring-red-500" : "border-white/5"}`}
+                placeholder="Ví dụ: Huân Nhi hentai 3d | Vam 3D Hentai 4K"
               />
+              {form.name && (
+                <p className="text-[10px] text-gray-500 mt-1 flex items-center justify-between">
+                  <span>Độ dài: <strong className={form.name.length > 60 ? "text-red-400" : "text-green-400"}>{form.name.length}</strong> ký tự</span>
+                  <span className="text-gray-400 font-mono text-[9px]">Google chuẩn: 50-60 ký tự (≤ 60)</span>
+                </p>
+              )}
+              {galleryDuplicateCheck?.exists && (
+                <p className="text-[11px] text-red-400 mt-1 font-semibold flex items-center gap-1">
+                  ⚠️ Tiêu đề này hoặc slug ({galleryDuplicateCheck.matchedSlug}) đã tồn tại trong database! Hãy chọn Hot Key khác.
+                </p>
+              )}
             </div>
 
             <div>

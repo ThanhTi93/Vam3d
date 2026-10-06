@@ -48,9 +48,9 @@ export async function callGeminiText(options: GeminiRequestOptions): Promise<str
 
   const { prompt, systemInstruction, temperature = 0.7, maxTokens = 1500, jsonMode = false } = options;
   const models = [
-    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
     "gemini-3.5-flash",
-    "gemini-3.7-flash",
+    "gemini-flash-latest",
     "gemini-3.8-flash",
   ];
 
@@ -83,7 +83,7 @@ export async function callGeminiText(options: GeminiRequestOptions): Promise<str
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(15000),
       });
 
       if (!response.ok) {
@@ -121,7 +121,20 @@ export async function callGeminiJson<T = any>(options: GeminiRequestOptions): Pr
       .trim();
     return JSON.parse(cleaned) as T;
   } catch (err) {
-    console.warn("Failed to parse Gemini JSON response:", rawText, err);
+    try {
+      const titleMatch = rawText.match(/"title"\s*:\s*"([^"]+)"/);
+      const descMatch = rawText.match(/"description"\s*:\s*"([^"]+)"/);
+      const slugMatch = rawText.match(/"slug"\s*:\s*"([^"]+)"/);
+      if (titleMatch) {
+        return {
+          title: titleMatch[1],
+          slug: slugMatch ? slugMatch[1] : undefined,
+          description: descMatch ? descMatch[1] : undefined,
+          hotKeys: []
+        } as unknown as T;
+      }
+    } catch {}
+    console.warn("Failed to parse Gemini JSON response:", rawText.slice(0, 150));
     return null;
   }
 }
