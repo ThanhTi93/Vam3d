@@ -75,6 +75,7 @@ export default function MoviePageClient({
   const isValidEp = Boolean(activeEpFromParam && hasEpisodes);
 
   const [showPlayer, setShowPlayer] = useState(() => isValidEp);
+  const [autoPlayRequested, setAutoPlayRequested] = useState(false);
   const [activeServer, setActiveServer] = useState("VIP");
   const [activeEpisode, setActiveEpisode] = useState(() => initialEpIndex);
   const [isPending, startTransition] = useTransition();
@@ -138,8 +139,11 @@ export default function MoviePageClient({
     }
   }, [showPlayer, activeEpisode, movie.episodes, user?.id]);
 
-  const handleEpisodeChange = (idx: number) => {
+  const handleEpisodeChange = (idx: number, shouldAutoPlay = true) => {
     setActiveEpisode(idx);
+    if (shouldAutoPlay) {
+      setAutoPlayRequested(true);
+    }
     const targetEp = movie.episodes?.[idx];
     const epSlug = targetEp?.slug || (targetEp?.name ? slugify(targetEp.name) : (idx + 1).toString());
     const params = new URLSearchParams(window.location.search);
@@ -159,7 +163,8 @@ export default function MoviePageClient({
       : movie.episodes?.findIndex((x: any) => x.id === ep.id);
 
     if (isSameMovie && resolvedIdx !== undefined && resolvedIdx !== -1) {
-      handleEpisodeChange(resolvedIdx);
+      setAutoPlayRequested(true);
+      handleEpisodeChange(resolvedIdx, true);
       setShowPlayer(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -226,6 +231,7 @@ export default function MoviePageClient({
         return;
       }
     }
+    setAutoPlayRequested(true);
     setShowPlayer(true);
     if (!searchParams.get("ep") && movie.episodes && movie.episodes.length > 0) {
       const firstEp = movie.episodes[0];
@@ -255,7 +261,8 @@ export default function MoviePageClient({
 
               const handleEpisodeEnd = () => {
                 if (movie.episodes && activeEpisode < movie.episodes.length - 1) {
-                  handleEpisodeChange(activeEpisode + 1);
+                  setAutoPlayRequested(true);
+                  handleEpisodeChange(activeEpisode + 1, true);
                 }
               };
 
@@ -267,7 +274,7 @@ export default function MoviePageClient({
                   poster={currentEp?.banner || movie.bannerUrl || movie.imgUrl}
                   title={`${movie.title} - ${currentEp?.name || "Tập phim"}`}
                   storageKey={storageKey}
-                  autoPlay={true}
+                  autoPlay={autoPlayRequested}
                   onEnded={handleEpisodeEnd}
                 />
               );

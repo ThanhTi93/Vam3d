@@ -32,7 +32,7 @@ export default function VideoPlayer({
   bunnyStatus,
   poster,
   title,
-  autoPlay = true,
+  autoPlay = false,
   storageKey,
   onEnded,
   className = "",
@@ -40,6 +40,7 @@ export default function VideoPlayer({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   
+  const [hasStarted, setHasStarted] = useState(() => Boolean(autoPlay));
   const [qualities, setQualities] = useState<QualityLevel[]>([]);
   const [currentQuality, setCurrentQuality] = useState<number>(-1); // -1 = Auto
   const [showSettings, setShowSettings] = useState(false);
@@ -79,9 +80,24 @@ export default function VideoPlayer({
     } catch (e) {}
   }, [progressKey]);
 
+  // Handle manual start play
+  const handleStartPlay = useCallback(() => {
+    setHasStarted(true);
+    if (hlsRef.current) {
+      hlsRef.current.startLoad();
+    }
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+  }, []);
+
   // Handle Resume action
   const handleResume = useCallback(() => {
     if (videoRef.current && resumeTime) {
+      setHasStarted(true);
+      if (hlsRef.current) {
+        hlsRef.current.startLoad();
+      }
       videoRef.current.currentTime = resumeTime;
       videoRef.current.play().catch(() => {});
       setResumeTime(null);
@@ -126,6 +142,11 @@ export default function VideoPlayer({
     effectiveSrc = effectiveSrc.replace(/https?:\/\/stream\.vam3dhentai\.online/gi, `https://${streamHost}`);
   }
 
+  // Sync hasStarted state with autoPlay or src changes
+  useEffect(() => {
+    setHasStarted(Boolean(autoPlay));
+  }, [effectiveSrc, autoPlay]);
+
   // Setup HLS / Video source (for direct MP4 / Bunny HLS stream)
   useEffect(() => {
     setErrorMsg(null);
@@ -139,13 +160,16 @@ export default function VideoPlayer({
 
     if (isHlsStream) {
       if (Hls.isSupported()) {
+        const shouldLoadImmediately = autoPlay || hasStarted;
         const hls = new Hls({
-          maxBufferLength: 30,
-          maxMaxBufferLength: 60,
-          maxBufferSize: 30 * 1024 * 1024,
-          backBufferLength: 30,
+          autoStartLoad: shouldLoadImmediately,
+          maxBufferLength: 10,       // Cost-saving: Buffer at most 10 seconds ahead (was 30s)
+          maxMaxBufferLength: 15,    // Cap maximum buffer length at 15 seconds (was 60s)
+          maxBufferSize: 8 * 1024 * 1024, // Cost-saving: Cap buffer memory to 8MB (was 30MB)
+          backBufferLength: 5,       // Aggressively free memory of watched parts
           enableWorker: true,
           lowLatencyMode: false,
+          capLevelToPlayerSize: true, // Cost-saving: don't load 1080p if screen is small
           startLevel: -1,
         });
 
@@ -163,7 +187,7 @@ export default function VideoPlayer({
           levels.sort((a, b) => b.height - a.height);
           setQualities(levels);
 
-          if (autoPlay) {
+          if (autoPlay || hasStarted) {
             video.play().catch(() => {});
           }
         });
@@ -194,7 +218,7 @@ export default function VideoPlayer({
         };
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         video.src = effectiveSrc;
-        if (autoPlay) {
+        if (autoPlay || hasStarted) {
           video.play().catch(() => {});
         }
       } else {
@@ -202,7 +226,7 @@ export default function VideoPlayer({
       }
     } else {
       video.src = effectiveSrc;
-      if (autoPlay) {
+      if (autoPlay || hasStarted) {
         video.play().catch(() => {});
       }
     }
@@ -269,13 +293,40 @@ export default function VideoPlayer({
           <video
             ref={videoRef}
             controls
-            preload="metadata"
+            preload={autoPlay || hasStarted ? "metadata" : "none"}
             poster={poster ? getBunnyImageUrl(poster, 'display') : undefined}
+            onPlay={() => {
+              if (!hasStarted) {
+                setHasStarted(true);
+                if (hlsRef.current) {
+                  hlsRef.current.startLoad();
+                }
+              }
+            }}
             onTimeUpdate={handleTimeUpdate}
             onEnded={onEnded}
             className="w-full h-full object-contain"
             playsInline
           />
+
+          {/* Big Play Button Overlay when video hasn't loaded/started yet */}
+          {!hasStarted && (
+            <div
+              onClick={handleStartPlay}
+              className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/45 hover:bg-black/30 transition-all cursor-pointer backdrop-blur-[2px] group/overlay"
+            >
+              <button
+                type="button"
+                aria-label="Bấm để phát video"
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-2xl shadow-orange-500/50 group-hover/overlay:scale-110 group-hover/overlay:shadow-orange-500/70 transition-all duration-300 cursor-pointer border border-white/20"
+              >
+                <Play className="w-8 h-8 fill-white ml-1" />
+              </button>
+              <span className="text-xs sm:text-sm font-bold text-white mt-3.5 drop-shadow px-4 py-1.5 bg-black/70 rounded-full border border-white/10 tracking-wide flex items-center gap-1.5 shadow-lg">
+                <Play className="w-3.5 h-3.5 fill-orange-400 text-orange-400" /> Bấm để xem phim
+              </span>
+            </div>
+          )}
 
           {/* Resume Prompt Toast */}
           {isClient && resumeTime !== null && (
