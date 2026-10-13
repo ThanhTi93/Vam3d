@@ -47,6 +47,7 @@ export async function POST(req: Request) {
     revalidatePath("/");
     revalidatePath("/tap-phim");
     revalidatePath("/admin");
+    revalidatePath("/movie/[id]", "page");
     revalidateTag("episodes:latest", "default");
     revalidateTag("episodes:most-viewed", "default");
     revalidateTag("movies:all", "default");
@@ -55,6 +56,16 @@ export async function POST(req: Request) {
     for (const row of result) {
       if (row.idMovie) {
         revalidateTag(`movie:detail-${row.idMovie}`, "default");
+        revalidatePath(`/movie/${row.idMovie}`, "page");
+        try {
+          const m = await db.query.movies.findFirst({
+            where: (movieTable, { eq }) => eq(movieTable.id, row.idMovie!),
+            columns: { slug: true }
+          });
+          if (m?.slug) {
+            revalidatePath(`/movie/${m.slug}`, "page");
+          }
+        } catch {}
       }
     }
 

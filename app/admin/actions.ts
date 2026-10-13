@@ -296,10 +296,15 @@ export async function syncProcessingEpisodes() {
 
     // Find all episodes in DB where bunnyVideoId is not null and bunnyStatus is not 'completed'
     const eps = await db.query.episodes.findMany({
-      where: (ep, { and, isNotNull }) => and(
+      where: (ep, { and, isNotNull, ne }) => and(
         isNotNull(ep.bunnyVideoId),
         ne(ep.bunnyStatus, "completed")
-      )
+      ),
+      with: {
+        movie: {
+          columns: { id: true, slug: true },
+        },
+      },
     });
 
     if (eps.length === 0) return;
@@ -317,7 +322,7 @@ export async function syncProcessingEpisodes() {
       if (res.ok) {
         const data = await res.json();
         let newStatus = ep.bunnyStatus || "processing";
-        if (data.status === 3 || data.status === 4) {
+        if (data.status === 3 || data.status === 4 || data.encodeProgress === 100) {
           newStatus = "completed";
         } else if (data.status === 5 || data.status === 8) {
           newStatus = "failed";
@@ -331,13 +336,21 @@ export async function syncProcessingEpisodes() {
           await db.update(schema.episodes)
             .set({ bunnyStatus: newStatus })
             .where(eq(schema.episodes.id, ep.id));
-          revalidateTag(`movie:detail-${ep.idMovie}`, "default");
+
+          if (ep.movie?.slug) {
+            revalidatePath(`/movie/${ep.movie.slug}`, "page");
+          }
+          if (ep.idMovie) {
+            revalidatePath(`/movie/${ep.idMovie}`, "page");
+            revalidateTag(`movie:detail-${ep.idMovie}`, "default");
+          }
           updated = true;
         }
       }
     }
 
     if (updated) {
+      revalidatePath("/movie/[id]", "page");
       revalidateAdmin();
       revalidateTag("movies:all", "default");
       revalidateTag("movies:hot", "default");
@@ -432,9 +445,22 @@ export async function createEpisode(data: {
   }
 
   revalidateAdmin();
+  revalidatePath("/movie/[id]", "page");
+  if (data.idMovie) {
+    revalidatePath(`/movie/${data.idMovie}`, "page");
+    try {
+      const m = await db.query.movies.findFirst({
+        where: (movieTable, { eq }) => eq(movieTable.id, data.idMovie),
+        columns: { slug: true }
+      });
+      if (m?.slug) {
+        revalidatePath(`/movie/${m.slug}`, "page");
+      }
+    } catch {}
+    revalidateTag(`movie:detail-${data.idMovie}`, "default");
+  }
   revalidateTag("episodes:latest", "default");
   revalidateTag("episodes:most-viewed", "default");
-  revalidateTag(`movie:detail-${data.idMovie}`, "default");
   revalidateTag("movies:all", "default");
   revalidateTag("movies:hot", "default");
 }
@@ -535,7 +561,18 @@ export async function updateEpisode(
   const idMovie = existing.idMovie;
 
   revalidateAdmin();
+  revalidatePath("/movie/[id]", "page");
   if (idMovie) {
+    revalidatePath(`/movie/${idMovie}`, "page");
+    try {
+      const m = await db.query.movies.findFirst({
+        where: (movieTable, { eq }) => eq(movieTable.id, idMovie),
+        columns: { slug: true }
+      });
+      if (m?.slug) {
+        revalidatePath(`/movie/${m.slug}`, "page");
+      }
+    } catch {}
     revalidateTag(`movie:detail-${idMovie}`, "default");
   }
   revalidateTag("episodes:latest", "default");
@@ -1012,6 +1049,8 @@ export async function deleteAccount(id: number) {
 export async function revalidateAllCache() {
   await verifyAdmin();
   revalidateAdmin();
+  revalidatePath("/movie/[id]", "page");
+  revalidatePath("/", "layout");
   revalidateTag("movies:all", "default");
   revalidateTag("movies:hot", "default");
   revalidateTag("movies:top", "default");

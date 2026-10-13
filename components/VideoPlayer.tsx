@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Hls from "hls.js";
-import { Settings, Play, RotateCcw, AlertCircle } from "lucide-react";
+import { Settings, Play, RotateCcw, AlertCircle, RefreshCw } from "lucide-react";
 import { getBunnyImageUrl } from "@/lib/utils";
 
 export interface VideoPlayerProps {
@@ -10,6 +10,7 @@ export interface VideoPlayerProps {
   bunnyVideoId?: string | null;
   bunnyLibraryId?: string | null;
   bunnyStatus?: string | null;
+  episodeId?: number | null;
   poster?: string;
   title?: string;
   autoPlay?: boolean;
@@ -30,6 +31,7 @@ export default function VideoPlayer({
   bunnyVideoId,
   bunnyLibraryId,
   bunnyStatus,
+  episodeId,
   poster,
   title,
   autoPlay = false,
@@ -48,12 +50,68 @@ export default function VideoPlayer({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
 
+  // Trạng thái xử lý Bunny với hỗ trợ auto-detect bypass cache tĩnh
+  const [statusState, setStatusState] = useState<string | null | undefined>(bunnyStatus);
+  const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false);
+  const [checkStatusMsg, setCheckStatusMsg] = useState<string | null>(null);
+
   const finalLibId = bunnyLibraryId || process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID || "689414";
   const progressKey = storageKey || (bunnyVideoId ? `progress_bunny_${bunnyVideoId}` : src ? `progress_src_${src}` : null);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Đồng bộ statusState khi prop bunnyStatus thay đổi
+  useEffect(() => {
+    setStatusState(bunnyStatus);
+  }, [bunnyStatus]);
+
+  // Hàm kiểm tra trạng thái video từ server (bypass stale static cache)
+  const checkVideoStatus = useCallback(async (silent = false) => {
+    if (!bunnyVideoId) return;
+    if (!silent) setIsCheckingStatus(true);
+    try {
+      const params = new URLSearchParams();
+      params.append("bunnyVideoId", bunnyVideoId);
+      if (episodeId) params.append("episodeId", episodeId.toString());
+      const res = await fetch(`/api/video/status?${params.toString()}`, { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === "completed") {
+          setStatusState("completed");
+          setCheckStatusMsg(null);
+        } else if (data.status === "failed") {
+          setStatusState("failed");
+          setCheckStatusMsg("Xử lý thất bại trên máy chủ.");
+        } else {
+          setStatusState(data.status || "processing");
+          if (typeof data.encodeProgress === "number") {
+            setCheckStatusMsg(`Tiến độ nén HLS: ${data.encodeProgress}%`);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Lỗi kiểm tra trạng thái video:", e);
+    } finally {
+      if (!silent) setIsCheckingStatus(false);
+    }
+  }, [bunnyVideoId, episodeId]);
+
+  // Tự động kiểm tra nhẹ định kỳ nếu video chưa completed (đảm bảo không kẹt bởi cache trang cũ)
+  useEffect(() => {
+    if (!bunnyVideoId || statusState === "completed" || statusState === "failed") return;
+
+    // Check ngay lập tức 1 lần khi người xem truy cập để phát hiện nếu video đã xong
+    checkVideoStatus(true);
+
+    // Polling nhẹ mỗi 8 giây (chỉ gọi API trạng thái nhẹ, không tải video chunk)
+    const timer = setInterval(() => {
+      checkVideoStatus(true);
+    }, 8000);
+
+    return () => clearInterval(timer);
+  }, [bunnyVideoId, statusState, checkVideoStatus]);
 
   // Format seconds to mm:ss or hh:mm:ss
   const formatTime = (seconds: number) => {
@@ -246,9 +304,9 @@ export default function VideoPlayer({
     setShowSettings(false);
   };
 
-  // 1. Status checks for Bunny processing
+  // 1. Status checks for Bunny processing (sử dụng statusState để tự động vượt qua cache tĩnh nếu video đã xong)
   if (bunnyVideoId) {
-    if (bunnyStatus === "failed") {
+    if (statusState === "failed") {
       return (
         <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-3 text-red-400 ${className}`}>
           <AlertCircle className="w-8 h-8" />
@@ -258,12 +316,28 @@ export default function VideoPlayer({
       );
     }
 
-    if (bunnyStatus !== "completed" && bunnyStatus !== undefined) {
+    if (statusState !== "completed" && statusState !== undefined) {
       return (
         <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-4 ${className}`}>
           <div className="w-10 h-10 rounded-full border-2 border-t-orange-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
           <h3 className="text-sm font-bold text-gray-300">Tập phim đang được tối ưu HLS...</h3>
-          <p className="text-xs text-gray-500 max-w-xs">Hệ thống đang chia phân đoạn và nén đa độ phân giải để tiết kiệm băng thông. Vui lòng quay lại sau ít phút!</p>
+          <p className="text-xs text-gray-500 max-w-xs">
+            Hệ thống đang chia phân đoạn và nén đa độ phân giải để tiết kiệm băng thông. Vui lòng quay lại sau ít phút!
+          </p>
+          {checkStatusMsg && (
+            <span className="text-xs text-orange-400/90 font-medium bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">
+              {checkStatusMsg}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => checkVideoStatus(false)}
+            disabled={isCheckingStatus}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 text-xs font-semibold text-gray-300 hover:text-white transition-all cursor-pointer disabled:opacity-50 mt-1"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isCheckingStatus ? "animate-spin text-orange-400" : ""}`} />
+            {isCheckingStatus ? "Đang kiểm tra..." : "Kiểm tra & Xem ngay"}
+          </button>
         </div>
       );
     }

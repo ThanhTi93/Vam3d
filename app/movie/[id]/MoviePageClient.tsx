@@ -271,6 +271,7 @@ export default function MoviePageClient({
                   src={videoSrc}
                   bunnyVideoId={currentEp?.bunnyVideoId}
                   bunnyStatus={currentEp?.bunnyStatus}
+                  episodeId={currentEp?.id}
                   poster={currentEp?.banner || movie.bannerUrl || movie.imgUrl}
                   title={`${movie.title} - ${currentEp?.name || "Tập phim"}`}
                   storageKey={storageKey}
