@@ -51,9 +51,10 @@ import { uploadFileToBunny } from "@/lib/uploadClient";
 import { getBunnyImageUrl, cleanFolderName, slugify, normalizeSearchText } from "@/lib/utils";
 import { getCultivationRealm } from "@/lib/cultivation";
 import * as tus from "tus-js-client";
+import StrategyTab from "./StrategyTab";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-type AdminTab = "overview" | "movies" | "categories" | "episodes" | "actors" | "characters" | "plans" | "features" | "packages" | "authors" | "accounts" | "galleries" | "collections";
+type AdminTab = "overview" | "strategy" | "movies" | "categories" | "episodes" | "actors" | "characters" | "plans" | "features" | "packages" | "authors" | "accounts" | "galleries" | "collections";
 
 // ─── Notification toast ─────────────────────────────────────────────────────
 function useToast() {
@@ -228,6 +229,7 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
 
   const navItems: NavItem[] = [
     { id: "overview", label: "Tổng Quan", icon: <LayoutDashboard className="w-4 h-4" /> },
+    { id: "strategy", label: "Chiến Lược & Sinh Lời", icon: <TrendingUp className="w-4 h-4 text-emerald-400" /> },
     { id: "movies", label: "Phim", icon: <Film className="w-4 h-4" />, count: movies.length },
     { id: "categories", label: "Thể Loại", icon: <List className="w-4 h-4" />, count: categories.length },
     { id: "episodes", label: "Tập Phim", icon: <Eye className="w-4 h-4" />, count: episodes.length },
@@ -506,7 +508,12 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
 
           {/* ═══ OVERVIEW ═══════════════════════════════════════════════════ */}
           {tab === "overview" && (
-            <OverviewTab movies={movies} categories={categories} show={show} />
+            <OverviewTab movies={movies} categories={categories} show={show} onGoToStrategy={() => handleTab("strategy")} />
+          )}
+
+          {/* ═══ STRATEGY & MONETIZATION ════════════════════════════════════ */}
+          {tab === "strategy" && (
+            <StrategyTab showToast={show} />
           )}
 
           {/* ═══ MOVIES ══════════════════════════════════════════════════════ */}
@@ -1194,9 +1201,40 @@ function RealtimeAnalyticsCard() {
 // ═══════════════════════════════════════════════════════════════════════
 // OVERVIEW TAB
 // ═══════════════════════════════════════════════════════════════════════
-function OverviewTab({ show }: { movies?: any[]; categories?: any[]; show: (msg: string, type?: "success" | "error") => void }) {
+function OverviewTab({ show, onGoToStrategy }: { movies?: any[]; categories?: any[]; show: (msg: string, type?: "success" | "error") => void; onGoToStrategy?: () => void }) {
   return (
     <div className="space-y-6 sm:space-y-8">
+      {/* Strategic Callout Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-950/40 via-amber-950/20 to-zinc-950 border border-orange-500/30 p-5 sm:p-6 backdrop-blur shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 text-black flex items-center justify-center shrink-0 font-black shadow-lg shadow-orange-500/20">
+            <TrendingUp className="w-5 h-5 text-black" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-black text-white">
+                Bản Đồ Chiến Lược Tăng Trưởng & Sinh Lời 2026
+              </h3>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                Mới
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 mt-0.5">
+              5 trụ cột bứt phá doanh thu: Vé xem trước 9k, Kinh tế Linh Thạch tu tiên, Phân tầng ảnh AI 4K & Giảm 45% chi phí CDN Bunny.
+            </p>
+          </div>
+        </div>
+        {onGoToStrategy && (
+          <Button
+            onClick={onGoToStrategy}
+            className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-black font-extrabold text-xs h-9 px-4 gap-1.5 shrink-0 shadow-md shadow-orange-500/20 cursor-pointer"
+          >
+            Khám phá chiến lược
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
+
       {/* Real-time Click & Search Analytics Section */}
       <RealtimeAnalyticsCard />
 

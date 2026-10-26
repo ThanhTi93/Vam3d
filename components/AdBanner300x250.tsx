@@ -74,7 +74,6 @@ export default function AdBanner300x250({ className = "", adKey }: AdBanner300x2
           srcDoc={srcDoc}
           width={300}
           height={250}
-          loading="lazy"
           scrolling="no"
           style={{ border: 0, width: "300px", height: "250px", overflow: "hidden" }}
         />

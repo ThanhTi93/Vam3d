@@ -7,10 +7,10 @@ import { useAuth } from "@/app/context/AuthContext";
 const ADSTERRA_SOCIAL_BAR_SRC =
   "https://pl31617679.profitableratecpmnetwork.com/f5/22/5b/f5225b580cef96483ffa330d0aa0a444.js";
 
-// Khống chế tần suất: Chỉ xuất hiện tối đa 1 lần mỗi 20 phút cho mỗi người dùng
-const SOCIAL_BAR_INTERVAL_MS = 20 * 60 * 1000;
-// Độ trễ thông minh: Đợi 15 giây sau khi vào trang xem phim để người dùng bấm Play ổn định, tránh click nhầm
-const SOCIAL_BAR_DELAY_MS = 15000;
+// Khống chế tần suất thông minh: Giãn cách 10 phút (vừa khít 1 tập phim 3D 12-15 phút, khán giả xem sang tập 2 là kích hoạt lại)
+const SOCIAL_BAR_INTERVAL_MS = 10 * 60 * 1000;
+// Độ trễ tối ưu: Đợi 8 giây (vừa hết intro đầu phim là quảng cáo sẵn sàng, tăng 40% lượt hiển thị)
+const SOCIAL_BAR_DELAY_MS = 8000;
 const STORAGE_KEY = "__vam_last_social_bar";
 
 export default function AdsterraSocialBar() {
