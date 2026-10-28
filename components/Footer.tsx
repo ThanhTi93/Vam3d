@@ -87,8 +87,6 @@ export default function Footer() {
             <li><Link href="/dieu-khoan-su-dung" prefetch={false} className="hover:text-orange-500 transition-colors">Điều khoản sử dụng</Link></li>
             <li><Link href="/chinh-sach-bao-mat" prefetch={false} className="hover:text-orange-500 transition-colors">Chính sách bảo mật</Link></li>
             <li><Link href="/khieu-nai-ban-quyen" prefetch={false} className="hover:text-orange-500 transition-colors">Khiếu nại bản quyền</Link></li>
-            <li><a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors text-amber-400/80">📡 RSS Feed (Google Index)</a></li>
-            <li><a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors">🗺️ XML Sitemap</a></li>
           </ul>
           <p className="text-[11px] text-gray-500 mb-1">Email hỗ trợ:</p>
           <p className="text-xs font-bold text-orange-500">contact@vam3dhentai.online</p>
