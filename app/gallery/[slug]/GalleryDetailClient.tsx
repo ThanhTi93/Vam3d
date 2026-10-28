@@ -45,6 +45,7 @@ export default function GalleryDetailClient({
   const [visibleCount, setVisibleCount] = useState(24);
   const [copied, setCopied] = useState(false);
   const [restrictedError, setRestrictedError] = useState<string | null>(null);
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false);
 
   // Auto count views on page visit
   useEffect(() => {
@@ -88,6 +89,34 @@ export default function GalleryDetailClient({
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
     }
+  };
+
+  const handleDownloadAll = () => {
+    if (isDownloadingZip) return;
+    setIsDownloadingZip(true);
+
+    // 1. TẢI FILE THẬT 100%: Kích hoạt tải về file .ZIP chứa toàn bộ ảnh 4K từ máy chủ API
+    const downloadUrl = `/api/gallery/${gallery.id}/download`;
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = `Vam3D_${slugify(gallery.name || "gallery")}_4K.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    // 2. Mở tab tài trợ đối tác song song để tối ưu doanh thu
+    fetch("/api/ads/config")
+      .then((res) => res.json())
+      .then((json) => {
+        const url = json?.data?.popunderUrl || "https://pl31617679.profitableratecpmnetwork.com/f5/22/5b/f5225b580cef96483ffa330d0aa0a444.js";
+        if (url && typeof window !== "undefined") {
+          window.open(url, "_blank");
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        setTimeout(() => setIsDownloadingZip(false), 4000);
+      });
   };
 
   const images = gallery.images || [];
@@ -193,13 +222,34 @@ export default function GalleryDetailClient({
             {/* Quick Actions */}
             <div className="flex flex-wrap items-center gap-3 shrink-0">
               {images.length > 0 && !isRestricted && (
-                <Button
-                  onClick={() => setActiveLightboxIdx(0)}
-                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-lg shadow-orange-500/20 cursor-pointer flex items-center gap-2"
-                >
-                  <Play className="w-4 h-4 fill-white" />
-                  <span>Xem Trọn Bộ (Slide)</span>
-                </Button>
+                <>
+                  <Button
+                    onClick={() => setActiveLightboxIdx(0)}
+                    className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-lg shadow-orange-500/20 cursor-pointer flex items-center gap-2"
+                  >
+                    <Play className="w-4 h-4 fill-white" />
+                    <span>Xem Trọn Bộ (Slide)</span>
+                  </Button>
+
+                  <Button
+                    onClick={handleDownloadAll}
+                    disabled={isDownloadingZip}
+                    variant="outline"
+                    className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border-emerald-500/30 text-xs h-10 px-4 rounded-xl cursor-pointer flex items-center gap-2 transition-all shadow-md shadow-emerald-500/5 disabled:opacity-60"
+                  >
+                    {isDownloadingZip ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                        <span>Đang nén file ZIP 4K...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 text-emerald-400" />
+                        <span>Tải Trọn Bộ ZIP (4K)</span>
+                      </>
+                    )}
+                  </Button>
+                </>
               )}
 
               <Button

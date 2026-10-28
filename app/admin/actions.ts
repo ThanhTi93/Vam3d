@@ -3178,3 +3178,77 @@ export async function getCachedAdsterraAiSolutionsAction(): Promise<{
     return { success: true, solutionMarkdown: "" };
   }
 }
+
+export async function getAdMonetizationSettingsAction(): Promise<{
+  success: boolean;
+  data: {
+    popunderUrl: string;
+    popunderEnabled: boolean;
+    popunderIntervalHours: number;
+    mobileStickyEnabled: boolean;
+    socialBarEnabled: boolean;
+  };
+}> {
+  await verifyAdmin();
+  try {
+    const [popunderUrl, popunderEnabled, popunderInterval, mobileStickyEnabled, socialBarEnabled] = await Promise.all([
+      getCachedSystemSetting("ad_popunder_url", ""),
+      getCachedSystemSetting("ad_popunder_enabled", "true"),
+      getCachedSystemSetting("ad_popunder_interval_hours", "12"),
+      getCachedSystemSetting("ad_mobile_sticky_enabled", "true"),
+      getCachedSystemSetting("ad_social_bar_enabled", "true"),
+    ]);
+    return {
+      success: true,
+      data: {
+        popunderUrl,
+        popunderEnabled: popunderEnabled !== "false",
+        popunderIntervalHours: parseInt(popunderInterval, 10) || 12,
+        mobileStickyEnabled: mobileStickyEnabled !== "false",
+        socialBarEnabled: socialBarEnabled !== "false",
+      },
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      data: {
+        popunderUrl: "",
+        popunderEnabled: true,
+        popunderIntervalHours: 12,
+        mobileStickyEnabled: true,
+        socialBarEnabled: true,
+      },
+    };
+  }
+}
+
+export async function saveAdMonetizationSettingsAction(settings: {
+  popunderUrl?: string;
+  popunderEnabled?: boolean;
+  popunderIntervalHours?: number;
+  mobileStickyEnabled?: boolean;
+  socialBarEnabled?: boolean;
+}): Promise<{ success: boolean; error?: string }> {
+  await verifyAdmin();
+  try {
+    if (settings.popunderUrl !== undefined) {
+      await setSystemSetting("ad_popunder_url", settings.popunderUrl.trim());
+    }
+    if (settings.popunderEnabled !== undefined) {
+      await setSystemSetting("ad_popunder_enabled", settings.popunderEnabled ? "true" : "false");
+    }
+    if (settings.popunderIntervalHours !== undefined) {
+      await setSystemSetting("ad_popunder_interval_hours", settings.popunderIntervalHours.toString());
+    }
+    if (settings.mobileStickyEnabled !== undefined) {
+      await setSystemSetting("ad_mobile_sticky_enabled", settings.mobileStickyEnabled ? "true" : "false");
+    }
+    if (settings.socialBarEnabled !== undefined) {
+      await setSystemSetting("ad_social_bar_enabled", settings.socialBarEnabled ? "true" : "false");
+    }
+    revalidatePath("/", "layout");
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err?.message };
+  }
+}

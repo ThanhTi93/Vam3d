@@ -10,6 +10,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import TrafficTracker from "@/components/TrafficTracker";
 import AdsterraSocialBar from "@/components/AdsterraSocialBar";
+import SmartPopunder from "@/components/SmartPopunder";
+import MobileStickyBanner from "@/components/MobileStickyBanner";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -88,6 +90,10 @@ export const metadata: Metadata = {
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
   },
+  other: {
+    rating: "RTA-5042-1996-1400-1579-RTA",
+    "content-rating": "adult",
+  },
 };
 
 const websiteJsonLd = {
@@ -145,6 +151,8 @@ export default function RootLayout({
             <Footer />
             <Suspense fallback={null}>
               <AdsterraSocialBar />
+              <SmartPopunder />
+              <MobileStickyBanner />
             </Suspense>
           </WatchlistProvider>
         </AuthProvider>

@@ -311,6 +311,9 @@ export default function MoviePageClient({
               </div>
             </div>
 
+            {/* Banner 300x250 Adsterra - Vị trí trực diện trước danh sách tập (Đảm bảo 100% viewability trên mobile) */}
+            <AdBanner300x250 className="my-3" adKey={`movie-${movie.id}-top-ep-${activeEpisode}`} />
+
             {/* ── RELATED EPISODES ── */}
             {(() => {
               const currentActiveEpId = movie.episodes?.[activeEpisode]?.id;

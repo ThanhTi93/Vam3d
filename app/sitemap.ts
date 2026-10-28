@@ -6,7 +6,7 @@ import { slugify } from "@/lib/utils";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost"))
     ? process.env.NEXT_PUBLIC_SITE_URL
-    : "https://www.vam3dhentai.online";
+    : "https://vam3dhentai.online";
   
   // Basic static pages
   const staticPaths: MetadataRoute.Sitemap = [
