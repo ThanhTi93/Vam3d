@@ -56,9 +56,12 @@ import {
   getCachedAdsterraAiSolutionsAction,
   getAdMonetizationSettingsAction,
   saveAdMonetizationSettingsAction,
+  getAdOpsDiagnosticsAction,
+  askAdOpsAiSpecialistAction,
   type StrategicAnalyticsData,
   type WeeklyStrategicData,
   type AdsterraDailyStat,
+  type AdOpsDiagnosticsData,
 } from "./actions";
 
 const DEFAULT_ADSTERRA_REAL_STATS: AdsterraDailyStat[] = [
@@ -117,6 +120,15 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
   const [isGeneratingAdsterraAi, setIsGeneratingAdsterraAi] = useState(false);
   const [copiedAdsterraAi, setCopiedAdsterraAi] = useState(false);
 
+  // AI Ad-Ops Specialist & Placement Diagnostics state
+  const [adOpsDiag, setAdOpsDiag] = useState<AdOpsDiagnosticsData | null>(null);
+  const [isRefreshingDiag, setIsRefreshingDiag] = useState(false);
+  const [adOpsChatHistory, setAdOpsChatHistory] = useState<
+    Array<{ role: "user" | "assistant"; content: string; timestamp: string }>
+  >([]);
+  const [adOpsQuestion, setAdOpsQuestion] = useState("");
+  const [isAskingAdOpsAi, setIsAskingAdOpsAi] = useState(false);
+
   // Weekly AI Action Plan
   const [weeklyAiPlan, setWeeklyAiPlan] = useState<string | null>(null);
   const [isGeneratingWeeklyAi, setIsGeneratingWeeklyAi] = useState(false);
@@ -156,13 +168,14 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
   const fetchData = async (refresh = false) => {
     if (refresh) setLoading(true);
     try {
-      const [resStrategy, resWeekly, resAdsterra, resToken, resSolution, resAdConfig] = await Promise.all([
+      const [resStrategy, resWeekly, resAdsterra, resToken, resSolution, resAdConfig, resDiag] = await Promise.all([
         getStrategyAnalyticsAction(),
         getDailyStrategicBriefingAction(),
         getAdsterraRealStatsAction(),
         getAdsterraApiTokenAction(),
         getCachedAdsterraAiSolutionsAction(),
         getAdMonetizationSettingsAction(),
+        getAdOpsDiagnosticsAction(false),
       ]);
 
       if (resStrategy.success && resStrategy.data) {
@@ -189,6 +202,9 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
       }
       if (resAdConfig.success && resAdConfig.data) {
         setAdSettings(resAdConfig.data);
+      }
+      if (resDiag. data) {
+        setAdOpsDiag(resDiag.data);
       }
     } catch (err: any) {
       showToast("Lỗi khi tải dữ liệu chiến lược", "error");
@@ -389,6 +405,7 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
         } else {
           handleGenerateAdsterraAiSolutions(nextData);
         }
+        handleRefreshDiagnostics(true);
       } else {
         showToast(res.error || "Không thể đồng bộ từ Adsterra", "error");
       }
@@ -396,6 +413,56 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
       showToast("Lỗi khi kết nối Adsterra API", "error");
     } finally {
       setIsSyncingApi(false);
+    }
+  };
+
+  // Refresh per-placement diagnostics from Adsterra API
+  const handleRefreshDiagnostics = async (forceApi = true) => {
+    setIsRefreshingDiag(true);
+    try {
+      const res = await getAdOpsDiagnosticsAction(forceApi);
+      if (res.data) {
+        setAdOpsDiag(res.data);
+        if (forceApi) {
+          showToast("✅ Đã quét & chẩn đoán sức khỏe từng Placement từ Adsterra API!");
+        }
+      }
+    } catch {
+      showToast("Không thể làm mới chẩn đoán Placement", "error");
+    } finally {
+      setIsRefreshingDiag(false);
+    }
+  };
+
+  // Ask the AI Ad-Ops Specialist a specific question or diagnostic prompt
+  const handleAskAdOpsSpecialist = async (presetQuestion?: string) => {
+    const q = (presetQuestion ?? adOpsQuestion).trim();
+    if (!q || isAskingAdOpsAi) return;
+
+    const nowTime = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    const nextHistory = [...adOpsChatHistory, { role: "user" as const, content: q, timestamp: nowTime }];
+    setAdOpsChatHistory(nextHistory);
+    if (!presetQuestion) setAdOpsQuestion("");
+    setIsAskingAdOpsAi(true);
+
+    try {
+      const res = await askAdOpsAiSpecialistAction({
+        question: q,
+        history: nextHistory.map((m) => ({ role: m.role, content: m.content })),
+      });
+      const replyTime = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+      if (res.success && res.answer) {
+        setAdOpsChatHistory([
+          ...nextHistory,
+          { role: "assistant" as const, content: res.answer, timestamp: replyTime },
+        ]);
+      } else {
+        showToast(res.error || "Không thể nhận phản hồi từ Chuyên Viên AI", "error");
+      }
+    } catch {
+      showToast("Lỗi khi kết nối Chuyên Viên AI Quảng Cáo", "error");
+    } finally {
+      setIsAskingAdOpsAi(false);
     }
   };
 
@@ -1337,8 +1404,332 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
             </div>
 
             <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
-              <span>Showing 8 of 8 daily records • Group by: DATE</span>
+              <span>Showing {adsterraData.stats.length} daily records • Group by: DATE</span>
               <span className="text-[11px] text-gray-400">Tỷ giá quy đổi ước tính: 1 USD = 25.400 VNĐ</span>
+            </div>
+          </div>
+
+          {/* ── AI AD-OPS SPECIALIST & REALTIME PLACEMENT DIAGNOSTICS CENTER ── */}
+          <div className="bg-gradient-to-b from-[#141726] to-[#0f111c] border border-orange-500/40 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-5">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                    <Cpu className="w-3.5 h-3.5" />
+                    TRỢ LÝ AI CHUYÊN VIÊN QUẢN LÝ & BẮT LỖI QUẢNG CÁO (24/7 AD-OPS)
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    Điểm Sức Khỏe QC: {adOpsDiag?.healthScore ?? 88}/100
+                  </span>
+                </div>
+                <h4 className="text-lg sm:text-xl font-black text-white">
+                  Giám Sát Từng Vị Trí Đặt QC (Placement API), Tự Động Phát Hiện Lỗi CTR/CPM & Tư Vấn Trực Tiếp
+                </h4>
+                <p className="text-xs text-gray-400">
+                  Theo dõi sâu tới từng mã Placement trên Adsterra (<code className="text-orange-400">SocialBar_1</code>, <code className="text-orange-400">300x250_1</code>, <code className="text-orange-400">Smartlink_1</code>), tự động phát hiện vị trí làm loãng CTR/CPM và kiểm định code đặt quảng cáo.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  onClick={() => handleRefreshDiagnostics(true)}
+                  disabled={isRefreshingDiag}
+                  className="bg-orange-500 hover:bg-orange-600 text-black font-extrabold text-xs h-9 px-4 gap-1.5 cursor-pointer shadow-lg shadow-orange-500/20"
+                >
+                  {isRefreshingDiag ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-black" />
+                      Đang quét Placement API...
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4 text-black" />
+                      🔍 Quét & Bắt Lỗi QC Ngay
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* 1. Automated Bug & Anomaly Alerts */}
+            {adOpsDiag?.alerts && adOpsDiag.alerts.length > 0 && (
+              <div className="space-y-3">
+                <h5 className="text-xs font-extrabold uppercase tracking-wider text-orange-400 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  1. Hệ Thống Tự Động Bắt Bệnh & Cảnh Báo Biến Động CTR / CPM ({adOpsDiag.alerts.length} phát hiện)
+                </h5>
+                <div className="grid grid-cols-1 gap-3">
+                  {adOpsDiag.alerts.map((alert) => {
+                    const isCrit = alert.severity === "critical";
+                    const isWarn = alert.severity === "warning";
+                    return (
+                      <div
+                        key={alert.id}
+                        className={`p-4 rounded-2xl border space-y-2 ${
+                          isCrit
+                            ? "bg-rose-950/25 border-rose-500/40"
+                            : isWarn
+                            ? "bg-amber-950/20 border-amber-500/35"
+                            : "bg-emerald-950/20 border-emerald-500/35"
+                        }`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                                isCrit
+                                  ? "bg-rose-500 text-white"
+                                  : isWarn
+                                  ? "bg-amber-500 text-black"
+                                  : "bg-emerald-500 text-black"
+                              }`}
+                            >
+                              {isCrit ? "CẢNH BÁO ĐỎ" : isWarn ? "LƯU Ý TỐI ƯU" : "ĐẠT CHUẨN"}
+                            </span>
+                            <span className="text-xs sm:text-sm font-bold text-white">{alert.title}</span>
+                          </div>
+                          <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-black/50 text-gray-200 border border-white/10 self-start sm:self-center">
+                            {alert.metricBadge}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-300 leading-relaxed">
+                          <strong className="text-gray-100">Nguyên nhân kỹ thuật:</strong> {alert.detail}
+                        </p>
+                        <div className="text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-xl">
+                          <strong className="text-emerald-400">🛠️ Giải pháp khắc phục:</strong> {alert.solution}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 2. Per-Placement Breakdown Table from Adsterra API */}
+            {adOpsDiag?.placements && adOpsDiag.placements.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h5 className="text-xs font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                    <Layers className="w-4 h-4" />
+                    2. Bảng Bóc Tách Sức Khỏe Từng Vị Trí Đặt QC (Group by: PLACEMENT - 7 Ngày Qua)
+                  </h5>
+                  <span className="text-[11px] text-gray-400">
+                    Giúp phát hiện ngay mã QC nào đang gánh doanh thu và mã nào đang kéo tụt CTR/CPM
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/30">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-white/5 text-gray-400 border-b border-white/10 font-bold uppercase text-[10px]">
+                        <th className="py-3 px-4">Placement (Mã vị trí)</th>
+                        <th className="py-3 px-4 text-right">Impressions (7d)</th>
+                        <th className="py-3 px-4 text-right">Clicks (7d)</th>
+                        <th className="py-3 px-4 text-right">CTR</th>
+                        <th className="py-3 px-4 text-right">CPM TB</th>
+                        <th className="py-3 px-4 text-right">Doanh Thu</th>
+                        <th className="py-3 px-4 text-right">Ngày Mới Nhất</th>
+                        <th className="py-3 px-4">Chẩn Đoán & Khuyến Nghị Từ Chuyên Viên</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5 text-gray-300">
+                      {adOpsDiag.placements.map((pl) => {
+                        const statusBadge =
+                          pl.status === "optimal"
+                            ? { label: "🟢 Chủ lực", cls: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" }
+                            : pl.status === "warning"
+                            ? { label: "🟡 Cần kiểm soát Imp", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" }
+                            : { label: "🔴 Kém hiệu quả", cls: "bg-rose-500/20 text-rose-400 border-rose-500/30" };
+
+                        return (
+                          <tr key={pl.placementId} className="hover:bg-white/[0.03] align-top">
+                            <td className="py-3.5 px-4 space-y-1">
+                              <div className="font-bold text-white flex items-center gap-1.5">
+                                <span>{pl.title}</span>
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded border font-bold ${statusBadge.cls}`}>
+                                  {statusBadge.label}
+                                </span>
+                              </div>
+                              <div className="text-[10px] font-mono text-gray-500">ID: #{pl.placementId}</div>
+                              <div className="text-[10px] text-gray-400">{pl.alias}</div>
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-mono">
+                              <div className="font-bold text-white">{pl.impressions.toLocaleString("vi-VN")}</div>
+                              <div className="text-[10px] text-gray-500">{pl.shareOfImpressions}% tổng imp</div>
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-mono font-bold text-blue-400">
+                              {pl.clicks.toLocaleString("vi-VN")}
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-mono">
+                              <span
+                                className={`font-bold ${
+                                  pl.ctr > 10 ? "text-emerald-400" : pl.ctr < 0.2 ? "text-rose-400" : "text-blue-400"
+                                }`}
+                              >
+                                {pl.ctr.toFixed(3)}%
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-mono font-bold text-amber-400">
+                              ${pl.cpm.toFixed(3)}
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-mono">
+                              <div className="font-black text-emerald-400">${pl.revenue.toFixed(3)}</div>
+                              <div className="text-[10px] text-gray-500">{pl.shareOfRevenue}% tổng thu</div>
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-mono text-[11px]">
+                              <div className="text-white font-semibold">{pl.latestImpressions} imp</div>
+                              <div className="text-blue-400">CTR {pl.latestCtr}%</div>
+                              <div className="text-amber-400">CPM ${pl.latestCpm}</div>
+                            </td>
+                            <td className="py-3.5 px-4 max-w-md space-y-1">
+                              <p className="text-[11px] text-gray-300 leading-relaxed">{pl.diagnosis}</p>
+                              <p className="text-[11px] text-emerald-400 font-medium">
+                                → {pl.recommendation}
+                              </p>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* 3. Live Source Code Ad Placement Audit */}
+            {adOpsDiag?.codeAudit && (
+              <div className="space-y-3">
+                <h5 className="text-xs font-extrabold uppercase tracking-wider text-blue-400 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4" />
+                  3. Kiểm Định Cấu Hình Code Đặt Quảng Cáo Trong Website (Chuẩn Viewability & Bảo Vệ CPM)
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {adOpsDiag.codeAudit.map((item) => (
+                    <div
+                      key={item.component}
+                      className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-white font-mono">{item.component}</span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            item.status === "optimal"
+                              ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                              : "bg-zinc-800 text-gray-300 border-white/10"
+                          }`}
+                        >
+                          {item.badge}
+                        </span>
+                      </div>
+                      <p className="text-[11px] font-semibold text-orange-300">{item.configSummary}</p>
+                      <p className="text-[11px] text-gray-400 leading-relaxed">{item.whyItMatters}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 4. Interactive AI Ad-Ops Specialist Consultation Chat */}
+            <div className="pt-4 border-t border-white/10 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h5 className="text-sm font-black text-white flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-orange-400" />
+                    4. Hỏi Đáp Trực Tiếp Với Chuyên Viên AI Bỏ Quảng Cáo (Ad-Ops Assistant)
+                  </h5>
+                  <p className="text-xs text-gray-400">
+                    Chuyên viên AI đã nắm toàn bộ số liệu API từng ngày, từng Placement và cấu hình code hiện tại. Bấm câu hỏi nhanh hoặc nhập vấn đề bạn muốn kiểm tra:
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick Diagnostic Buttons */}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  "🔍 Phân tích vì sao hôm nay CTR và CPM biến động so với các ngày trước?",
+                  "📐 Tư vấn cách đặt quảng cáo chuẩn vàng cho web phim hoạt hình 3D (85% Mobile) không tụt CPM?",
+                  "⚖️ So sánh 3 Placement (SocialBar_1, 300x250_1, Smartlink_1): Cái nào nên giữ, cái nào nên tắt?",
+                  "💰 Làm sao tăng doanh thu từ Social Bar và Banner 300x250 lên gấp đôi mà không làm phiền người xem?",
+                ].map((qText, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    disabled={isAskingAdOpsAi}
+                    onClick={() => handleAskAdOpsSpecialist(qText)}
+                    className="text-left text-[11px] font-semibold px-3 py-2 rounded-xl bg-white/5 hover:bg-orange-500/20 text-gray-200 hover:text-orange-300 border border-white/10 hover:border-orange-500/40 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {qText}
+                  </button>
+                ))}
+              </div>
+
+              {/* Chat Conversation History */}
+              {adOpsChatHistory.length > 0 && (
+                <div className="space-y-3 max-h-[520px] overflow-y-auto p-4 rounded-2xl bg-black/50 border border-white/10">
+                  {adOpsChatHistory.map((msg, i) => (
+                    <div
+                      key={i}
+                      className={`p-4 rounded-2xl text-xs leading-relaxed ${
+                        msg.role === "user"
+                          ? "bg-orange-500/15 border border-orange-500/30 text-orange-100 ml-auto max-w-2xl"
+                          : "bg-[#131624] border border-emerald-500/30 text-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5 text-[10px] font-bold uppercase tracking-wider">
+                        <span className={msg.role === "user" ? "text-orange-400" : "text-emerald-400"}>
+                          {msg.role === "user" ? "👤 Admin hỏi" : "🤖 Chuyên Viên AI Quảng Cáo (Ad-Ops)"}
+                        </span>
+                        <span className="text-gray-500">{msg.timestamp}</span>
+                      </div>
+                      <div className="whitespace-pre-wrap font-sans text-xs leading-relaxed">
+                        {msg.content}
+                      </div>
+                    </div>
+                  ))}
+                  {isAskingAdOpsAi && (
+                    <div className="p-4 rounded-2xl bg-[#131624] border border-orange-500/30 text-xs text-orange-300 flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin text-orange-400" />
+                      <span>Chuyên viên AI đang đối chiếu số liệu Placement API và phân tích câu trả lời...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Question Input Bar */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={adOpsQuestion}
+                  onChange={(e) => setAdOpsQuestion(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAskAdOpsSpecialist();
+                    }
+                  }}
+                  placeholder="Hỏi Chuyên Viên AI (VD: Có nên đặt thêm banner ở trang Gallery không? Vì sao CPM hôm nay giảm?)..."
+                  className="flex-1 bg-black/60 border border-white/15 rounded-xl px-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                />
+                <Button
+                  onClick={() => handleAskAdOpsSpecialist()}
+                  disabled={isAskingAdOpsAi || !adOpsQuestion.trim()}
+                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-black font-extrabold text-xs h-10 px-5 rounded-xl cursor-pointer shrink-0 shadow-lg shadow-orange-500/20"
+                >
+                  {isAskingAdOpsAi ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                      Đang phân tích...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                      Hỏi Chuyên Viên AI
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
 
