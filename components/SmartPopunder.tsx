@@ -15,14 +15,13 @@ interface SmartPopunderProps {
 
 const STORAGE_KEY = "__vam_last_smart_pop";
 
-// Link Adsterra Smartlink / Direct Link (hoặc link tài trợ tương thích CPM cao)
-const DEFAULT_DIRECT_LINK =
-  "https://pl31617679.profitableratecpmnetwork.com/f5/22/5b/f5225b580cef96483ffa330d0aa0a444.js";
+// Mặc định để trống (TUYỆT ĐỐI không gán file .js vào window.open)
+const DEFAULT_DIRECT_LINK = "";
 
 export default function SmartPopunder({
-  intervalHours = 12,
+  intervalHours = 24,
   directLinkUrl,
-  enabled = true,
+  enabled = false,
 }: SmartPopunderProps) {
   const pathname = usePathname();
   const { user } = useAuth();

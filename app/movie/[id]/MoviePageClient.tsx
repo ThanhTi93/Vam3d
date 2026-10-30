@@ -436,9 +436,6 @@ export default function MoviePageClient({
               </Button>
             </div>
 
-            {/* Banner 300x250 Adsterra */}
-            <AdBanner300x250 adKey={`movie-${movie.id}-ep-${activeEpisode}`} />
-
             {/* AI Galleries Section inside Player View */}
             {movie.aiGalleries && movie.aiGalleries.length > 0 && (
               <div className="space-y-4 pt-5 border-t border-white/5 animate-in fade-in duration-300">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 
 interface AdBanner300x250Props {
@@ -44,6 +44,8 @@ const srcDoc = `<!DOCTYPE html>
 export default function AdBanner300x250({ className = "", adKey }: AdBanner300x250Props) {
   const { user } = useAuth();
   const [canShow, setCanShow] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     // 1. Chặn bot Google / Crawlers để bảo vệ SEO 100%
@@ -55,28 +57,59 @@ export default function AdBanner300x250({ className = "", adKey }: AdBanner300x2
 
     // 2. Không hiện cho tài khoản VIP hoặc Admin
     const isVipOrAdmin = !!user && ((user.level && user.level > 0) || user.role === "admin");
-    if (isVipOrAdmin) return;
+    if (isVipOrAdmin) {
+      setCanShow(false);
+      return;
+    }
 
     setCanShow(true);
   }, [user]);
 
+  // 3. Chỉ nạp iframe khi người dùng thực sự cuộn tới gần vùng hiển thị (tối ưu Viewability & đẩy cao CTR/CPM)
+  useEffect(() => {
+    if (!canShow) return;
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "150px" }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [canShow, adKey]);
+
   if (!canShow) return null;
 
   return (
-    <div className={`my-6 flex flex-col items-center justify-center w-full ${className}`}>
+    <div
+      ref={containerRef}
+      className={`my-6 flex flex-col items-center justify-center w-full ${className}`}
+    >
       <span className="text-[10px] tracking-wider uppercase text-gray-500 mb-1 select-none">
         Quảng cáo
       </span>
       <div className="w-[300px] h-[250px] overflow-hidden rounded-md bg-[#13161f] shadow-lg flex items-center justify-center border border-gray-800/40">
-        <iframe
-          key={adKey}
-          title="Advertisement"
-          srcDoc={srcDoc}
-          width={300}
-          height={250}
-          scrolling="no"
-          style={{ border: 0, width: "300px", height: "250px", overflow: "hidden" }}
-        />
+        {isVisible && (
+          <iframe
+            key={adKey}
+            title="Advertisement"
+            srcDoc={srcDoc}
+            width={300}
+            height={250}
+            scrolling="no"
+            style={{ border: 0, width: "300px", height: "250px", overflow: "hidden" }}
+          />
+        )}
       </div>
     </div>
   );

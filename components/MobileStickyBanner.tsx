@@ -10,7 +10,8 @@ interface MobileStickyBannerProps {
   adKey?: string;
 }
 
-const DEFAULT_BANNER_KEY = "a1c807f9e14c4acd0b1f92582a15c657";
+// Lưu ý: Chỉ truyền adKey của đơn vị 320x50 thật sự. Không dùng chung key 300x250 để tránh bị cắt khung làm sập CTR & CPM.
+const DEFAULT_BANNER_KEY = "";
 const SESSION_CLOSED_KEY = "__vam_sticky_banner_closed";
 
 export default function MobileStickyBanner({ className = "", adKey = DEFAULT_BANNER_KEY }: MobileStickyBannerProps) {
@@ -20,7 +21,7 @@ export default function MobileStickyBanner({ className = "", adKey = DEFAULT_BAN
   const [isClosed, setIsClosed] = useState(true);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !adKey) return;
 
     // 1. Chặn bot Google / Web crawlers / Lighthouse để bảo vệ SEO 100%
     const isBot =
