@@ -104,19 +104,7 @@ export default function GalleryDetailClient({
     a.click();
     a.remove();
 
-    // 2. Mở tab tài trợ đối tác song song để tối ưu doanh thu
-    fetch("/api/ads/config")
-      .then((res) => res.json())
-      .then((json) => {
-        const url = json?.data?.popunderUrl || "https://pl31617679.profitableratecpmnetwork.com/f5/22/5b/f5225b580cef96483ffa330d0aa0a444.js";
-        if (url && typeof window !== "undefined") {
-          window.open(url, "_blank");
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        setTimeout(() => setIsDownloadingZip(false), 4000);
-      });
+    setTimeout(() => setIsDownloadingZip(false), 4000);
   };
 
   const images = gallery.images || [];
