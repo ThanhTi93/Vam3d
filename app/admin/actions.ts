@@ -2850,14 +2850,14 @@ export interface AdsterraDailyStat {
 }
 
 const DEFAULT_ADSTERRA_REAL_STATS: AdsterraDailyStat[] = [
-  { date: "2026/10/26", impressions: 610, clicks: 76, ctr: 12.459, cpm: 0.679, revenue: 0.41 },
+  { date: "2026/11/01", impressions: 1317, clicks: 355, ctr: 26.955, cpm: 0.081, revenue: 0.11 },
+  { date: "2026/10/31", impressions: 3819, clicks: 1111, ctr: 29.091, cpm: 0.553, revenue: 2.11 },
+  { date: "2026/10/30", impressions: 4186, clicks: 423, ctr: 10.105, cpm: 0.061, revenue: 0.25 },
+  { date: "2026/10/29", impressions: 4606, clicks: 391, ctr: 8.489, cpm: 0.309, revenue: 1.42 },
+  { date: "2026/10/28", impressions: 4142, clicks: 786, ctr: 18.976, cpm: 0.110, revenue: 0.46 },
+  { date: "2026/10/27", impressions: 3589, clicks: 645, ctr: 17.972, cpm: 0.097, revenue: 0.35 },
+  { date: "2026/10/26", impressions: 4050, clicks: 622, ctr: 15.358, cpm: 0.196, revenue: 0.79 },
   { date: "2026/10/25", impressions: 2467, clicks: 361, ctr: 14.633, cpm: 0.255, revenue: 0.63 },
-  { date: "2026/10/24", impressions: 1910, clicks: 342, ctr: 17.906, cpm: 0.123, revenue: 0.23 },
-  { date: "2026/10/23", impressions: 1338, clicks: 265, ctr: 19.806, cpm: 0.170, revenue: 0.23 },
-  { date: "2026/10/22", impressions: 1292, clicks: 285, ctr: 22.059, cpm: 0.147, revenue: 0.19 },
-  { date: "2026/10/21", impressions: 1491, clicks: 188, ctr: 12.609, cpm: 0.177, revenue: 0.26 },
-  { date: "2026/10/20", impressions: 1461, clicks: 200, ctr: 13.689, cpm: 0.157, revenue: 0.23 },
-  { date: "2026/10/19", impressions: 2065, clicks: 260, ctr: 12.591, cpm: 0.147, revenue: 0.30 },
 ];
 
 export async function getAdsterraRealStatsAction(): Promise<{
@@ -3029,7 +3029,7 @@ export async function syncAdsterraStatsFromApiAction(tokenOverride?: string): Pr
         clicks: clk,
         ctr: Number(ctr.toFixed(3)),
         cpm: Number(cpm.toFixed(3)),
-        revenue: Number(rev.toFixed(2)),
+        revenue: Number(rev.toFixed(3)),
       };
     });
 
@@ -3302,13 +3302,100 @@ export interface AdOpsCodeConfigAudit {
   whyItMatters: string;
 }
 
+export interface PlacementDailyMetric {
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  cpm: number;
+  revenue: number;
+}
+
+export interface PlacementDailyBreakdownRow {
+  date: string; // e.g. "2026/11/01"
+  socialBar: PlacementDailyMetric;
+  banner300: PlacementDailyMetric;
+  nativeBanner: PlacementDailyMetric;
+  otherAds: PlacementDailyMetric;
+  totalImpressions: number;
+  totalClicks: number;
+  totalRevenue: number;
+  topEarnerLabel: string;
+}
+
 export interface AdOpsDiagnosticsData {
   updatedAt: string;
   healthScore: number; // 0 - 100
   placements: AdsterraPlacementSummary[];
+  dailyByPlacement: PlacementDailyBreakdownRow[];
   alerts: AdOpsDiagnosticAlert[];
   codeAudit: AdOpsCodeConfigAudit[];
 }
+
+const EMPTY_PLACEMENT_METRIC: PlacementDailyMetric = {
+  impressions: 0,
+  clicks: 0,
+  ctr: 0,
+  cpm: 0,
+  revenue: 0,
+};
+
+const DEFAULT_PLACEMENT_DAILY_ROWS: PlacementDailyBreakdownRow[] = [
+  {
+    date: "2026/11/01",
+    socialBar: { impressions: 838, clicks: 342, ctr: 40.811, cpm: 0.088, revenue: 0.074 },
+    banner300: { impressions: 479, clicks: 13, ctr: 2.714, cpm: 0.067, revenue: 0.032 },
+    nativeBanner: { impressions: 0, clicks: 0, ctr: 0, cpm: 0, revenue: 0 },
+    otherAds: { impressions: 0, clicks: 0, ctr: 0, cpm: 0, revenue: 0 },
+    totalImpressions: 1317,
+    totalClicks: 355,
+    totalRevenue: 0.106,
+    topEarnerLabel: "SocialBar_1 (70%)",
+  },
+  {
+    date: "2026/10/31",
+    socialBar: { impressions: 2472, clicks: 1091, ctr: 44.134, cpm: 0.678, revenue: 1.676 },
+    banner300: { impressions: 1327, clicks: 20, ctr: 1.507, cpm: 0.329, revenue: 0.436 },
+    nativeBanner: { impressions: 0, clicks: 0, ctr: 0, cpm: 0, revenue: 0 },
+    otherAds: { impressions: 20, clicks: 0, ctr: 0, cpm: 0.05, revenue: 0.001 },
+    totalImpressions: 3819,
+    totalClicks: 1111,
+    totalRevenue: 2.113,
+    topEarnerLabel: "SocialBar_1 (79%)",
+  },
+  {
+    date: "2026/10/30",
+    socialBar: { impressions: 984, clicks: 412, ctr: 41.87, cpm: 0.086, revenue: 0.085 },
+    banner300: { impressions: 2943, clicks: 11, ctr: 0.374, cpm: 0.053, revenue: 0.156 },
+    nativeBanner: { impressions: 0, clicks: 0, ctr: 0, cpm: 0, revenue: 0 },
+    otherAds: { impressions: 259, clicks: 0, ctr: 0, cpm: 0.049, revenue: 0.013 },
+    totalImpressions: 4186,
+    totalClicks: 423,
+    totalRevenue: 0.254,
+    topEarnerLabel: "300x250_1 (61%)",
+  },
+  {
+    date: "2026/10/29",
+    socialBar: { impressions: 818, clicks: 381, ctr: 46.577, cpm: 0.118, revenue: 0.097 },
+    banner300: { impressions: 3431, clicks: 10, ctr: 0.291, cpm: 0.384, revenue: 1.317 },
+    nativeBanner: { impressions: 0, clicks: 0, ctr: 0, cpm: 0, revenue: 0 },
+    otherAds: { impressions: 357, clicks: 0, ctr: 0, cpm: 0.028, revenue: 0.01 },
+    totalImpressions: 4606,
+    totalClicks: 391,
+    totalRevenue: 1.424,
+    topEarnerLabel: "300x250_1 (92%)",
+  },
+  {
+    date: "2026/10/28",
+    socialBar: { impressions: 1621, clicks: 769, ctr: 47.44, cpm: 0.146, revenue: 0.237 },
+    banner300: { impressions: 2431, clicks: 17, ctr: 0.699, cpm: 0.09, revenue: 0.219 },
+    nativeBanner: { impressions: 0, clicks: 0, ctr: 0, cpm: 0, revenue: 0 },
+    otherAds: { impressions: 90, clicks: 0, ctr: 0, cpm: 0.02, revenue: 0.002 },
+    totalImpressions: 4142,
+    totalClicks: 786,
+    totalRevenue: 0.458,
+    topEarnerLabel: "SocialBar_1 (52%)",
+  },
+];
 
 const DEFAULT_PLACEMENT_SUMMARIES: AdsterraPlacementSummary[] = [
   {
@@ -3457,9 +3544,17 @@ function buildDiagnosticsFromPlacements(
       component: "AdBanner300x250",
       file: "components/AdBanner300x250.tsx",
       status: "optimal",
-      badge: "100% Viewability (Lazy Load)",
-      configSummary: "1 vị trí duy nhất dưới Player • Tích hợp IntersectionObserver (rootMargin 150px)",
-      whyItMatters: "Loại bỏ hoàn toàn impression rác khi người xem bật full màn hình ngay mà không cuộn xuống, giúp nâng điểm chất lượng placement và kéo CPM tăng gấp 3-4 lần.",
+      badge: "Độc Quyền Trang Phim (Lazy Load)",
+      configSummary: "1 vị trí duy nhất dưới Player (/movie/[id]) • IntersectionObserver (rootMargin 150px)",
+      whyItMatters: "Cô lập riêng cho trang Xem Phim để giữ CTR & CPM ở mức đỉnh ($0.50+), không bị pha loãng bởi traffic lướt ảnh.",
+    },
+    {
+      component: "AdGalleryNativeBanner",
+      file: "components/AdGalleryNativeBanner.tsx",
+      status: "optimal",
+      badge: "Độc Quyền Bộ Sưu Tập (/gallery/...)",
+      configSummary: "Native Banner (0e9eb19de72ab9f4abbaae739e8a148c) • Lazy Load • Chặn Googlebot 100%",
+      whyItMatters: "Tách riêng mã Native Banner cho toàn bộ trang /gallery & /gallery/[slug], hiển thị dạng lưới ảnh tự nhiên và bảo vệ 100% CPM cho trang Phim.",
     },
     {
       component: "MobileStickyBanner",
@@ -3502,23 +3597,23 @@ export async function getAdOpsDiagnosticsAction(forceApiRefresh = false): Promis
     const dailyStats = statsRes.data?.stats || DEFAULT_ADSTERRA_REAL_STATS;
     const apiToken = dbToken || process.env.ADSTERRA_API_KEY || "";
 
-    // Try live fetch from Adsterra API if forceApiRefresh or no cached diagnostics
-    if (apiToken && (forceApiRefresh || !cachedDiagRaw)) {
+    // Always try live fetch from Adsterra API when token exists so daily per-placement stats are real-time
+    if (apiToken) {
       try {
         const now = new Date();
-        const finishDate = now.toISOString().slice(0, 10);
-        const start7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        const finishDate = new Date(now.getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+        const start10 = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
         const [resPlacements, resStatsByPl] = await Promise.all([
           fetch("https://api3.adsterratools.com/publisher/placements.json", {
             headers: { Accept: "application/json", "X-API-Key": apiToken },
-            next: { revalidate: 0 },
+            cache: "no-store",
           }),
           fetch(
-            `https://api3.adsterratools.com/publisher/stats.json?start_date=${start7}&finish_date=${finishDate}&group_by[]=date&group_by[]=placement`,
+            `https://api3.adsterratools.com/publisher/stats.json?start_date=${start10}&finish_date=${finishDate}&group_by[]=date&group_by[]=placement`,
             {
               headers: { Accept: "application/json", "X-API-Key": apiToken },
-              next: { revalidate: 0 },
+              cache: "no-store",
             }
           ),
         ]);
@@ -3538,7 +3633,7 @@ export async function getAdOpsDiagnosticsAction(forceApiRefresh = false): Promis
               });
             }
 
-            // Group by placement ID
+            // Group by placement ID AND by Date
             const byPlacement = new Map<
               number,
               {
@@ -3548,6 +3643,29 @@ export async function getAdOpsDiagnosticsAction(forceApiRefresh = false): Promis
                 byDate: Array<{ date: string; imp: number; clk: number; rev: number; ctr: number; cpm: number }>;
               }
             >();
+
+            const byDateMap = new Map<
+              string,
+              {
+                socialBar: PlacementDailyMetric;
+                banner300: PlacementDailyMetric;
+                nativeBanner: PlacementDailyMetric;
+                otherAds: PlacementDailyMetric;
+              }
+            >();
+
+            const addMetric = (target: PlacementDailyMetric, imp: number, clk: number, rev: number) => {
+              const nextImp = target.impressions + imp;
+              const nextClk = target.clicks + clk;
+              const nextRev = Number((target.revenue + rev).toFixed(3));
+              return {
+                impressions: nextImp,
+                clicks: nextClk,
+                revenue: nextRev,
+                ctr: nextImp > 0 ? Number(((nextClk / nextImp) * 100).toFixed(2)) : 0,
+                cpm: nextImp > 0 ? Number(((nextRev / nextImp) * 1000).toFixed(3)) : 0,
+              };
+            };
 
             for (const row of stItems) {
               const pid = Number(row.placement || 0);
@@ -3565,7 +3683,79 @@ export async function getAdOpsDiagnosticsAction(forceApiRefresh = false): Promis
               cur.revenue += rev;
               cur.byDate.push({ date: dateStr, imp, clk, rev, ctr, cpm });
               byPlacement.set(pid, cur);
+
+              // Also bucket into dailyByPlacement
+              const info = titleMap.get(pid) || { title: `Placement_${pid}`, alias: "" };
+              const titleLower = `${info.title} ${info.alias}`.toLowerCase();
+              const dayBucket = byDateMap.get(dateStr) || {
+                socialBar: { ...EMPTY_PLACEMENT_METRIC },
+                banner300: { ...EMPTY_PLACEMENT_METRIC },
+                nativeBanner: { ...EMPTY_PLACEMENT_METRIC },
+                otherAds: { ...EMPTY_PLACEMENT_METRIC },
+              };
+
+              if (titleLower.includes("social") || pid === 31517180) {
+                dayBucket.socialBar = addMetric(dayBucket.socialBar, imp, clk, rev);
+              } else if (titleLower.includes("300x250") || pid === 31517549) {
+                dayBucket.banner300 = addMetric(dayBucket.banner300, imp, clk, rev);
+              } else if (titleLower.includes("native")) {
+                dayBucket.nativeBanner = addMetric(dayBucket.nativeBanner, imp, clk, rev);
+              } else {
+                dayBucket.otherAds = addMetric(dayBucket.otherAds, imp, clk, rev);
+              }
+              byDateMap.set(dateStr, dayBucket);
             }
+
+            // Ensure newly created NativeBanner_1 in placements.json also appears in placement summary even if 0 impressions yet
+            for (const p of plItems) {
+              const pid = Number(p.id);
+              const tLower = `${p.title || ""} ${p.alias || ""}`.toLowerCase();
+              if (pid && !byPlacement.has(pid) && tLower.includes("native")) {
+                byPlacement.set(pid, { impressions: 0, clicks: 0, revenue: 0, byDate: [] });
+              }
+            }
+
+            const computedDailyByPlacement: PlacementDailyBreakdownRow[] = Array.from(byDateMap.entries())
+              .map(([date, b]) => {
+                const totalImpressions =
+                  b.socialBar.impressions +
+                  b.banner300.impressions +
+                  b.nativeBanner.impressions +
+                  b.otherAds.impressions;
+                const totalClicks =
+                  b.socialBar.clicks + b.banner300.clicks + b.nativeBanner.clicks + b.otherAds.clicks;
+                const totalRevenue = Number(
+                  (
+                    b.socialBar.revenue +
+                    b.banner300.revenue +
+                    b.nativeBanner.revenue +
+                    b.otherAds.revenue
+                  ).toFixed(3)
+                );
+
+                const candidates = [
+                  { name: "SocialBar_1", rev: b.socialBar.revenue },
+                  { name: "300x250_1", rev: b.banner300.revenue },
+                  { name: "NativeBanner_1", rev: b.nativeBanner.revenue },
+                ].sort((x, y) => y.rev - x.rev);
+
+                const best = candidates[0];
+                const share =
+                  totalRevenue > 0 && best.rev > 0 ? Math.round((best.rev / totalRevenue) * 100) : 0;
+
+                return {
+                  date,
+                  socialBar: b.socialBar,
+                  banner300: b.banner300,
+                  nativeBanner: b.nativeBanner,
+                  otherAds: b.otherAds,
+                  totalImpressions,
+                  totalClicks,
+                  totalRevenue,
+                  topEarnerLabel: share > 0 ? `${best.name} (${share}%)` : "Đang cập nhật",
+                };
+              })
+              .sort((a, b) => b.date.localeCompare(a.date));
 
             const grandTotalImp = Array.from(byPlacement.values()).reduce((s, x) => s + x.impressions, 0);
             const grandTotalRev = Array.from(byPlacement.values()).reduce((s, x) => s + x.revenue, 0);
@@ -3573,7 +3763,7 @@ export async function getAdOpsDiagnosticsAction(forceApiRefresh = false): Promis
             const computedPlacements: AdsterraPlacementSummary[] = [];
             for (const [pid, agg] of byPlacement.entries()) {
               agg.byDate.sort((a, b) => b.date.localeCompare(a.date));
-              const latest = agg.byDate[0] || { date: "", imp: 0, clk: 0, rev: 0, ctr: 0, cpm: 0 };
+              const latest = agg.byDate[0] || { date: "Mới tạo", imp: 0, clk: 0, rev: 0, ctr: 0, cpm: 0 };
               const prev = agg.byDate[1] || latest;
               const info = titleMap.get(pid) || { title: `Placement_${pid}`, alias: `Placement #${pid}` };
               const avgCtr = agg.impressions > 0 ? Number(((agg.clicks / agg.impressions) * 100).toFixed(3)) : 0;
@@ -3587,16 +3777,23 @@ export async function getAdOpsDiagnosticsAction(forceApiRefresh = false): Promis
 
               if (info.title.toLowerCase().includes("social") || pid === 31517180) {
                 status = latest.imp < 900 ? "warning" : "optimal";
-                diagnosis = `Chủ lực kéo Click (CTR ${avgCtr}%, ${agg.clicks.toLocaleString("vi-VN")} clicks/7 ngày). Ngày mới nhất đạt ${latest.imp} imp (CPM $${latest.cpm.toFixed(3)}).`;
+                diagnosis = `Chủ lực kéo Click (CTR ${avgCtr}%, ${agg.clicks.toLocaleString("vi-VN")} clicks). Ngày mới nhất đạt ${latest.imp} imp (CPM $${latest.cpm.toFixed(3)}).`;
                 recommendation = "Chỉ chạy ở trang Xem Phim & Gallery (delay 5s, giãn cách 8 phút), không chạy ở trang chủ để giữ CTR > 40%.";
               } else if (info.title.includes("300x250") || pid === 31517549) {
                 status = latest.cpm < 0.1 ? "warning" : "optimal";
-                diagnosis = `Chiếm ${shareRev}% tổng doanh thu ($${agg.revenue.toFixed(2)}), nhưng chiếm tới ${shareImp}% tổng impression với CTR ${avgCtr}%.`;
-                recommendation = "Giữ đúng 1 banner dưới Player có IntersectionObserver (100% Viewability), không nhân bản nhiều vị trí trên 1 trang.";
+                diagnosis = `Độc quyền trang Xem Phim (/movie/[id]), đóng góp ${shareRev}% tổng doanh thu ($${agg.revenue.toFixed(2)}) với CTR ${avgCtr}%.`;
+                recommendation = "Giữ đúng 1 banner dưới Player có IntersectionObserver (100% Viewability), tách biệt với trang Bộ Sưu Tập.";
+              } else if (info.title.toLowerCase().includes("native")) {
+                status = "optimal";
+                diagnosis =
+                  agg.impressions > 0
+                    ? `Độc quyền trang Bộ Sưu Tập (/gallery/...), đạt ${agg.impressions} imp, CTR ${avgCtr}%, doanh thu $${agg.revenue.toFixed(3)}.`
+                    : "Vừa kích hoạt độc quyền cho toàn bộ trang Bộ Sưu Tập (/gallery & /gallery/[slug]) — đang chờ Adsterra đồng bộ lượt hiển thị đầu tiên.";
+                recommendation = "Giữ cố định 1 khối Native Banner dạng lưới ảnh kèm Lazy-load & chặn Googlebot 100%.";
               } else if (avgCtr < 0.1 && avgCpm < 0.06) {
-                status = "critical";
-                diagnosis = `Hiệu suất rất thấp: ${agg.impressions} imp chỉ đạt $${agg.revenue.toFixed(3)} (CTR ${avgCtr}%, CPM $${avgCpm}).`;
-                recommendation = "Ngắt khỏi sự kiện click toàn trang để không làm mất khách xem phim và bảo vệ Social Bar.";
+                status = "inactive";
+                diagnosis = `Đã gỡ bỏ hoàn toàn (${agg.impressions} imp cũ chỉ đạt $${agg.revenue.toFixed(3)}, CTR ${avgCtr}%, CPM $${avgCpm}).`;
+                recommendation = "Đã tắt hoàn toàn khỏi website để bảo vệ SEO và giữ 100% hiển thị cho Social Bar.";
               }
 
               computedPlacements.push({
@@ -3633,6 +3830,10 @@ export async function getAdOpsDiagnosticsAction(forceApiRefresh = false): Promis
                 updatedAt: new Date().toLocaleString("vi-VN"),
                 healthScore: built.healthScore,
                 placements: computedPlacements,
+                dailyByPlacement:
+                  computedDailyByPlacement.length > 0
+                    ? computedDailyByPlacement
+                    : DEFAULT_PLACEMENT_DAILY_ROWS,
                 alerts: built.alerts,
                 codeAudit: built.codeAudit,
               },
@@ -3661,6 +3862,7 @@ export async function getAdOpsDiagnosticsAction(forceApiRefresh = false): Promis
         updatedAt: new Date().toLocaleString("vi-VN"),
         healthScore: built.healthScore,
         placements,
+        dailyByPlacement: DEFAULT_PLACEMENT_DAILY_ROWS,
         alerts: built.alerts,
         codeAudit: built.codeAudit,
       },
@@ -3674,6 +3876,7 @@ export async function getAdOpsDiagnosticsAction(forceApiRefresh = false): Promis
         updatedAt: new Date().toLocaleString("vi-VN"),
         healthScore: built.healthScore,
         placements: DEFAULT_PLACEMENT_SUMMARIES,
+        dailyByPlacement: DEFAULT_PLACEMENT_DAILY_ROWS,
         alerts: built.alerts,
         codeAudit: built.codeAudit,
       },
@@ -3782,6 +3985,492 @@ Hãy trả lời trực tiếp, súc tích, chuyên sâu như một kỹ sư AdT
     return {
       success: false,
       error: err?.message || "Lỗi khi gọi Chuyên Viên AI Quảng Cáo",
+    };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// BUNNY CDN COST VS ADSTERRA REVENUE DAILY NET PROFIT AUDITOR
+// ─────────────────────────────────────────────────────────────────
+
+export interface DailyProfitComparisonRow {
+  date: string; // "2026/11/01"
+  adImpressions: number;
+  adClicks: number;
+  adCtr: number;
+  adCpm: number;
+  adRevenueUsd: number;
+  bandwidthGb: number;
+  storageCostUsd: number;
+  bandwidthCostUsd: number;
+  totalBunnyCostUsd: number;
+  dailyHostingCostUsd: number; // $5 / 30 days = ~$0.167/day
+  totalDailyCostUsd: number; // Bunny + Daily Hosting
+  netProfitAfterBunnyUsd: number;
+  netProfitUsd: number; // After both Bunny + Daily Hosting
+  netProfitVnd: number;
+  roiPercent: number;
+  isExactBunnyApi: boolean;
+}
+
+export interface PastMonthSummaryRow {
+  monthKey: string; // "2026/10"
+  monthLabel: string; // "Tháng 10/2026"
+  resetInvoiceDate: string; // "01/11/2026"
+  impressions: number;
+  clicks: number;
+  adRevenueUsd: number;
+  bunnyCostUsd: number;
+  hostingCostUsd: number; // $5.00
+  totalCostUsd: number; // Bunny + $5.00 Hosting
+  netAfterBunnyUsd: number; // Ads - Bunny
+  netProfitUsd: number; // Ads - Bunny - $5.00 Hosting
+  netProfitVnd: number;
+  note: string;
+}
+
+export interface BunnyProfitAuditData {
+  mode: "exact_account_api" | "stream_library_smart_estimate";
+  hasAccountKey: boolean;
+  accountBalanceUsd: number | null;
+  thisMonthChargesUsd: number | null;
+  currentMonthKey: string; // "2026/11"
+  currentMonthLabel: string; // "Tháng 11/2026"
+  hostingMonthlyFixedUsd: number; // 5.00
+  streamVideosCount: number;
+  streamStorageGb: number;
+  streamTotalHours: number;
+  monthlyStorageCostUsd: number;
+  dailyStorageCostUsd: number;
+  bandwidthPricePerGbUsd: number;
+  // Current month totals (only days in the new/current month)
+  totalAdRevenueUsd: number;
+  totalBunnyCostUsd: number;
+  proratedHostingCostUsd: number;
+  totalCostWithProratedHostingUsd: number;
+  totalNetAfterBunnyUsd: number;
+  totalNetProfitUsd: number; // Ads - Bunny - Prorated Hosting
+  totalNetProfitVnd: number;
+  avgDailyProfitUsd: number;
+  profitMarginPercent: number;
+  // Current month daily breakdown ONLY
+  dailyRows: DailyProfitComparisonRow[];
+  // Past months summarized (1 row per past month)
+  pastMonths: PastMonthSummaryRow[];
+}
+
+const HISTORICAL_MONTHS_BASELINE: PastMonthSummaryRow[] = [
+  {
+    monthKey: "2026/10",
+    monthLabel: "Tháng 10/2026",
+    resetInvoiceDate: "01/11/2026",
+    impressions: 66352,
+    clicks: 11299,
+    adRevenueUsd: 11.1,
+    bunnyCostUsd: 8.85,
+    hostingCostUsd: 5.0,
+    totalCostUsd: 13.85,
+    netAfterBunnyUsd: 2.25,
+    netProfitUsd: -2.75,
+    netProfitVnd: Math.round(-2.75 * 25400),
+    note: "Đã tự trả 100% hóa đơn Bunny ($8.85) + dư $2.25 đỡ tiền Hosting (cuối tháng CPM đạt $0.553)",
+  },
+  {
+    monthKey: "2026/09",
+    monthLabel: "Tháng 09/2026",
+    resetInvoiceDate: "01/10/2026",
+    impressions: 0,
+    clicks: 0,
+    adRevenueUsd: 0,
+    bunnyCostUsd: 3.48,
+    hostingCostUsd: 5.0,
+    totalCostUsd: 8.48,
+    netAfterBunnyUsd: -3.48,
+    netProfitUsd: -8.48,
+    netProfitVnd: Math.round(-8.48 * 25400),
+    note: "Giai đoạn xây dựng nội dung & SEO (Hóa đơn Bunny $3.48 + Hosting $5.00)",
+  },
+  {
+    monthKey: "2026/08",
+    monthLabel: "Tháng 08/2026",
+    resetInvoiceDate: "01/09/2026",
+    impressions: 0,
+    clicks: 0,
+    adRevenueUsd: 0,
+    bunnyCostUsd: 1.0,
+    hostingCostUsd: 5.0,
+    totalCostUsd: 6.0,
+    netAfterBunnyUsd: -1.0,
+    netProfitUsd: -6.0,
+    netProfitVnd: Math.round(-6.0 * 25400),
+    note: "Giai đoạn khởi tạo thư viện phim (Hóa đơn Bunny $1.00 + Hosting $5.00)",
+  },
+  {
+    monthKey: "2026/07",
+    monthLabel: "Tháng 07/2026",
+    resetInvoiceDate: "01/08/2026",
+    impressions: 0,
+    clicks: 0,
+    adRevenueUsd: 0,
+    bunnyCostUsd: 0.8,
+    hostingCostUsd: 5.0,
+    totalCostUsd: 5.8,
+    netAfterBunnyUsd: -0.8,
+    netProfitUsd: -5.8,
+    netProfitVnd: Math.round(-5.8 * 25400),
+    note: "Tháng đầu vận hành thử nghiệm (Hóa đơn Bunny $0.80 + Hosting $5.00)",
+  },
+];
+
+export async function getBunnyVsAdsProfitAction(
+  accountKeyOverride?: string
+): Promise<{
+  success: boolean;
+  data: BunnyProfitAuditData;
+  syncedAdStats?: AdsterraDailyStat[];
+  error?: string;
+}> {
+  await verifyAdmin();
+  const USD_VND = 25400;
+  const HOSTING_MONTHLY_USD = 5.0;
+
+  try {
+    if (accountKeyOverride !== undefined && accountKeyOverride.trim()) {
+      await setSystemSetting("bunny_account_api_key", accountKeyOverride.trim());
+    }
+
+    const [adStatsRes, savedAccountKey, savedPricePerGb, dbAdsterraToken] = await Promise.all([
+      getAdsterraRealStatsAction(),
+      getCachedSystemSetting("bunny_account_api_key", ""),
+      getCachedSystemSetting("bunny_price_per_gb", "0.03"),
+      getCachedSystemSetting("adsterra_api_token", ""),
+    ]);
+
+    const accountApiKey =
+      (accountKeyOverride && accountKeyOverride.trim()) ||
+      savedAccountKey ||
+      process.env.BUNNY_ACCOUNT_API_KEY ||
+      "";
+    const pricePerGb = Math.max(0.005, parseFloat(savedPricePerGb || "0.03") || 0.03);
+
+    let adStats = adStatsRes.data?.stats || DEFAULT_ADSTERRA_REAL_STATS;
+
+    // Auto-fetch LIVE real-time Adsterra API stats on refresh so today's impressions/revenue are always 100% up-to-date
+    const adsterraToken = (dbAdsterraToken || process.env.ADSTERRA_API_KEY || "").trim();
+    if (adsterraToken) {
+      try {
+        const now = new Date();
+        const finishDate = new Date(now.getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+        const startDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        const liveUrl = `https://api3.adsterratools.com/publisher/stats.json?start_date=${startDate}&finish_date=${finishDate}&group_by=date`;
+        const liveRes = await fetch(liveUrl, {
+          headers: { Accept: "application/json", "X-API-Key": adsterraToken },
+          cache: "no-store",
+        });
+        if (liveRes.ok) {
+          const liveJson = await liveRes.json();
+          const liveItems = liveJson?.items || liveJson?.data || [];
+          if (Array.isArray(liveItems) && liveItems.length > 0) {
+            const liveMapped: AdsterraDailyStat[] = liveItems.map((it: any) => {
+              const dateRaw = String(it.date || "").replace(/-/g, "/");
+              const imp = Number(it.impression || it.impressions || it.views || 0);
+              const clk = Number(it.clicks || 0);
+              const rev = Number(it.revenue || it.money || 0);
+              const ctr =
+                it.ctr != null ? Number(it.ctr) : imp > 0 ? Number(((clk / imp) * 100).toFixed(3)) : 0;
+              const cpm =
+                it.cpm != null ? Number(it.cpm) : imp > 0 ? Number(((rev / imp) * 1000).toFixed(3)) : 0;
+              return {
+                date: dateRaw,
+                impressions: imp,
+                clicks: clk,
+                ctr: Number(ctr.toFixed(3)),
+                cpm: Number(cpm.toFixed(3)),
+                revenue: Number(rev.toFixed(3)),
+              };
+            });
+            liveMapped.sort((a, b) => b.date.localeCompare(a.date));
+            adStats = liveMapped;
+            await setSystemSetting("adsterra_real_stats", JSON.stringify(liveMapped));
+          }
+        }
+      } catch (liveErr) {
+        console.warn("Live Adsterra sync inside getBunnyVsAdsProfitAction fallback:", liveErr);
+      }
+    }
+
+    // Determine current month in Vietnam Time (UTC+7)
+    const vnNow = new Date(Date.now() + 7 * 3600 * 1000);
+    const curYear = vnNow.getUTCFullYear();
+    const curMonthNum = vnNow.getUTCMonth() + 1;
+    const currentMonthKey = `${curYear}/${String(curMonthNum).padStart(2, "0")}`;
+    const currentMonthLabel = `Tháng ${String(curMonthNum).padStart(2, "0")}/${curYear}`;
+    const daysInCurrentMonth = new Date(curYear, curMonthNum, 0).getDate() || 30;
+    const dailyHostingCostUsd = Number((HOSTING_MONTHLY_USD / daysInCurrentMonth).toFixed(3));
+
+    // 1. Read Bunny Stream Library real video storage & count using existing BUNNY_API_KEY
+    const libraryId = process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID || "689414";
+    const streamApiKey = process.env.BUNNY_API_KEY || "";
+
+    let streamVideosCount = 32;
+    let streamStorageGb = 16.02;
+    let streamTotalHours = 9.23;
+
+    if (streamApiKey) {
+      try {
+        const resLib = await fetch(
+          `https://video.bunnycdn.com/library/${libraryId}/videos?page=1&itemsPerPage=100`,
+          {
+            headers: { AccessKey: streamApiKey, Accept: "application/json" },
+            next: { revalidate: 300 },
+          }
+        );
+        if (resLib.ok) {
+          const vJson = await resLib.json();
+          const items: any[] = vJson?.items || [];
+          let bytes = 0;
+          let sec = 0;
+          for (const v of items) {
+            bytes += Number(v.storageSize || 0);
+            sec += Number(v.length || 0);
+          }
+          streamVideosCount = Number(vJson?.totalItems || items.length || 32);
+          streamStorageGb = Number((bytes / 1024 ** 3).toFixed(2));
+          streamTotalHours = Number((sec / 3600).toFixed(2));
+        }
+      } catch (e) {
+        console.warn("Bunny Stream library fetch fallback:", e);
+      }
+    }
+
+    const totalStorageGb = Number((streamStorageGb + 2.5).toFixed(2));
+    const monthlyStorageCostUsd = Number((totalStorageGb * 0.02).toFixed(3));
+    const dailyStorageCostUsd = Number((monthlyStorageCostUsd / daysInCurrentMonth).toFixed(4));
+
+    // 2. If user has configured Bunny Master Account API Key, fetch exact daily bandwidth & billing!
+    let mode: BunnyProfitAuditData["mode"] = "stream_library_smart_estimate";
+    let accountBalanceUsd: number | null = null;
+    let thisMonthChargesUsd: number | null = null;
+    const exactBandwidthByDate = new Map<string, number>();
+
+    if (accountApiKey) {
+      try {
+        const now = new Date();
+        const dateTo = now.toISOString().slice(0, 10);
+        const dateFrom = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+        const [resBilling, resStats] = await Promise.all([
+          fetch("https://api.bunny.net/billing", {
+            headers: { AccessKey: accountApiKey, Accept: "application/json" },
+            cache: "no-store",
+          }),
+          fetch(`https://api.bunny.net/statistics?dateFrom=${dateFrom}&dateTo=${dateTo}`, {
+            headers: { AccessKey: accountApiKey, Accept: "application/json" },
+            cache: "no-store",
+          }),
+        ]);
+
+        if (resBilling.ok) {
+          const billJson = await resBilling.json();
+          accountBalanceUsd = Number(billJson?.Balance ?? 0);
+          thisMonthChargesUsd = Number(billJson?.ThisMonthCharges ?? 0);
+          mode = "exact_account_api";
+        }
+
+        if (resStats.ok) {
+          const statJson = await resStats.json();
+          const bwChart = statJson?.BandwidthUsedChart || {};
+          for (const [isoKey, bytesVal] of Object.entries(bwChart)) {
+            const dKey = String(isoKey).slice(0, 10).replace(/-/g, "/");
+            exactBandwidthByDate.set(dKey, Number(bytesVal || 0));
+          }
+          mode = "exact_account_api";
+        }
+      } catch (e) {
+        console.warn("Bunny Account API fetch error:", e);
+      }
+    }
+
+    // 3. Filter daily rows to ONLY show the current month (e.g. "2026/11/*")
+    const currentMonthAdStats = adStats.filter((r) => r.date.startsWith(currentMonthKey));
+
+    // Also dynamically aggregate any past months present in adStats that aren't in HISTORICAL_MONTHS_BASELINE
+    const pastMonthsMap = new Map<string, PastMonthSummaryRow>();
+    for (const item of HISTORICAL_MONTHS_BASELINE) {
+      pastMonthsMap.set(item.monthKey, { ...item });
+    }
+
+    const pastStatsByMonth = new Map<string, AdsterraDailyStat[]>();
+    for (const r of adStats) {
+      const mKey = r.date.slice(0, 7); // "YYYY/MM"
+      if (mKey && mKey < currentMonthKey && !pastMonthsMap.has(mKey)) {
+        const list = pastStatsByMonth.get(mKey) || [];
+        list.push(r);
+        pastStatsByMonth.set(mKey, list);
+      }
+    }
+
+    for (const [mKey, rows] of pastStatsByMonth.entries()) {
+      const [yStr, mStr] = mKey.split("/");
+      const imp = rows.reduce((s, x) => s + x.impressions, 0);
+      const clk = rows.reduce((s, x) => s + x.clicks, 0);
+      const rev = Number(rows.reduce((s, x) => s + x.revenue, 0).toFixed(2));
+      const bunnyEst = Number(((imp * 0.1334) / 1000).toFixed(2));
+      const totalCost = Number((bunnyEst + HOSTING_MONTHLY_USD).toFixed(2));
+      const netBunny = Number((rev - bunnyEst).toFixed(2));
+      const netTotal = Number((rev - totalCost).toFixed(2));
+      const nextM = (parseInt(mStr, 10) % 12) + 1;
+      const nextY = nextM === 1 ? parseInt(yStr, 10) + 1 : parseInt(yStr, 10);
+
+      pastMonthsMap.set(mKey, {
+        monthKey: mKey,
+        monthLabel: `Tháng ${mStr}/${yStr}`,
+        resetInvoiceDate: `01/${String(nextM).padStart(2, "0")}/${nextY}`,
+        impressions: imp,
+        clicks: clk,
+        adRevenueUsd: rev,
+        bunnyCostUsd: bunnyEst,
+        hostingCostUsd: HOSTING_MONTHLY_USD,
+        totalCostUsd: totalCost,
+        netAfterBunnyUsd: netBunny,
+        netProfitUsd: netTotal,
+        netProfitVnd: Math.round(netTotal * USD_VND),
+        note: `Tổng kết tự động kỳ reset đầu tháng (${rows.length} ngày dữ liệu)`,
+      });
+    }
+
+    const pastMonths = Array.from(pastMonthsMap.values()).sort((a, b) =>
+      b.monthKey.localeCompare(a.monthKey)
+    );
+
+    // Build daily rows for current month ONLY
+    const dailyRows: DailyProfitComparisonRow[] = currentMonthAdStats.map((adRow) => {
+      const exactBytes = exactBandwidthByDate.get(adRow.date);
+      const isExact = exactBytes !== undefined;
+
+      // Calibrated from official Bunny October 2026 Invoice ($8.85 USD across 66,352 Adsterra impressions)
+      const bandwidthGb = isExact
+        ? Number((exactBytes / 1024 ** 3).toFixed(2))
+        : Number(((adRow.impressions * 4.45) / 1000).toFixed(2));
+
+      const bandwidthCostUsd = Number((bandwidthGb * pricePerGb).toFixed(3));
+      const totalBunnyCostUsd = Number((bandwidthCostUsd + dailyStorageCostUsd).toFixed(3));
+      const totalDailyCostUsd = Number((totalBunnyCostUsd + dailyHostingCostUsd).toFixed(3));
+      const adRevenueUsd = Number(adRow.revenue.toFixed(3));
+      const netProfitAfterBunnyUsd = Number((adRevenueUsd - totalBunnyCostUsd).toFixed(3));
+      const netProfitUsd = Number((adRevenueUsd - totalDailyCostUsd).toFixed(3));
+      const netProfitVnd = Math.round(netProfitUsd * USD_VND);
+      const roiPercent =
+        totalDailyCostUsd > 0
+          ? Math.round(((adRevenueUsd - totalDailyCostUsd) / totalDailyCostUsd) * 100)
+          : 100;
+
+      return {
+        date: adRow.date,
+        adImpressions: adRow.impressions,
+        adClicks: adRow.clicks,
+        adCtr: adRow.ctr,
+        adCpm: adRow.cpm,
+        adRevenueUsd,
+        bandwidthGb,
+        storageCostUsd: Number(dailyStorageCostUsd.toFixed(3)),
+        bandwidthCostUsd,
+        totalBunnyCostUsd,
+        dailyHostingCostUsd,
+        totalDailyCostUsd,
+        netProfitAfterBunnyUsd,
+        netProfitUsd,
+        netProfitVnd,
+        roiPercent,
+        isExactBunnyApi: isExact,
+      };
+    });
+
+    const totalAdRevenueUsd = Number(
+      dailyRows.reduce((s, r) => s + r.adRevenueUsd, 0).toFixed(2)
+    );
+    const totalBunnyCostUsd = Number(
+      dailyRows.reduce((s, r) => s + r.totalBunnyCostUsd, 0).toFixed(2)
+    );
+    const proratedHostingCostUsd = Number(
+      dailyRows.reduce((s, r) => s + r.dailyHostingCostUsd, 0).toFixed(2)
+    );
+    const totalCostWithProratedHostingUsd = Number(
+      (totalBunnyCostUsd + proratedHostingCostUsd).toFixed(2)
+    );
+    const totalNetAfterBunnyUsd = Number((totalAdRevenueUsd - totalBunnyCostUsd).toFixed(2));
+    const totalNetProfitUsd = Number(
+      (totalAdRevenueUsd - totalCostWithProratedHostingUsd).toFixed(2)
+    );
+    const totalNetProfitVnd = Math.round(totalNetProfitUsd * USD_VND);
+    const daysCount = Math.max(1, dailyRows.length);
+    const avgDailyProfitUsd = Number((totalNetProfitUsd / daysCount).toFixed(2));
+    const profitMarginPercent =
+      totalAdRevenueUsd > 0
+        ? Math.round((totalNetProfitUsd / totalAdRevenueUsd) * 100)
+        : 0;
+
+    return {
+      success: true,
+      data: {
+        mode,
+        hasAccountKey: !!accountApiKey,
+        accountBalanceUsd,
+        thisMonthChargesUsd,
+        currentMonthKey,
+        currentMonthLabel,
+        hostingMonthlyFixedUsd: HOSTING_MONTHLY_USD,
+        streamVideosCount,
+        streamStorageGb: totalStorageGb,
+        streamTotalHours,
+        monthlyStorageCostUsd,
+        dailyStorageCostUsd,
+        bandwidthPricePerGbUsd: pricePerGb,
+        totalAdRevenueUsd,
+        totalBunnyCostUsd,
+        proratedHostingCostUsd,
+        totalCostWithProratedHostingUsd,
+        totalNetAfterBunnyUsd,
+        totalNetProfitUsd,
+        totalNetProfitVnd,
+        avgDailyProfitUsd,
+        profitMarginPercent,
+        dailyRows,
+        pastMonths,
+      },
+      syncedAdStats: adStats,
+    };
+  } catch (err: any) {
+    console.error("Error in getBunnyVsAdsProfitAction:", err);
+    return {
+      success: false,
+      error: err?.message || "Không thể tính toán đối soát Bunny CDN vs Ads",
+      data: {
+        mode: "stream_library_smart_estimate",
+        hasAccountKey: false,
+        accountBalanceUsd: null,
+        thisMonthChargesUsd: null,
+        currentMonthKey: "2026/11",
+        currentMonthLabel: "Tháng 11/2026",
+        hostingMonthlyFixedUsd: 5.0,
+        streamVideosCount: 32,
+        streamStorageGb: 18.52,
+        streamTotalHours: 9.23,
+        monthlyStorageCostUsd: 0.37,
+        dailyStorageCostUsd: 0.012,
+        bandwidthPricePerGbUsd: 0.03,
+        totalAdRevenueUsd: 0.11,
+        totalBunnyCostUsd: 0.18,
+        proratedHostingCostUsd: 0.17,
+        totalCostWithProratedHostingUsd: 0.35,
+        totalNetAfterBunnyUsd: -0.07,
+        totalNetProfitUsd: -0.24,
+        totalNetProfitVnd: -6096,
+        avgDailyProfitUsd: -0.24,
+        profitMarginPercent: 0,
+        dailyRows: [],
+        pastMonths: HISTORICAL_MONTHS_BASELINE,
+      },
     };
   }
 }

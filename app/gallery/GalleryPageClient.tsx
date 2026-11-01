@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { HomeGalleryGrid, GalleryDetailModal } from "@/components/GalleryComponents";
+import AdGalleryNativeBanner from "@/components/AdGalleryNativeBanner";
 import { incrementGalleryViews } from "@/app/admin/actions";
 import { fetchMoreGalleries } from "./actions";
 
@@ -186,6 +187,11 @@ export default function GalleryPageClient({
         activeCharacter={filters.character}
         activeSortBy={filters.sortBy}
         onFilterChange={handleFilterChange}
+        topBannerSlot={
+          <AdGalleryNativeBanner
+            refreshKey={`gallery-index-${filters.movie}-${filters.character}-${filters.plan}-${filters.sortBy}`}
+          />
+        }
       />
       
       {galleries.length < totalCount && (

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import MovieCard from "@/components/MovieCard";
 import RankingsSidebar from "@/components/RankingsSidebar";
+import AdGalleryNativeBanner from "@/components/AdGalleryNativeBanner";
 import { Movie } from "@/types";
 import { DEFAULT_CATEGORIES, CategoryFAQ } from "@/lib/categories";
 import { slugify } from "@/lib/utils";
@@ -252,6 +253,9 @@ export default function CategoryCatalog({
               </span>
             </div>
           </div>
+
+          {/* Native Banner Adsterra (Chặn Googlebot 100%, Lazy-load chuẩn SEO) */}
+          <AdGalleryNativeBanner refreshKey={`cat-${currentSlugClean}-p${safeCurrentPage}`} />
 
           {/* Movies List */}
           {filteredMovies.length > 0 ? (

@@ -58,21 +58,23 @@ import {
   saveAdMonetizationSettingsAction,
   getAdOpsDiagnosticsAction,
   askAdOpsAiSpecialistAction,
+  getBunnyVsAdsProfitAction,
   type StrategicAnalyticsData,
   type WeeklyStrategicData,
   type AdsterraDailyStat,
   type AdOpsDiagnosticsData,
+  type BunnyProfitAuditData,
 } from "./actions";
 
 const DEFAULT_ADSTERRA_REAL_STATS: AdsterraDailyStat[] = [
-  { date: "2026/10/26", impressions: 610, clicks: 76, ctr: 12.459, cpm: 0.679, revenue: 0.41 },
+  { date: "2026/11/01", impressions: 1317, clicks: 355, ctr: 26.955, cpm: 0.081, revenue: 0.11 },
+  { date: "2026/10/31", impressions: 3819, clicks: 1111, ctr: 29.091, cpm: 0.553, revenue: 2.11 },
+  { date: "2026/10/30", impressions: 4186, clicks: 423, ctr: 10.105, cpm: 0.061, revenue: 0.25 },
+  { date: "2026/10/29", impressions: 4606, clicks: 391, ctr: 8.489, cpm: 0.309, revenue: 1.42 },
+  { date: "2026/10/28", impressions: 4142, clicks: 786, ctr: 18.976, cpm: 0.110, revenue: 0.46 },
+  { date: "2026/10/27", impressions: 3589, clicks: 645, ctr: 17.972, cpm: 0.097, revenue: 0.35 },
+  { date: "2026/10/26", impressions: 4050, clicks: 622, ctr: 15.358, cpm: 0.196, revenue: 0.79 },
   { date: "2026/10/25", impressions: 2467, clicks: 361, ctr: 14.633, cpm: 0.255, revenue: 0.63 },
-  { date: "2026/10/24", impressions: 1910, clicks: 342, ctr: 17.906, cpm: 0.123, revenue: 0.23 },
-  { date: "2026/10/23", impressions: 1338, clicks: 265, ctr: 19.806, cpm: 0.170, revenue: 0.23 },
-  { date: "2026/10/22", impressions: 1292, clicks: 285, ctr: 22.059, cpm: 0.147, revenue: 0.19 },
-  { date: "2026/10/21", impressions: 1491, clicks: 188, ctr: 12.609, cpm: 0.177, revenue: 0.26 },
-  { date: "2026/10/20", impressions: 1461, clicks: 200, ctr: 13.689, cpm: 0.157, revenue: 0.23 },
-  { date: "2026/10/19", impressions: 2065, clicks: 260, ctr: 12.591, cpm: 0.147, revenue: 0.30 },
 ];
 
 interface StrategyTabProps {
@@ -129,6 +131,12 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
   const [adOpsQuestion, setAdOpsQuestion] = useState("");
   const [isAskingAdOpsAi, setIsAskingAdOpsAi] = useState(false);
 
+  // Bunny CDN Cost vs Adsterra Profit Auditor state
+  const [bunnyProfit, setBunnyProfit] = useState<BunnyProfitAuditData | null>(null);
+  const [showBunnyKeyModal, setShowBunnyKeyModal] = useState(false);
+  const [bunnyAccountKeyInput, setBunnyAccountKeyInput] = useState("");
+  const [isSyncingBunny, setIsSyncingBunny] = useState(false);
+
   // Weekly AI Action Plan
   const [weeklyAiPlan, setWeeklyAiPlan] = useState<string | null>(null);
   const [isGeneratingWeeklyAi, setIsGeneratingWeeklyAi] = useState(false);
@@ -168,7 +176,7 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
   const fetchData = async (refresh = false) => {
     if (refresh) setLoading(true);
     try {
-      const [resStrategy, resWeekly, resAdsterra, resToken, resSolution, resAdConfig, resDiag] = await Promise.all([
+      const [resStrategy, resWeekly, resAdsterra, resToken, resSolution, resAdConfig, resDiag, resBunny] = await Promise.all([
         getStrategyAnalyticsAction(),
         getDailyStrategicBriefingAction(),
         getAdsterraRealStatsAction(),
@@ -176,6 +184,7 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
         getCachedAdsterraAiSolutionsAction(),
         getAdMonetizationSettingsAction(),
         getAdOpsDiagnosticsAction(false),
+        getBunnyVsAdsProfitAction(),
       ]);
 
       if (resStrategy.success && resStrategy.data) {
@@ -205,6 +214,9 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
       }
       if (resDiag. data) {
         setAdOpsDiag(resDiag.data);
+      }
+      if (resBunny.data) {
+        setBunnyProfit(resBunny.data);
       }
     } catch (err: any) {
       showToast("Lỗi khi tải dữ liệu chiến lược", "error");
@@ -333,6 +345,7 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
           daysCount,
           avgDailyRevenue,
         });
+        handleSyncBunnyProfit();
       } else {
         showToast(res.error || "Không thể lưu", "error");
       }
@@ -406,6 +419,7 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
           handleGenerateAdsterraAiSolutions(nextData);
         }
         handleRefreshDiagnostics(true);
+        handleSyncBunnyProfit();
       } else {
         showToast(res.error || "Không thể đồng bộ từ Adsterra", "error");
       }
@@ -431,6 +445,63 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
       showToast("Không thể làm mới chẩn đoán Placement", "error");
     } finally {
       setIsRefreshingDiag(false);
+    }
+  };
+
+  // Sync Bunny Account API Key or refresh Bunny vs Ads profit comparison
+  const handleSyncBunnyProfit = async (keyOverride?: string) => {
+    setIsSyncingBunny(true);
+    try {
+      const [res, diagRes] = await Promise.all([
+        getBunnyVsAdsProfitAction(keyOverride),
+        getAdOpsDiagnosticsAction(true),
+      ]);
+      if (diagRes?.data) {
+        setAdOpsDiag(diagRes.data);
+      }
+      if (res.data) {
+        setBunnyProfit(res.data);
+        if (res.syncedAdStats && res.syncedAdStats.length > 0) {
+          const list = res.syncedAdStats;
+          const totalImpressions = list.reduce((sum, item) => sum + (Number(item.impressions) || 0), 0);
+          const totalClicks = list.reduce((sum, item) => sum + (Number(item.clicks) || 0), 0);
+          const totalRevenue = Number(list.reduce((sum, item) => sum + (Number(item.revenue) || 0), 0).toFixed(2));
+          const avgCtr = totalImpressions > 0 ? Number(((totalClicks / totalImpressions) * 100).toFixed(3)) : 0;
+          const avgCpm = totalImpressions > 0 ? Number(((totalRevenue / totalImpressions) * 1000).toFixed(3)) : 0;
+          const daysCount = list.length;
+          const avgDailyRevenue = daysCount > 0 ? Number((totalRevenue / daysCount).toFixed(2)) : 0;
+          setAdsterraData({
+            stats: list,
+            totalImpressions,
+            totalClicks,
+            avgCtr,
+            avgCpm,
+            totalRevenue,
+            daysCount,
+            avgDailyRevenue,
+          });
+          setEditedStats(list);
+        }
+        if (keyOverride) {
+          setShowBunnyKeyModal(false);
+          showToast(
+            res.data.mode === "exact_account_api"
+              ? "✅ Đã kết nối Bunny Account API & đồng bộ chi phí băng thông thực tế!"
+              : "Đã lưu mã và cập nhật bảng đối soát chi phí Bunny vs Ads!"
+          );
+        } else {
+          const latestRow = res.data.dailyRows[0];
+          showToast(
+            latestRow
+              ? `✅ Đã kéo Adsterra API trực tiếp (${latestRow.date}: ${latestRow.adImpressions.toLocaleString("vi-VN")} imp · +$${latestRow.adRevenueUsd.toFixed(3)}) & cập nhật Lợi Nhuận!`
+              : "✅ Đã đồng bộ dữ liệu trực tiếp & cập nhật bảng Lợi Nhuận Ròng!"
+          );
+        }
+      }
+    } catch {
+      showToast("Không thể đồng bộ thống kê Bunny CDN", "error");
+    } finally {
+      setIsSyncingBunny(false);
     }
   };
 
@@ -1409,6 +1480,295 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
             </div>
           </div>
 
+          {/* ── BUNNY CDN COST VS ADSTERRA REVENUE DAILY NET PROFIT AUDITOR ── */}
+          {bunnyProfit && (
+            <div className="bg-gradient-to-b from-[#111822] to-[#0d111a] border border-cyan-500/35 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-5">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                      <Coins className="w-3.5 h-3.5" />
+                      ĐỐI SOÁT LỢI NHUẬN RÒNG: DOANH THU ADSTERRA VS CHI PHÍ BUNNY CDN
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                        bunnyProfit.mode === "exact_account_api"
+                          ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                          : "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                      }`}
+                    >
+                      {bunnyProfit.mode === "exact_account_api"
+                        ? "● Đã đồng bộ 100% từ Bunny Billing API"
+                        : `● Đã đọc Bunny Stream Library #689414 (${bunnyProfit.streamVideosCount} video • ${bunnyProfit.streamStorageGb} GB)`}
+                    </span>
+                  </div>
+                  <h4 className="text-lg sm:text-xl font-black text-white">
+                    Bảng Tính Chi Phí Bunny Trả Mỗi Ngày vs Doanh Thu Quảng Cáo (Biên Lợi Nhuận Thực Tế)
+                  </h4>
+                  <p className="text-xs text-gray-400">
+                    Đọc trực tiếp dung lượng lưu trữ từ Bunny Stream API (<strong className="text-white">{bunnyProfit.streamStorageGb} GB</strong> / {bunnyProfit.streamVideosCount} tập phim) và tính chi phí băng thông CDN mỗi ngày để so sánh lãi/lỗ ròng với tiền quảng cáo Adsterra.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap shrink-0">
+                  <Button
+                    size="sm"
+                    onClick={() => handleSyncBunnyProfit()}
+                    disabled={isSyncingBunny}
+                    className="bg-cyan-500 hover:bg-cyan-600 text-black font-extrabold text-xs h-9 px-3.5 gap-1.5 cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isSyncingBunny ? "animate-spin" : ""}`} />
+                    Làm mới Lợi Nhuận
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowBunnyKeyModal(!showBunnyKeyModal)}
+                    className="border-cyan-500/30 hover:bg-cyan-500/10 text-cyan-300 text-xs h-9 px-3 gap-1.5 cursor-pointer"
+                  >
+                    <Key className="w-3.5 h-3.5" />
+                    {bunnyProfit.hasAccountKey ? "Đổi Bunny Account Key" : "Kết Nối Bunny Account Key"}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Optional Bunny Master Account API Key Modal */}
+              {showBunnyKeyModal && (
+                <div className="p-5 rounded-2xl bg-black/60 border border-cyan-500/40 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h5 className="text-xs sm:text-sm font-bold text-white">
+                      🔑 Kết Nối Bunny.net Master Account API Key (Tùy chọn để lấy số dư Balance & GB chính xác 100%)
+                    </h5>
+                    <button
+                      onClick={() => setShowBunnyKeyModal(false)}
+                      className="text-xs text-gray-400 hover:text-white px-2 py-0.5 rounded bg-white/5"
+                    >
+                      Đóng
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-gray-400 leading-relaxed">
+                    Hiện tại hệ thống đã có <code className="text-cyan-400">BUNNY_API_KEY</code> của Stream Library (#689414) để đọc dung lượng video ({bunnyProfit.streamStorageGb} GB). Nếu muốn đọc thêm hóa đơn tiền <code className="text-white">api.bunny.net/billing</code>, bạn vào <strong className="text-white">dash.bunny.net → Account Settings → API</strong> copy khóa chính dán vào đây:
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="password"
+                      value={bunnyAccountKeyInput}
+                      onChange={(e) => setBunnyAccountKeyInput(e.target.value)}
+                      placeholder="Nhập Bunny Account API Key..."
+                      className="flex-1 bg-black/80 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => handleSyncBunnyProfit(bunnyAccountKeyInput)}
+                      disabled={isSyncingBunny || !bunnyAccountKeyInput.trim()}
+                      className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold text-xs h-9 px-4 cursor-pointer"
+                    >
+                      Lưu & Đồng Bộ Bunny Billing
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* 4 Summary Cards for Current Month: Revenue vs Bunny + Hosting Cost vs Net Profit */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 rounded-2xl bg-black/40 border border-emerald-500/30 space-y-1">
+                  <span className="text-xs text-gray-400 font-semibold">
+                    1. Thu QC {bunnyProfit.currentMonthLabel} ({bunnyProfit.dailyRows.length} ngày)
+                  </span>
+                  <div className="text-2xl font-black text-emerald-400">
+                    +${bunnyProfit.totalAdRevenueUsd.toFixed(2)} USD
+                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    ~{Math.round(bunnyProfit.totalAdRevenueUsd * USD_VND).toLocaleString("vi-VN")} VNĐ
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-black/40 border border-rose-500/30 space-y-1">
+                  <span className="text-xs text-gray-400 font-semibold">
+                    2. Chi Phí Bunny + Hosting ({bunnyProfit.currentMonthLabel})
+                  </span>
+                  <div className="text-2xl font-black text-rose-400">
+                    -${bunnyProfit.totalCostWithProratedHostingUsd.toFixed(2)} USD
+                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    Bunny: -${bunnyProfit.totalBunnyCostUsd.toFixed(2)} • Hosting phân bổ: -${bunnyProfit.proratedHostingCostUsd.toFixed(2)}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-emerald-950/25 border border-emerald-500/40 space-y-1">
+                  <span className="text-xs text-emerald-300 font-bold">
+                    3. LÃI RÒNG {bunnyProfit.currentMonthLabel.toUpperCase()}
+                  </span>
+                  <div className="text-2xl font-black text-emerald-400">
+                    {bunnyProfit.totalNetProfitUsd >= 0 ? "+" : ""}${bunnyProfit.totalNetProfitUsd.toFixed(2)} USD
+                  </div>
+                  <p className="text-[11px] text-emerald-300 font-bold">
+                    Sau riêng Bunny:{" "}
+                    {bunnyProfit.totalNetAfterBunnyUsd >= 0 ? "+" : ""}${bunnyProfit.totalNetAfterBunnyUsd.toFixed(2)} (
+                    {bunnyProfit.totalNetProfitVnd >= 0 ? "+" : ""}
+                    {bunnyProfit.totalNetProfitVnd.toLocaleString("vi-VN")} đ)
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-black/40 border border-cyan-500/30 space-y-1">
+                  <span className="text-xs text-gray-400 font-semibold">4. Định Phí Hosting & Lưu Trữ Tháng</span>
+                  <div className="text-xl font-black text-cyan-400">
+                    $5.00 Hosting + ${bunnyProfit.monthlyStorageCostUsd} Storage
+                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    {bunnyProfit.accountBalanceUsd !== null
+                      ? `Số dư ví Bunny: $${bunnyProfit.accountBalanceUsd.toFixed(2)}`
+                      : `Hosting cố định: $5.00/tháng (~127.000đ/tháng)`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Section 1: Current Month Daily Breakdown ONLY */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h5 className="text-xs font-extrabold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    1. Chi Tiết Từng Ngày Trong Tháng Mới ({bunnyProfit.currentMonthLabel} — Reset từ ngày 01)
+                  </h5>
+                  <span className="text-[11px] text-gray-400">
+                    Chỉ thống kê các ngày thuộc {bunnyProfit.currentMonthLabel} (Phí Hosting $5/tháng = -$0.167/ngày)
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/30">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-white/5 text-gray-400 border-b border-white/10 font-bold uppercase text-[10px]">
+                        <th className="py-3 px-4">Ngày ({bunnyProfit.currentMonthKey})</th>
+                        <th className="py-3 px-4 text-right">Impressions QC</th>
+                        <th className="py-3 px-4 text-right">CTR / CPM</th>
+                        <th className="py-3 px-4 text-right text-emerald-400">Thu Quảng Cáo (+)</th>
+                        <th className="py-3 px-4 text-right text-rose-400">Phí Bunny (-)</th>
+                        <th className="py-3 px-4 text-right text-amber-400">Phí Hosting Ngày (-)</th>
+                        <th className="py-3 px-4 text-right text-emerald-300">Lãi Sau Bunny</th>
+                        <th className="py-3 px-4 text-right text-cyan-300">Lãi Ròng Cuối (Trừ Cả Hosting)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5 text-gray-300">
+                      {bunnyProfit.dailyRows.length > 0 ? (
+                        bunnyProfit.dailyRows.map((row) => {
+                          const isPositive = row.netProfitUsd >= 0;
+                          const isBunnyPositive = row.netProfitAfterBunnyUsd >= 0;
+                          return (
+                            <tr key={row.date} className="hover:bg-white/[0.03]">
+                              <td className="py-3 px-4 font-mono font-bold text-white">
+                                {row.date}
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono">
+                                {row.adImpressions.toLocaleString("vi-VN")}
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono text-[11px]">
+                                <span className="text-blue-400 font-bold">{row.adCtr.toFixed(1)}%</span>
+                                <span className="text-gray-500"> • </span>
+                                <span className="text-amber-400 font-bold">${row.adCpm.toFixed(3)}</span>
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono font-bold text-emerald-400">
+                                +${row.adRevenueUsd.toFixed(3)}
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono font-semibold text-rose-400">
+                                -${row.totalBunnyCostUsd.toFixed(3)} (~{row.bandwidthGb.toFixed(1)}GB)
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono text-amber-400">
+                                -${row.dailyHostingCostUsd.toFixed(3)}
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono font-bold">
+                                <span className={isBunnyPositive ? "text-emerald-400" : "text-rose-400"}>
+                                  {isBunnyPositive ? "+" : ""}${row.netProfitAfterBunnyUsd.toFixed(3)}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono font-black">
+                                <span className={isPositive ? "text-cyan-300" : "text-rose-400"}>
+                                  {isPositive ? "+" : ""}${row.netProfitUsd.toFixed(3)} (
+                                  {isPositive ? "+" : ""}
+                                  {row.netProfitVnd.toLocaleString("vi-VN")} đ)
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={8} className="py-6 text-center text-gray-400 text-xs">
+                            Chưa có dữ liệu ngày nào trong {bunnyProfit.currentMonthLabel}. Bấm &quot;⚡ Đồng Bộ API (Tự Động)&quot; để kéo dữ liệu ngày mới nhất!
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Section 2: Past Months Summary ONLY (Total Profit + Bunny Reset Invoice + $5 Hosting) */}
+              <div className="space-y-2.5 pt-2 border-t border-white/10">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h5 className="text-xs font-extrabold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                    <Layers className="w-4 h-4" />
+                    2. Bảng Chốt Sổ Tổng Kết Các Tháng Cũ (Theo Kỳ Reset Đầu Tháng Của Bunny + $5.00 Hosting/Tháng)
+                  </h5>
+                  <span className="text-[11px] text-gray-400">
+                    Các tháng cũ chỉ thống kê 1 dòng Tổng Lãi, Hóa đơn Bunny và $5.00 Hosting mỗi tháng
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/40">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-white/5 text-gray-400 border-b border-white/10 font-bold uppercase text-[10px]">
+                        <th className="py-3 px-4">Kỳ Tháng Cũ</th>
+                        <th className="py-3 px-4">Ngày Reset Bunny</th>
+                        <th className="py-3 px-4 text-right text-emerald-400">Tổng Thu Ads (+)</th>
+                        <th className="py-3 px-4 text-right text-rose-400">Hóa Đơn Bunny (-)</th>
+                        <th className="py-3 px-4 text-right text-amber-400">Phí Hosting (-)</th>
+                        <th className="py-3 px-4 text-right text-emerald-300">Lãi Sau Bunny</th>
+                        <th className="py-3 px-4 text-right text-cyan-300">Tổng Lãi/Lỗ Ròng (Trừ Cả $5 Hosting)</th>
+                        <th className="py-3 px-4">Ghi Chú Kỳ Chốt Sổ</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5 text-gray-300">
+                      {bunnyProfit.pastMonths.map((m) => {
+                        const isBunnyPos = m.netAfterBunnyUsd >= 0;
+                        const isNetPos = m.netProfitUsd >= 0;
+                        return (
+                          <tr key={m.monthKey} className="hover:bg-white/[0.03]">
+                            <td className="py-3.5 px-4 font-bold text-white">{m.monthLabel}</td>
+                            <td className="py-3.5 px-4 font-mono text-gray-400">{m.resetInvoiceDate}</td>
+                            <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-400">
+                              +${m.adRevenueUsd.toFixed(2)}
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-mono font-bold text-rose-400">
+                              -${m.bunnyCostUsd.toFixed(2)}
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-mono font-semibold text-amber-400">
+                              -${m.hostingCostUsd.toFixed(2)}
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-mono font-bold">
+                              <span className={isBunnyPos ? "text-emerald-400" : "text-rose-400"}>
+                                {isBunnyPos ? "+" : ""}${m.netAfterBunnyUsd.toFixed(2)}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-mono font-black">
+                              <span className={isNetPos ? "text-cyan-300" : "text-rose-400"}>
+                                {isNetPos ? "+" : ""}${m.netProfitUsd.toFixed(2)} (
+                                {isNetPos ? "+" : ""}
+                                {m.netProfitVnd.toLocaleString("vi-VN")} đ)
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-[11px] text-gray-400 max-w-xs">{m.note}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── AI AD-OPS SPECIALIST & REALTIME PLACEMENT DIAGNOSTICS CENTER ── */}
           <div className="bg-gradient-to-b from-[#141726] to-[#0f111c] border border-orange-500/40 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
             {/* Header */}
@@ -1592,6 +1952,149 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                           </tr>
                         );
                       })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* 2B. Daily Revenue Breakdown by Ad Placement Table (Group by: DATE × PLACEMENT) */}
+            {adOpsDiag?.dailyByPlacement && adOpsDiag.dailyByPlacement.length > 0 && (
+              <div className="space-y-3 pt-2 border-t border-white/10">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="space-y-0.5">
+                    <h5 className="text-xs font-extrabold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Bảng Thống Kê Doanh Thu Mỗi Ngày Của Từng Loại Quảng Cáo (Group by: DATE × PLACEMENT)
+                    </h5>
+                    <span className="text-[11px] text-gray-400 block">
+                      So sánh trực tiếp mỗi ngày: SocialBar_1 (Toàn web) vs 300x250_1 (Trang Phim) vs NativeBanner_1 (Bộ Sưu Tập & Thể loại)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {adOpsDiag.updatedAt && (
+                      <span className="text-[10px] font-mono text-gray-400 bg-black/40 border border-white/10 px-2.5 py-1 rounded-lg">
+                        Cập nhật: {adOpsDiag.updatedAt}
+                      </span>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleRefreshDiagnostics(true)}
+                      disabled={isRefreshingDiag}
+                      className="bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border-cyan-500/30 text-[11px] font-bold h-8 px-3 gap-1.5 cursor-pointer"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingDiag ? "animate-spin" : ""}`} />
+                      <span>{isRefreshingDiag ? "Đang kéo API..." : "Làm mới từng loại QC"}</span>
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/40">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-white/5 text-gray-400 border-b border-white/10 font-bold uppercase text-[10px]">
+                        <th className="py-3 px-4">Ngày</th>
+                        <th className="py-3 px-4 text-right text-orange-400">
+                          🔥 SocialBar_1 (In-Page Push)
+                        </th>
+                        <th className="py-3 px-4 text-right text-cyan-400">
+                          🎬 300x250_1 (Trang Xem Phim)
+                        </th>
+                        <th className="py-3 px-4 text-right text-purple-400">
+                          🖼️ NativeBanner_1 (Bộ Sưu Tập /gallery)
+                        </th>
+                        <th className="py-3 px-4 text-right text-emerald-400">
+                          💰 Tổng Thu Ngày
+                        </th>
+                        <th className="py-3 px-4 text-center">Loại QC Gánh Chính</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5 text-gray-300">
+                      {adOpsDiag.dailyByPlacement.map((row) => (
+                        <tr key={row.date} className="hover:bg-white/[0.03] align-middle">
+                          <td className="py-3 px-4 font-mono font-bold text-white whitespace-nowrap">
+                            {row.date}
+                          </td>
+
+                          {/* SocialBar_1 */}
+                          <td className="py-3 px-4 text-right font-mono">
+                            <div className="font-black text-orange-400 text-xs">
+                              +${row.socialBar.revenue.toFixed(3)}
+                            </div>
+                            <div className="text-[10px] text-gray-400">
+                              {row.socialBar.impressions.toLocaleString("vi-VN")} imp · CTR{" "}
+                              <span className="text-blue-400 font-semibold">
+                                {row.socialBar.ctr.toFixed(1)}%
+                              </span>{" "}
+                              · CPM{" "}
+                              <span className="text-amber-400 font-semibold">
+                                ${row.socialBar.cpm.toFixed(3)}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* 300x250_1 */}
+                          <td className="py-3 px-4 text-right font-mono">
+                            <div className="font-black text-cyan-400 text-xs">
+                              +${row.banner300.revenue.toFixed(3)}
+                            </div>
+                            <div className="text-[10px] text-gray-400">
+                              {row.banner300.impressions.toLocaleString("vi-VN")} imp · CTR{" "}
+                              <span className="text-blue-400 font-semibold">
+                                {row.banner300.ctr.toFixed(2)}%
+                              </span>{" "}
+                              · CPM{" "}
+                              <span className="text-amber-400 font-semibold">
+                                ${row.banner300.cpm.toFixed(3)}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* NativeBanner_1 */}
+                          <td className="py-3 px-4 text-right font-mono">
+                            {row.nativeBanner.impressions > 0 ? (
+                              <>
+                                <div className="font-black text-purple-400 text-xs">
+                                  +${row.nativeBanner.revenue.toFixed(3)}
+                                </div>
+                                <div className="text-[10px] text-gray-400">
+                                  {row.nativeBanner.impressions.toLocaleString("vi-VN")} imp · CTR{" "}
+                                  <span className="text-blue-400 font-semibold">
+                                    {row.nativeBanner.ctr.toFixed(2)}%
+                                  </span>{" "}
+                                  · CPM{" "}
+                                  <span className="text-amber-400 font-semibold">
+                                    ${row.nativeBanner.cpm.toFixed(3)}
+                                  </span>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-[10px] text-gray-500 italic">
+                                $0.000 (Mới gắn /gallery)
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Total Day */}
+                          <td className="py-3 px-4 text-right font-mono">
+                            <div className="font-black text-emerald-400 text-xs">
+                              +${row.totalRevenue.toFixed(3)}
+                            </div>
+                            <div className="text-[10px] text-gray-400">
+                              ~{Math.round(row.totalRevenue * USD_VND).toLocaleString("vi-VN")}đ ·{" "}
+                              {row.totalImpressions.toLocaleString("vi-VN")} imp
+                            </div>
+                          </td>
+
+                          {/* Top Earner */}
+                          <td className="py-3 px-4 text-center">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                              {row.topEarnerLabel}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>

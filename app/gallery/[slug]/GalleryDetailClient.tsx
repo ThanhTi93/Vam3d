@@ -27,7 +27,7 @@ import { incrementGalleryViews } from "@/app/admin/actions";
 import { HomeGalleryCard, HomeGalleryLightbox } from "@/components/GalleryComponents";
 import MovieComments from "@/components/movie/MovieComments";
 import CultivationLoginNotice from "@/components/ranking/CultivationLoginNotice";
-import AdBanner300x250 from "@/components/AdBanner300x250";
+import AdGalleryNativeBanner from "@/components/AdGalleryNativeBanner";
 
 interface GalleryDetailClientProps {
   gallery: any;
@@ -281,8 +281,8 @@ export default function GalleryDetailClient({
           </div>
         )}
 
-        {/* Banner 300x250 Adsterra */}
-        <AdBanner300x250 adKey={`gallery-${gallery.id}`} />
+        {/* Native Banner Adsterra dành riêng cho trang Bộ Sưu Tập (/gallery/...) */}
+        <AdGalleryNativeBanner refreshKey={`gallery-${gallery.id}`} />
 
         {/* Images Grid Section */}
         <div className="space-y-4">

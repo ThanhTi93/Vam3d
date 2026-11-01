@@ -181,7 +181,8 @@ export function HomeGalleryGrid({
   activeMovie = "all",
   activeCharacter = "all",
   activeSortBy = "newest",
-  onFilterChange
+  onFilterChange,
+  topBannerSlot,
 }: {
   galleries: any[];
   onSelectGallery: (g: any) => void;
@@ -193,6 +194,7 @@ export function HomeGalleryGrid({
   activeCharacter?: string;
   activeSortBy?: string;
   onFilterChange?: (filters: { plan: string; movie: string; character: string; sortBy: string }) => void;
+  topBannerSlot?: React.ReactNode;
 }) {
   const safeGalleries = galleries || [];
   const [localPlan, setLocalPlan] = useState("all");
@@ -384,6 +386,8 @@ export function HomeGalleryGrid({
           </select>
         </div>
       </div>
+
+      {topBannerSlot}
 
       {/* Grid of Galleries */}
       {displayGalleries.length > 0 ? (
