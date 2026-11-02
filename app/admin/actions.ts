@@ -3448,7 +3448,7 @@ const DEFAULT_PLACEMENT_SUMMARIES: AdsterraPlacementSummary[] = [
 
 function safeReadWorkspaceFile(relPath: string): string {
   try {
-    return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
+    return fs.readFileSync(path.join(/*turbopackIgnore: true*/ process.cwd(), relPath), "utf8");
   } catch {
     return "";
   }

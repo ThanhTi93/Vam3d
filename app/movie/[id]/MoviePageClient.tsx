@@ -651,9 +651,6 @@ export default function MoviePageClient({
             </div>
           )}
 
-          {/* Banner 300x250 Adsterra */}
-          <AdBanner300x250 adKey={`movie-${movie.id}-overview`} />
-
           {/* ─── BỘ SƯU TẬP AI CỦA PHIM (SEO OPTIMIZED SECTION) ─── */}
           {movie.aiGalleries && movie.aiGalleries.length > 0 && (
             <section aria-label={`Bộ sưu tập AI của phim ${movie.title}`} className="p-6 sm:p-8 border-t border-white/5 bg-gradient-to-b from-[#131520] to-[#0d0e16] space-y-6">
