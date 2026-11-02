@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
+import { getClientAdConfig } from "@/lib/adConfigClient";
 
 interface AdGalleryNativeBannerProps {
   className?: string;
@@ -40,7 +41,15 @@ export default function AdGalleryNativeBanner({
       return;
     }
 
-    setCanShow(true);
+    let cancelled = false;
+    getClientAdConfig().then((cfg) => {
+      if (!cancelled) {
+        setCanShow(cfg.nativeBannerEnabled);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   // 3. Lazy-load bằng IntersectionObserver để đảm bảo 100% Viewability & 0 ảnh hưởng Core Web Vitals

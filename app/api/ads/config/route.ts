@@ -1,15 +1,40 @@
 import { NextResponse } from "next/server";
+import { getCachedSystemSetting } from "@/lib/db/settings";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-  return NextResponse.json({
-    success: true,
-    data: {
-      popunderUrl: "",
-      popunderEnabled: false,
-      popunderIntervalHours: 24,
-      mobileStickyEnabled: false,
-    },
-  });
+  try {
+    const [socialBarEnabled, banner300Enabled, nativeBannerEnabled] = await Promise.all([
+      getCachedSystemSetting("ad_social_bar_enabled", "true"),
+      getCachedSystemSetting("ad_banner_300x250_enabled", "true"),
+      getCachedSystemSetting("ad_native_banner_enabled", "true"),
+    ]);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        socialBarEnabled: socialBarEnabled !== "false",
+        banner300Enabled: banner300Enabled !== "false",
+        nativeBannerEnabled: nativeBannerEnabled !== "false",
+        popunderUrl: "",
+        popunderEnabled: false,
+        popunderIntervalHours: 24,
+        mobileStickyEnabled: false,
+      },
+    });
+  } catch {
+    return NextResponse.json({
+      success: true,
+      data: {
+        socialBarEnabled: true,
+        banner300Enabled: true,
+        nativeBannerEnabled: true,
+        popunderUrl: "",
+        popunderEnabled: false,
+        popunderIntervalHours: 24,
+        mobileStickyEnabled: false,
+      },
+    });
+  }
 }

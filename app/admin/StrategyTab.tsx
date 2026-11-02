@@ -156,19 +156,23 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
   const [simBannerRentals, setSimBannerRentals] = useState<number>(0); // Banner game/shop
   const USD_VND = 25400;
 
-  // Ad Monetization Settings (Popunder, Mobile Sticky, etc.)
+  // Ad Monetization Settings (Individual ON/OFF switches for each Ad Unit)
   const [adSettings, setAdSettings] = useState<{
     popunderUrl: string;
     popunderEnabled: boolean;
     popunderIntervalHours: number;
     mobileStickyEnabled: boolean;
     socialBarEnabled: boolean;
+    banner300Enabled: boolean;
+    nativeBannerEnabled: boolean;
   }>({
     popunderUrl: "",
-    popunderEnabled: true,
+    popunderEnabled: false,
     popunderIntervalHours: 12,
-    mobileStickyEnabled: true,
+    mobileStickyEnabled: false,
     socialBarEnabled: true,
+    banner300Enabled: true,
+    nativeBannerEnabled: true,
   });
   const [isSavingAdSettings, setIsSavingAdSettings] = useState(false);
 
@@ -2107,12 +2111,208 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
               </div>
             )}
 
-            {/* 3. Live Source Code Ad Placement Audit */}
+            {/* 3. Real-time Individual Ad Unit ON/OFF Switchboard */}
+            <div className="space-y-3 pt-2 border-t border-white/10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h5 className="text-xs font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    3. Bảng Công Tắc Bật / Tắt Từng Loại Quảng Cáo (Real-Time ON/OFF)
+                  </h5>
+                  <span className="text-[11px] text-gray-400 block">
+                    Bấm công tắc để BẬT hoặc TẮT riêng từng đơn vị quảng cáo ngay lập tức trên toàn website mà không cần sửa code
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isSavingAdSettings}
+                    onClick={() =>
+                      handleSaveAdSettings({
+                        socialBarEnabled: true,
+                        banner300Enabled: true,
+                        nativeBannerEnabled: true,
+                      })
+                    }
+                    className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[11px] font-bold h-7 px-2.5 cursor-pointer"
+                  >
+                    Bật Tất Cả (3/3)
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Switch 1: SocialBar_1 */}
+                <div
+                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
+                    adSettings.socialBarEnabled
+                      ? "bg-orange-950/20 border-orange-500/40"
+                      : "bg-black/40 border-white/10 opacity-75"
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-black text-white flex items-center gap-1.5">
+                        🔥 SocialBar_1
+                      </span>
+                      <span
+                        className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
+                          adSettings.socialBarEnabled
+                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                            : "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                        }`}
+                      >
+                        {adSettings.socialBarEnabled ? "● ĐANG BẬT" : "○ ĐANG TẮT"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-300 font-medium">
+                      Thanh nổi In-Page Push (Toàn web trừ trang chủ <code className="text-orange-300">/</code>)
+                    </p>
+                    <p className="text-[10px] text-gray-500 font-mono">
+                      components/AdsterraSocialBar.tsx
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                    <span className="text-[10px] text-gray-400">
+                      Trạng thái hiển thị:
+                    </span>
+                    <button
+                      type="button"
+                      disabled={isSavingAdSettings}
+                      onClick={() =>
+                        handleSaveAdSettings({
+                          socialBarEnabled: !adSettings.socialBarEnabled,
+                        })
+                      }
+                      className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer disabled:opacity-50 ${
+                        adSettings.socialBarEnabled
+                          ? "bg-emerald-500 hover:bg-emerald-600 text-black shadow-lg shadow-emerald-500/20"
+                          : "bg-zinc-800 hover:bg-zinc-700 text-gray-300 border border-white/15"
+                      }`}
+                    >
+                      {adSettings.socialBarEnabled ? "Đang Bật → Bấm để Tắt" : "Đang Tắt → Bấm để Bật"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Switch 2: 300x250_1 */}
+                <div
+                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
+                    adSettings.banner300Enabled
+                      ? "bg-cyan-950/20 border-cyan-500/40"
+                      : "bg-black/40 border-white/10 opacity-75"
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-black text-white flex items-center gap-1.5">
+                        🎬 300x250_1 (Banner Phim)
+                      </span>
+                      <span
+                        className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
+                          adSettings.banner300Enabled
+                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                            : "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                        }`}
+                      >
+                        {adSettings.banner300Enabled ? "● ĐANG BẬT" : "○ ĐANG TẮT"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-300 font-medium">
+                      Banner 300×250 độc quyền dưới Player Xem Phim (<code className="text-cyan-300">/movie/[id]</code>)
+                    </p>
+                    <p className="text-[10px] text-gray-500 font-mono">
+                      components/AdBanner300x250.tsx
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                    <span className="text-[10px] text-gray-400">
+                      Trạng thái hiển thị:
+                    </span>
+                    <button
+                      type="button"
+                      disabled={isSavingAdSettings}
+                      onClick={() =>
+                        handleSaveAdSettings({
+                          banner300Enabled: !adSettings.banner300Enabled,
+                        })
+                      }
+                      className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer disabled:opacity-50 ${
+                        adSettings.banner300Enabled
+                          ? "bg-emerald-500 hover:bg-emerald-600 text-black shadow-lg shadow-emerald-500/20"
+                          : "bg-zinc-800 hover:bg-zinc-700 text-gray-300 border border-white/15"
+                      }`}
+                    >
+                      {adSettings.banner300Enabled ? "Đang Bật → Bấm để Tắt" : "Đang Tắt → Bấm để Bật"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Switch 3: NativeBanner_1 */}
+                <div
+                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
+                    adSettings.nativeBannerEnabled
+                      ? "bg-purple-950/20 border-purple-500/40"
+                      : "bg-black/40 border-white/10 opacity-75"
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-black text-white flex items-center gap-1.5">
+                        🖼️ NativeBanner_1 (4×1)
+                      </span>
+                      <span
+                        className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
+                          adSettings.nativeBannerEnabled
+                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                            : "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                        }`}
+                      >
+                        {adSettings.nativeBannerEnabled ? "● ĐANG BẬT" : "○ ĐANG TẮT"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-300 font-medium">
+                      Native Banner ở Bộ Sưu Tập (<code className="text-purple-300">/gallery</code>) & Thể Loại (<code className="text-purple-300">/sex-ai</code>...)
+                    </p>
+                    <p className="text-[10px] text-gray-500 font-mono">
+                      components/AdGalleryNativeBanner.tsx
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                    <span className="text-[10px] text-gray-400">
+                      Trạng thái hiển thị:
+                    </span>
+                    <button
+                      type="button"
+                      disabled={isSavingAdSettings}
+                      onClick={() =>
+                        handleSaveAdSettings({
+                          nativeBannerEnabled: !adSettings.nativeBannerEnabled,
+                        })
+                      }
+                      className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer disabled:opacity-50 ${
+                        adSettings.nativeBannerEnabled
+                          ? "bg-emerald-500 hover:bg-emerald-600 text-black shadow-lg shadow-emerald-500/20"
+                          : "bg-zinc-800 hover:bg-zinc-700 text-gray-300 border border-white/15"
+                      }`}
+                    >
+                      {adSettings.nativeBannerEnabled ? "Đang Bật → Bấm để Tắt" : "Đang Tắt → Bấm để Bật"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3B. Live Source Code Ad Placement Audit */}
             {adOpsDiag?.codeAudit && (
               <div className="space-y-3">
                 <h5 className="text-xs font-extrabold uppercase tracking-wider text-blue-400 flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4" />
-                  3. Kiểm Định Cấu Hình Code Đặt Quảng Cáo Trong Website (Chuẩn Viewability & Bảo Vệ CPM)
+                  4. Kiểm Định Cấu Hình Code Đặt Quảng Cáo Trong Website (Chuẩn Viewability & Bảo Vệ CPM)
                 </h5>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {adOpsDiag.codeAudit.map((item) => (

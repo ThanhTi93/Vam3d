@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
+import { getClientAdConfig } from "@/lib/adConfigClient";
 
 const ADSTERRA_SOCIAL_BAR_SRC =
   "https://pl31617679.profitableratecpmnetwork.com/f5/22/5b/f5225b580cef96483ffa330d0aa0a444.js";
@@ -64,10 +65,16 @@ export default function AdsterraSocialBar() {
     }
 
     // 5. NẠP QUẢNG CÁO SAU 5 GIÂY Ở TRANG NỘI DUNG
-    timerRef.current = setTimeout(() => {
+    timerRef.current = setTimeout(async () => {
       // Kiểm tra lại VIP/Admin tại thời điểm nạp (phòng trường hợp AuthContext vừa tải xong)
       const latestUser = userRef.current;
       if (latestUser && ((latestUser.level && latestUser.level > 0) || latestUser.role === "admin")) {
+        return;
+      }
+
+      // Kiểm tra công tắc BẬT/TẮT trong Admin
+      const adCfg = await getClientAdConfig();
+      if (!adCfg.socialBarEnabled) {
         return;
       }
 

@@ -3193,25 +3193,39 @@ export async function getAdMonetizationSettingsAction(): Promise<{
     popunderIntervalHours: number;
     mobileStickyEnabled: boolean;
     socialBarEnabled: boolean;
+    banner300Enabled: boolean;
+    nativeBannerEnabled: boolean;
   };
 }> {
   await verifyAdmin();
   try {
-    const [popunderUrl, popunderEnabled, popunderInterval, mobileStickyEnabled, socialBarEnabled] = await Promise.all([
+    const [
+      popunderUrl,
+      popunderEnabled,
+      popunderInterval,
+      mobileStickyEnabled,
+      socialBarEnabled,
+      banner300Enabled,
+      nativeBannerEnabled,
+    ] = await Promise.all([
       getCachedSystemSetting("ad_popunder_url", ""),
-      getCachedSystemSetting("ad_popunder_enabled", "true"),
+      getCachedSystemSetting("ad_popunder_enabled", "false"),
       getCachedSystemSetting("ad_popunder_interval_hours", "12"),
-      getCachedSystemSetting("ad_mobile_sticky_enabled", "true"),
+      getCachedSystemSetting("ad_mobile_sticky_enabled", "false"),
       getCachedSystemSetting("ad_social_bar_enabled", "true"),
+      getCachedSystemSetting("ad_banner_300x250_enabled", "true"),
+      getCachedSystemSetting("ad_native_banner_enabled", "true"),
     ]);
     return {
       success: true,
       data: {
         popunderUrl,
-        popunderEnabled: popunderEnabled !== "false",
+        popunderEnabled: popunderEnabled === "true",
         popunderIntervalHours: parseInt(popunderInterval, 10) || 12,
-        mobileStickyEnabled: mobileStickyEnabled !== "false",
+        mobileStickyEnabled: mobileStickyEnabled === "true",
         socialBarEnabled: socialBarEnabled !== "false",
+        banner300Enabled: banner300Enabled !== "false",
+        nativeBannerEnabled: nativeBannerEnabled !== "false",
       },
     };
   } catch (err: any) {
@@ -3219,10 +3233,12 @@ export async function getAdMonetizationSettingsAction(): Promise<{
       success: false,
       data: {
         popunderUrl: "",
-        popunderEnabled: true,
+        popunderEnabled: false,
         popunderIntervalHours: 12,
-        mobileStickyEnabled: true,
+        mobileStickyEnabled: false,
         socialBarEnabled: true,
+        banner300Enabled: true,
+        nativeBannerEnabled: true,
       },
     };
   }
@@ -3234,6 +3250,8 @@ export async function saveAdMonetizationSettingsAction(settings: {
   popunderIntervalHours?: number;
   mobileStickyEnabled?: boolean;
   socialBarEnabled?: boolean;
+  banner300Enabled?: boolean;
+  nativeBannerEnabled?: boolean;
 }): Promise<{ success: boolean; error?: string }> {
   await verifyAdmin();
   try {
@@ -3251,6 +3269,12 @@ export async function saveAdMonetizationSettingsAction(settings: {
     }
     if (settings.socialBarEnabled !== undefined) {
       await setSystemSetting("ad_social_bar_enabled", settings.socialBarEnabled ? "true" : "false");
+    }
+    if (settings.banner300Enabled !== undefined) {
+      await setSystemSetting("ad_banner_300x250_enabled", settings.banner300Enabled ? "true" : "false");
+    }
+    if (settings.nativeBannerEnabled !== undefined) {
+      await setSystemSetting("ad_native_banner_enabled", settings.nativeBannerEnabled ? "true" : "false");
     }
     revalidatePath("/", "layout");
     return { success: true };

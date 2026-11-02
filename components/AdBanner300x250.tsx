@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
+import { getClientAdConfig } from "@/lib/adConfigClient";
 
 interface AdBanner300x250Props {
   className?: string;
@@ -62,7 +63,15 @@ export default function AdBanner300x250({ className = "", adKey }: AdBanner300x2
       return;
     }
 
-    setCanShow(true);
+    let cancelled = false;
+    getClientAdConfig().then((cfg) => {
+      if (!cancelled) {
+        setCanShow(cfg.banner300Enabled);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   // 3. Chỉ nạp iframe khi người dùng thực sự cuộn tới gần vùng hiển thị (tối ưu Viewability & đẩy cao CTR/CPM)
