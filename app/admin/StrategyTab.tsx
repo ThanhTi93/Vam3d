@@ -1780,14 +1780,14 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                     TRỢ LÝ AI CHUYÊN VIÊN QUẢN LÝ & BẮT LỖI QUẢNG CÁO (24/7 AD-OPS)
                   </span>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                    Điểm Sức Khỏe QC: {adOpsDiag?.healthScore ?? 88}/100
+                    Điểm Sức Khỏe QC: {adOpsDiag?.healthScore ?? 96}/100
                   </span>
                 </div>
                 <h4 className="text-lg sm:text-xl font-black text-white">
                   Giám Sát Từng Vị Trí Đặt QC (Placement API), Tự Động Phát Hiện Lỗi CTR/CPM & Tư Vấn Trực Tiếp
                 </h4>
                 <p className="text-xs text-gray-400">
-                  Theo dõi sâu tới từng mã Placement trên Adsterra (<code className="text-orange-400">SocialBar_1</code>, <code className="text-orange-400">300x250_1</code>, <code className="text-orange-400">Smartlink_1</code>), tự động phát hiện vị trí làm loãng CTR/CPM và kiểm định code đặt quảng cáo.
+                  Theo dõi sâu tới từng mã Placement đang chạy trên Adsterra (<code className="text-orange-400">SocialBar_1</code>, <code className="text-orange-400">300x250_1</code>, <code className="text-orange-400">NativeBanner_1</code>) — chỉ cảnh báo khi phát sinh lỗi mới chưa xử lý.
                 </p>
               </div>
 
@@ -1818,7 +1818,7 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
               <div className="space-y-3">
                 <h5 className="text-xs font-extrabold uppercase tracking-wider text-orange-400 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" />
-                  1. Hệ Thống Tự Động Bắt Bệnh & Cảnh Báo Biến Động CTR / CPM ({adOpsDiag.alerts.length} phát hiện)
+                  1. Hệ Thống Tự Động Bắt Bệnh & Kiểm Tra Trạng Thái QC
                 </h5>
                 <div className="grid grid-cols-1 gap-3">
                   {adOpsDiag.alerts.map((alert) => {
@@ -1846,7 +1846,7 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                                   : "bg-emerald-500 text-black"
                               }`}
                             >
-                              {isCrit ? "CẢNH BÁO ĐỎ" : isWarn ? "LƯU Ý TỐI ƯU" : "ĐẠT CHUẨN"}
+                              {isCrit ? "CẢNH BÁO ĐỎ" : isWarn ? "KIẾN NGHỊ MỚI" : "ĐẠT CHUẨN 100%"}
                             </span>
                             <span className="text-xs sm:text-sm font-bold text-white">{alert.title}</span>
                           </div>
@@ -1855,10 +1855,16 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                           </span>
                         </div>
                         <p className="text-xs text-gray-300 leading-relaxed">
-                          <strong className="text-gray-100">Nguyên nhân kỹ thuật:</strong> {alert.detail}
+                          <strong className="text-gray-100">
+                            {isCrit || isWarn ? "Nguyên nhân phát hiện:" : "Chi tiết đánh giá:"}
+                          </strong>{" "}
+                          {alert.detail}
                         </p>
                         <div className="text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-xl">
-                          <strong className="text-emerald-400">🛠️ Giải pháp khắc phục:</strong> {alert.solution}
+                          <strong className="text-emerald-400">
+                            {isCrit || isWarn ? "🛠️ Kiến nghị xử lý:" : "✅ Kết luận:"}
+                          </strong>{" "}
+                          {alert.solution}
                         </div>
                       </div>
                     );
