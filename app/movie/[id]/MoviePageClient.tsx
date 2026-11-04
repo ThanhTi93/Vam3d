@@ -265,6 +265,14 @@ export default function MoviePageClient({
         {/* ── PLAYER VIEW ── */}
       {showPlayer ? (
         <div className="flex flex-col">
+          {/* ── BẢNG HƯỚNG DẪN XEM PHIM PHÍA TRÊN TRÌNH PHÁT ── */}
+          <div className="px-4 py-2.5 bg-gradient-to-r from-orange-500/20 via-amber-500/15 to-orange-500/20 border-b border-orange-500/30 flex items-center gap-2.5 text-xs text-orange-200">
+            <Sparkles className="w-4 h-4 text-orange-400 shrink-0 animate-pulse" />
+            <span className="leading-snug">
+              <strong className="text-orange-300 font-bold">Hướng dẫn xem phim:</strong> Khán giả bấm Play, nếu có tab quảng cáo mở ra chỉ cần tắt đi và bấm Play lại là xem trọn tập phim!
+            </span>
+          </div>
+
           <div className="relative bg-black aspect-video w-full flex items-center justify-center">
             {isCurrentRoute ? (() => {
               const storageKey = `progress_movie_${movie.id}_ep_${activeEpisode}`;
@@ -335,14 +343,6 @@ export default function MoviePageClient({
                 <span>{isCinemaMode ? "Bật đèn" : "Tắt đèn"}</span>
               </button>
             </div>
-          </div>
-
-          {/* ── HƯỚNG DẪN XEM PHIM MƯỢT MÀ CHUẨN WEB PHIM ── */}
-          <div className="mx-4 sm:mx-6 mt-3 px-3.5 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 text-xs text-orange-300/90 flex items-center gap-2 shadow-sm">
-            <Sparkles className="w-4 h-4 text-orange-400 shrink-0" />
-            <span>
-              <strong>Mẹo xem phim:</strong> Khi bấm Play lần đầu nếu có tab quảng cáo mở ra, quý khán giả chỉ cần đóng tab đó lại là có thể xem phim mượt mà suốt cả tập!
-            </span>
           </div>
 
           <div className="p-6 space-y-5">

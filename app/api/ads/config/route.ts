@@ -5,10 +5,20 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const [socialBarEnabled, banner300Enabled, nativeBannerEnabled] = await Promise.all([
+    const [
+      socialBarEnabled,
+      banner300Enabled,
+      nativeBannerEnabled,
+      popunderUrl,
+      popunderEnabled,
+      popunderInterval,
+    ] = await Promise.all([
       getCachedSystemSetting("ad_social_bar_enabled", "true"),
       getCachedSystemSetting("ad_banner_300x250_enabled", "true"),
       getCachedSystemSetting("ad_native_banner_enabled", "true"),
+      getCachedSystemSetting("ad_popunder_url", ""),
+      getCachedSystemSetting("ad_popunder_enabled", "false"),
+      getCachedSystemSetting("ad_popunder_interval_hours", "12"),
     ]);
 
     return NextResponse.json({
@@ -17,9 +27,9 @@ export async function GET() {
         socialBarEnabled: socialBarEnabled !== "false",
         banner300Enabled: banner300Enabled !== "false",
         nativeBannerEnabled: nativeBannerEnabled !== "false",
-        popunderUrl: "",
-        popunderEnabled: false,
-        popunderIntervalHours: 24,
+        popunderUrl: popunderUrl || "",
+        popunderEnabled: popunderEnabled === "true",
+        popunderIntervalHours: parseInt(popunderInterval, 10) || 12,
         mobileStickyEnabled: false,
       },
     });

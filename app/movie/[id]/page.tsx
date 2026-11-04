@@ -211,14 +211,20 @@ export async function generateStaticParams() {
 }
 
 export default async function MovieDetailPage({ params }: MoviePageProps) {
+  const { id } = await params;
+  let movie: any = null;
+
   try {
-    const { id } = await params;
-    const movie = await getMovieById(id);
+    movie = await getMovieById(id);
+  } catch (err) {
+    console.error("Database error in getMovieById:", err);
+  }
 
-    if (!movie) {
-      notFound();
-    }
+  if (!movie) {
+    notFound();
+  }
 
+  try {
     const allMovies = await getAllMovies(6);
 
     const movieData = movie as any;
@@ -383,7 +389,10 @@ export default async function MovieDetailPage({ params }: MoviePageProps) {
         </div>
       </main>
     );
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.digest?.startsWith?.("NEXT_") || err?.message?.includes?.("NEXT_HTTP_ERROR_FALLBACK")) {
+      throw err;
+    }
     console.error("Error in MovieDetailPage:", err);
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-20 text-center px-4">

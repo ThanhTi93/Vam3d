@@ -576,25 +576,106 @@ export async function updateEpisode(
   revalidateTag("movies:hot", "default");
 }
 
-export async function getStreamtapeUploadUrlAction(): Promise<{
+export async function getStreamtapeMigrationStatusAction(): Promise<{
   success: boolean;
-  uploadUrl?: string;
+  remainingCount: number;
+  episodes: Array<{ id: number; name: string; url: string }>;
   error?: string;
 }> {
   await verifyAdmin();
+  if (!db) return { success: false, remainingCount: 0, episodes: [], error: "Database not available" };
+
   try {
+    const rows = await db
+      .select({
+        id: schema.episodes.id,
+        name: schema.episodes.name,
+        url: schema.episodes.url,
+      })
+      .from(schema.episodes)
+      .where(ilike(schema.episodes.url, "%streamtape%"));
+
+    return {
+      success: true,
+      remainingCount: rows.length,
+      episodes: rows.filter((r): r is { id: number; name: string; url: string } => Boolean(r.url)),
+    };
+  } catch (err: any) {
+    return { success: false, remainingCount: 0, episodes: [], error: err?.message || "Lỗi truy vấn database" };
+  }
+}
+
+export async function migrateSingleStreamtapeEpisodeAction(episodeId: number): Promise<{
+  success: boolean;
+  newUrl?: string;
+  error?: string;
+}> {
+  await verifyAdmin();
+  if (!db) return { success: false, error: "Database not available" };
+
+  try {
+    const ep = await db.query.episodes.findFirst({
+      where: (e, { eq }) => eq(e.id, episodeId),
+    });
+
+    if (!ep || !ep.url || !ep.url.includes("streamtape")) {
+      return { success: false, error: "Tập phim không tồn tại hoặc không dùng link Streamtape" };
+    }
+
+    const match = ep.url.match(/streamtape\.com\/(?:e|v)\/([a-zA-Z0-9]+)/);
+    if (!match) {
+      return { success: false, error: "Không tìm thấy file ID Streamtape hợp lệ" };
+    }
+
+    const fileId = match[1];
     const login = process.env.STREAMTAPE_API_LOGIN || "439070443d3e6fe76376";
     const key = process.env.STREAMTAPE_API_KEY || "RpAWzXJbpXI0lR";
-    const res = await fetch(`https://api.streamtape.com/file/ul?login=${login}&key=${key}`, {
+
+    // 1. Get ticket
+    const ticketRes = await fetch(`https://api.streamtape.com/file/dlticket?file=${fileId}&login=${login}&key=${key}`, {
       cache: "no-store",
     });
-    const data = await res.json();
-    if (data.status === 200 && data.result?.url) {
-      return { success: true, uploadUrl: data.result.url };
+    const ticket = await ticketRes.json();
+    if (!ticket?.result?.ticket) {
+      return { success: false, error: `Streamtape báo lỗi: ${ticket?.msg || "File không tồn tại (404)"}` };
     }
-    return { success: false, error: data.msg || "Không thể lấy cổng tải lên từ Streamtape" };
+
+    const waitMs = ((ticket.result.wait_time || 5) + 1) * 1000;
+    await new Promise((r) => setTimeout(r, waitMs));
+
+    // 2. Get direct download URL
+    const dlRes = await fetch(`https://api.streamtape.com/file/dl?file=${fileId}&ticket=${ticket.result.ticket}`, {
+      cache: "no-store",
+    });
+    const dl = await dlRes.json();
+    if (!dl?.result?.url) {
+      return { success: false, error: `Không lấy được link stream từ Streamtape: ${dl?.msg || "Lỗi không xác định"}` };
+    }
+
+    // 3. Fetch stream from Streamtape CDN
+    const videoStreamResp = await fetch(dl.result.url);
+    if (!videoStreamResp.ok || !videoStreamResp.body) {
+      return { success: false, error: `Lỗi tải file từ Streamtape CDN: HTTP ${videoStreamResp.status}` };
+    }
+
+    // 4. Stream upload into Cloudflare R2
+    const { uploadStreamToR2 } = await import("@/lib/r2");
+    const { Readable } = await import("stream");
+    const nodeReadable = Readable.fromWeb(videoStreamResp.body as any);
+
+    const r2Key = `episodes/ep-${ep.id}.mp4`;
+    const r2Res = await uploadStreamToR2(r2Key, nodeReadable, "video/mp4");
+    if (!r2Res || !r2Res.publicUrl) {
+      return { success: false, error: "Lỗi tải luồng video lên Cloudflare R2" };
+    }
+
+    // 5. Update Postgres DB
+    await db.update(schema.episodes).set({ url: r2Res.publicUrl }).where(eq(schema.episodes.id, ep.id));
+
+    revalidateAdmin();
+    return { success: true, newUrl: r2Res.publicUrl };
   } catch (err: any) {
-    return { success: false, error: err?.message || "Lỗi kết nối Streamtape API" };
+    return { success: false, error: err?.message || "Lỗi xử lý di chuyển sang R2" };
   }
 }
 

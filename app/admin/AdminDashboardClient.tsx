@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useTransition, useRef } from "react";
+import React, { useState, useEffect, useTransition, useRef, useCallback } from "react";
 import Image from "next/image";
 import {
   Film, List, Users, User, Package, LayoutDashboard,
@@ -28,7 +28,8 @@ import {
   getAdminFeatures, createFeature, updateFeature, deleteFeature,
   getAdminPackages, createPackage, updatePackage, deletePackage,
   revalidateAllCache,
-  getStreamtapeUploadUrlAction,
+  getStreamtapeMigrationStatusAction,
+  migrateSingleStreamtapeEpisodeAction,
   getAdminGalleries, getAdminGalleriesPaginated, createGallery, updateGallery, deleteGallery,
   getAdminCollections, createCollection, updateCollection, deleteCollection,
   addImageToCollection, removeImageFromCollection, getAdminAiImages,
@@ -2254,12 +2255,19 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
   }, [form.name, editing]);
 
   // Upload States
-  const [uploadMode, setUploadMode] = useState<"streamtape" | "url">("streamtape");
+  const [uploadMode, setUploadMode] = useState<"r2" | "url">("r2");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadStatusMsg, setUploadStatusMsg] = useState<string>("");
   const [uploading, setUploading] = useState<boolean>(false);
-  const [streamtapeXhr, setStreamtapeXhr] = useState<XMLHttpRequest | null>(null);
+  const [r2Xhr, setR2Xhr] = useState<XMLHttpRequest | null>(null);
+
+  // Streamtape Migration States
+  const [stCount, setStCount] = useState<number | null>(null);
+  const [stEpisodes, setStEpisodes] = useState<Array<{ id: number; name: string; url: string }>>([]);
+  const [migratingSt, setMigratingSt] = useState<boolean>(false);
+  const [migratingCurrent, setMigratingCurrent] = useState<string>("");
+  const [migratingProgress, setMigratingProgress] = useState<{ current: number; total: number }>({ current: 0, total: 0 });
 
   // Search states for relations selector
   const [charSearch, setCharSearch] = useState<string>("");
@@ -2289,10 +2297,56 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
   const startIndex = (safeCurrentPage - 1) * pageSize;
   const paginatedEpisodes = filtered.slice(startIndex, startIndex + pageSize);
 
+  const fetchStreamtapeStatus = useCallback(async () => {
+    try {
+      const res = await getStreamtapeMigrationStatusAction();
+      if (res.success) {
+        setStCount(res.remainingCount);
+        setStEpisodes(res.episodes);
+      }
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    fetchStreamtapeStatus();
+  }, [fetchStreamtapeStatus, episodes]);
+
+  const handleMigrateAllStreamtape = async () => {
+    if (!stEpisodes.length) return;
+    if (!confirm(`Bạn có chắc muốn tự động di chuyển ${stEpisodes.length} tập phim từ Streamtape sang Cloudflare R2?`)) return;
+
+    setMigratingSt(true);
+    let success = 0;
+    let failed = 0;
+    const total = stEpisodes.length;
+
+    for (let i = 0; i < total; i++) {
+      const ep = stEpisodes[i];
+      setMigratingProgress({ current: i + 1, total });
+      setMigratingCurrent(`Đang xử lý tập ${i + 1}/${total}: "${ep.name}"...`);
+      try {
+        const res = await migrateSingleStreamtapeEpisodeAction(ep.id);
+        if (res.success) {
+          success++;
+        } else {
+          failed++;
+        }
+      } catch (e) {
+        failed++;
+      }
+    }
+
+    setMigratingSt(false);
+    setMigratingCurrent("");
+    show(`Hoàn tất chuyển đổi! Thành công: ${success}, Thất bại/404: ${failed}`);
+    await onRefresh();
+    await fetchStreamtapeStatus();
+  };
+
   const cancelUpload = () => {
-    if (streamtapeXhr) {
-      streamtapeXhr.abort();
-      setStreamtapeXhr(null);
+    if (r2Xhr) {
+      r2Xhr.abort();
+      setR2Xhr(null);
     }
     
     setUploading(false);
@@ -2301,7 +2355,7 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
     setUploadFile(null);
   };
 
-  const handleUploadToStreamtape = async () => {
+  const handleUploadToR2 = async () => {
     if (!uploadFile) {
       show("Vui lòng chọn file video trước", "error");
       return;
@@ -2309,19 +2363,30 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
 
     setUploading(true);
     setUploadProgress(0);
-    setUploadStatusMsg("Đang lấy cổng tải lên từ Streamtape API...");
+    setUploadStatusMsg("Đang khởi tạo cổng tải lên Cloudflare R2...");
 
     try {
-      const resUrl = await getStreamtapeUploadUrlAction();
-      if (!resUrl.success || !resUrl.uploadUrl) {
-        throw new Error(resUrl.error || "Không thể lấy cổng upload Streamtape");
+      const res = await fetch("/api/r2/presigned", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: uploadFile.name,
+          contentType: uploadFile.type || "video/mp4",
+          folder: "episodes",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.presignedUrl) {
+        throw new Error(data.error || "Không thể lấy cổng tải lên Cloudflare R2");
       }
 
-      setUploadStatusMsg("Đang truyền video trực tiếp sang Streamtape (0%)...");
+      setUploadStatusMsg("Đang truyền video trực tiếp lên Cloudflare R2 (0%)...");
 
       const xhr = new XMLHttpRequest();
-      setStreamtapeXhr(xhr);
-      xhr.open("POST", resUrl.uploadUrl, true);
+      setR2Xhr(xhr);
+      xhr.open("PUT", data.presignedUrl, true);
+      xhr.setRequestHeader("Content-Type", uploadFile.type || "video/mp4");
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
@@ -2329,58 +2394,49 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
           setUploadProgress(percent);
           const loadedMb = (e.loaded / (1024 * 1024)).toFixed(1);
           const totalMb = (e.total / (1024 * 1024)).toFixed(1);
-          setUploadStatusMsg(`Đang tải lên Streamtape: ${percent}% (${loadedMb}MB / ${totalMb}MB)...`);
+          setUploadStatusMsg(`Đang tải lên Cloudflare R2: ${percent}% (${loadedMb}MB / ${totalMb}MB)...`);
         }
       };
 
       xhr.onload = () => {
         setUploading(false);
-        setStreamtapeXhr(null);
-        try {
-          const resp = JSON.parse(xhr.responseText);
-          if (resp.status === 200 && resp.result?.id) {
-            const streamtapeId = resp.result.id;
-            const embedUrl = `https://streamtape.com/e/${streamtapeId}`;
-            setUploadProgress(100);
-            setUploadStatusMsg("✅ Tải lên Streamtape hoàn tất 100%!");
-            setForm((prev) => ({
-              ...prev,
-              url: embedUrl,
-            }));
-            show("Tải video lên Streamtape thành công!");
-          } else {
-            throw new Error(resp.msg || "Streamtape báo lỗi upload");
-          }
-        } catch (e: any) {
-          setUploadStatusMsg("Lỗi: " + e.message);
-          show("Lỗi từ Streamtape: " + e.message, "error");
+        setR2Xhr(null);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          setUploadProgress(100);
+          setUploadStatusMsg("✅ Tải lên Cloudflare R2 hoàn tất 100%!");
+          setForm((prev) => ({
+            ...prev,
+            url: data.publicUrl,
+          }));
+          show("Tải video lên Cloudflare R2 thành công!");
+        } else {
+          setUploadStatusMsg("Lỗi upload Cloudflare R2 (HTTP " + xhr.status + ")");
+          show("Cloudflare R2 báo lỗi: HTTP " + xhr.status, "error");
         }
       };
 
       xhr.onerror = () => {
         setUploading(false);
-        setStreamtapeXhr(null);
+        setR2Xhr(null);
         setUploadProgress(null);
-        setUploadStatusMsg("Lỗi mạng khi tải lên Streamtape");
-        show("Lỗi mạng khi kết nối Streamtape", "error");
+        setUploadStatusMsg("Lỗi mạng khi tải lên Cloudflare R2");
+        show("Lỗi mạng khi kết nối Cloudflare R2", "error");
       };
 
-      const formData = new FormData();
-      formData.append("file1", uploadFile, uploadFile.name);
-      xhr.send(formData);
+      xhr.send(uploadFile);
     } catch (err: any) {
       setUploading(false);
       setUploadProgress(null);
       setUploadStatusMsg("Lỗi: " + err.message);
-      show(err.message || "Lỗi khởi tạo upload Streamtape", "error");
+      show(err.message || "Lỗi khởi tạo upload R2", "error");
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const isEdit = editing !== null;
-    if (uploadMode === "streamtape" && !form.url) {
-      show("Vui lòng chọn và upload video lên Streamtape trước", "error");
+    if (uploadMode === "r2" && !form.url) {
+      show("Vui lòng chọn và upload video lên Cloudflare R2 trước", "error");
       return;
     }
 
@@ -2553,12 +2609,12 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
           <div className="flex bg-[#090a0f] rounded-lg p-1 border border-white/5 gap-1">
             <button
               type="button"
-              onClick={() => setUploadMode("streamtape")}
+              onClick={() => setUploadMode("r2")}
               className={`flex-1 text-center text-xs font-bold py-1.5 rounded transition-all cursor-pointer ${
-                uploadMode === "streamtape" ? "bg-orange-500 text-white shadow" : "text-gray-400 hover:text-white"
+                uploadMode === "r2" ? "bg-orange-500 text-white shadow" : "text-gray-400 hover:text-white"
               }`}
             >
-              ⚡ Streamtape (Miễn phí 100%)
+              ☁️ Cloudflare R2 (Khuyên dùng)
             </button>
             <button
               type="button"
@@ -2567,24 +2623,24 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
                 uploadMode === "url" ? "bg-orange-500 text-white shadow" : "text-gray-400 hover:text-white"
               }`}
             >
-              Nhập URL
+              🔗 Nhập URL
             </button>
           </div>
 
           {uploadMode === "url" && (
             <div>
               <label className="text-xs text-gray-400 mb-1 block">URL Video <span className="text-red-400">*</span></label>
-              <Input value={form.url} onChange={e => setForm(p => ({ ...p, url: e.target.value }))} placeholder="https://…mp4 hoặc https://streamtape.com/e/..." required={uploadMode === "url"} className="bg-[#090a0f] border-white/5 text-sm h-9" />
+              <Input value={form.url} onChange={e => setForm(p => ({ ...p, url: e.target.value }))} placeholder="https://pub-....r2.dev/episodes/... hoặc https://...mp4" required={uploadMode === "url"} className="bg-[#090a0f] border-white/5 text-sm h-9" />
             </div>
           )}
 
-          {uploadMode === "streamtape" && (
+          {uploadMode === "r2" && (
             <div className="space-y-3">
-              <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-2.5 text-xs text-orange-300">
-                💡 <b>Khuyên dùng:</b> Tải video lên Streamtape để người xem xem phim không tốn bất kỳ chi phí băng thông nào ($0 CDN).
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2.5 text-xs text-emerald-300">
+                💎 <b>Tối ưu nhất:</b> Tải video trực tiếp từ trình duyệt lên Cloudflare R2 (0% tải VPS, $0 băng thông CDN, phát Native VAM3D Player mượt mà).
               </div>
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Chọn video file để tải lên Streamtape <span className="text-red-400">*</span></label>
+                <label className="text-xs text-gray-400 mb-1 block">Chọn video file để tải lên Cloudflare R2 <span className="text-red-400">*</span></label>
                 <input
                   type="file"
                   accept="video/*"
@@ -2596,18 +2652,18 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
                     }
                   }}
                   disabled={uploading}
-                  className="w-full text-xs text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-500/10 file:text-orange-400 hover:file:bg-orange-500/20 file:cursor-pointer"
+                  className="w-full text-xs text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-500/10 file:text-emerald-400 hover:file:bg-emerald-500/20 file:cursor-pointer"
                 />
               </div>
 
               {uploadFile && !form.url && (
                 <Button
                   type="button"
-                  onClick={handleUploadToStreamtape}
+                  onClick={handleUploadToR2}
                   disabled={uploading}
-                  className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-xs h-9 font-bold cursor-pointer"
+                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs h-9 font-bold cursor-pointer"
                 >
-                  {uploading ? "Đang tải lên Streamtape..." : "⚡ Bắt đầu tải lên Streamtape (Miễn phí 100%)"}
+                  {uploading ? "Đang tải lên Cloudflare R2..." : "☁️ Bắt đầu tải lên Cloudflare R2 (Băng thông $0)"}
                 </Button>
               )}
 
@@ -2616,7 +2672,7 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
                   <p className="font-semibold text-gray-300">{uploadStatusMsg}</p>
                   {uploadProgress !== null && (
                     <div className="w-full bg-white/10 h-1.5 rounded-full mt-2 overflow-hidden">
-                      <div className="bg-orange-500 h-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                      <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
                     </div>
                   )}
                   {uploading && (
@@ -2633,7 +2689,7 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
 
               {form.url && (
                 <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2.5 text-xs text-green-400 space-y-1">
-                  <p className="font-bold">✓ Đã tải lên Streamtape thành công</p>
+                  <p className="font-bold">✓ Đã tải lên Cloudflare R2 thành công</p>
                   <p className="font-mono text-[10px] text-gray-300 break-all">{form.url}</p>
                 </div>
               )}
@@ -2771,6 +2827,45 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
             </Button>
           )}
         </div>
+
+        {stCount !== null && stCount > 0 && (
+          <div className="bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-amber-500/20 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">☁️</span>
+                <h4 className="text-sm font-bold text-amber-300">
+                  Phát hiện <span className="font-mono text-orange-400">{stCount}</span> tập phim còn dùng link Streamtape
+                </h4>
+              </div>
+              <p className="text-xs text-gray-300 leading-relaxed">
+                Chuyển đổi toàn bộ video sang <b>Cloudflare R2</b> để phát mượt mà trên Trình phát Native VAM3D, loại bỏ 100% quảng cáo Streamtape và miễn phí băng thông.
+              </p>
+              {migratingSt && (
+                <div className="mt-2 space-y-1.5">
+                  <p className="text-xs text-orange-400 font-semibold animate-pulse">
+                    {migratingCurrent || `Đang xử lý ${migratingProgress.current}/${migratingProgress.total}...`}
+                  </p>
+                  <div className="w-full max-w-md bg-white/10 h-2 rounded-full overflow-hidden">
+                    <div
+                      className="bg-orange-500 h-full transition-all duration-300"
+                      style={{
+                        width: `${migratingProgress.total ? (migratingProgress.current / migratingProgress.total) * 100 : 0}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            <Button
+              type="button"
+              onClick={handleMigrateAllStreamtape}
+              disabled={migratingSt}
+              className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs h-9 px-4 shrink-0 shadow-lg shadow-orange-500/20 cursor-pointer"
+            >
+              {migratingSt ? "Đang chuyển sang R2..." : "🚀 Chuyển toàn bộ sang Cloudflare R2"}
+            </Button>
+          </div>
+        )}
         <div className="bg-[#131520] border border-white/5 rounded-2xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>

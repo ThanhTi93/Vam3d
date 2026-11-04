@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import Hls from "hls.js";
 import { Settings, Play, RotateCcw, AlertCircle } from "lucide-react";
 import { getBunnyImageUrl } from "@/lib/utils";
+import { useAuth } from "@/app/context/AuthContext";
+import { getClientAdConfig, type ClientAdConfig } from "@/lib/adConfigClient";
 
 export interface VideoPlayerProps {
   src?: string | null;
@@ -41,6 +43,7 @@ export default function VideoPlayer({
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const { user } = useAuth();
   
   const [hasStarted, setHasStarted] = useState(() => Boolean(autoPlay));
   const [qualities, setQualities] = useState<QualityLevel[]>([]);
@@ -49,50 +52,15 @@ export default function VideoPlayer({
   const [resumeTime, setResumeTime] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
-  const [directStreamUrl, setDirectStreamUrl] = useState<string | null>(null);
-  const [isResolvingDirect, setIsResolvingDirect] = useState<boolean>(false);
-  const [streamtapeBlocked, setStreamtapeBlocked] = useState<boolean>(false);
+  const [adConfig, setAdConfig] = useState<ClientAdConfig | null>(null);
   const progressKey = storageKey || (src ? `progress_src_${src}` : null);
 
   useEffect(() => {
     setIsClient(true);
+    getClientAdConfig()
+      .then((cfg) => setAdConfig(cfg))
+      .catch(() => {});
   }, []);
-
-  // Tự động phân giải Direct Stream sạch từ Streamtape
-  useEffect(() => {
-    if (!src || !src.includes("streamtape.com")) {
-      setDirectStreamUrl(null);
-      setIsResolvingDirect(false);
-      setStreamtapeBlocked(false);
-      return;
-    }
-
-    let active = true;
-    setIsResolvingDirect(true);
-    setStreamtapeBlocked(false);
-
-    fetch(`/api/streamtape/direct?url=${encodeURIComponent(src)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!active) return;
-        if (data.success && data.directUrl) {
-          setDirectStreamUrl(data.directUrl);
-        } else if (data.blocked) {
-          setStreamtapeBlocked(true);
-        }
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.warn("Direct stream fetch failed:", err);
-      })
-      .finally(() => {
-        if (active) setIsResolvingDirect(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [src]);
 
   // Format seconds to mm:ss or hh:mm:ss
   const formatTime = (seconds: number) => {
@@ -119,8 +87,35 @@ export default function VideoPlayer({
     } catch (e) {}
   }, [progressKey]);
 
+  // Trigger 1-time ad popunder synchronously upon user clicking "Bấm để xem phim"
+  const triggerOneTimeAd = useCallback(() => {
+    if (typeof window === "undefined") return;
+    // Don't show ads to VIP or Admin
+    if (user && ((user.level && user.level > 0) || user.role === "admin")) return;
+    if (!adConfig || !adConfig.popunderEnabled || !adConfig.popunderUrl) return;
+
+    const adKey = `vam_ad_shown_${episodeId || "global"}`;
+    const epAlreadyShown = sessionStorage.getItem(adKey);
+    const lastShownGlobal = localStorage.getItem("vam_last_popunder_time");
+    const intervalMs = (adConfig.popunderIntervalHours || 12) * 3600 * 1000;
+    const now = Date.now();
+
+    const isIntervalExpired = !lastShownGlobal || (now - parseInt(lastShownGlobal, 10)) > intervalMs;
+
+    if (!epAlreadyShown && isIntervalExpired) {
+      sessionStorage.setItem(adKey, "1");
+      localStorage.setItem("vam_last_popunder_time", now.toString());
+      try {
+        window.open(adConfig.popunderUrl, "_blank", "noopener,noreferrer");
+      } catch (e) {
+        console.warn("Popunder blocked or failed:", e);
+      }
+    }
+  }, [user, adConfig, episodeId]);
+
   // Handle manual start play
   const handleStartPlay = useCallback(() => {
+    triggerOneTimeAd();
     setHasStarted(true);
     if (hlsRef.current) {
       hlsRef.current.startLoad();
@@ -128,7 +123,7 @@ export default function VideoPlayer({
     if (videoRef.current) {
       videoRef.current.play().catch(() => {});
     }
-  }, []);
+  }, [triggerOneTimeAd]);
 
   // Handle Resume action
   const handleResume = useCallback(() => {
@@ -162,14 +157,12 @@ export default function VideoPlayer({
   }, [progressKey]);
 
   const streamHost = process.env.NEXT_PUBLIC_BUNNY_STREAM_HOST || "vz-df52fbd4-040.b-cdn.net";
-  
-  let effectiveSrc = directStreamUrl
-    ? directStreamUrl
-    : bunnyVideoId
+
+  let effectiveSrc = bunnyVideoId
     ? `https://${streamHost}/${bunnyVideoId}/playlist.m3u8`
     : src;
 
-  // If effectiveSrc is an iframe URL (e.g. from DB), extract video ID to get the HLS stream
+  // Bunny & CDN URL normalization
   if (effectiveSrc) {
     if (effectiveSrc.includes("mediadelivery.net/embed/")) {
       const match = effectiveSrc.match(/mediadelivery\.net\/embed\/\d+\/([a-zA-Z0-9-]+)/);
@@ -288,32 +281,7 @@ export default function VideoPlayer({
 
 
 
-  // 2.1. Đang nạp direct stream
-  if (isResolvingDirect && !directStreamUrl && !streamtapeBlocked) {
-    return (
-      <div className={`relative w-full aspect-video bg-[#090a0f] rounded-xl flex flex-col items-center justify-center gap-3 text-orange-400 border border-white/5 ${className}`}>
-        <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs sm:text-sm font-medium text-gray-300">
-          Đang nạp luồng phát video tốc độ cao...
-        </span>
-      </div>
-    );
-  }
-
-  // 2.2. Video đang convert trên Streamtape
-  if (streamtapeBlocked) {
-    return (
-      <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-3 text-orange-400 rounded-xl border border-white/5 ${className}`}>
-        <AlertCircle className="w-10 h-10 text-orange-400" />
-        <h3 className="text-md font-bold text-white">Tập phim đang được xử lý chuyển đổi</h3>
-        <p className="text-xs text-gray-400 max-w-sm">
-          Tập phim này đang trong hàng đợi xử lý định dạng MP4 trên máy chủ. Vui lòng quay lại sau ít phút hoặc chọn tập khác trong danh sách!
-        </p>
-      </div>
-    );
-  }
-
-  // 2.3. No source available
+  // 2. No source available
   if (!effectiveSrc) {
     return (
       <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-3 text-orange-400 ${className}`}>
@@ -324,11 +292,8 @@ export default function VideoPlayer({
     );
   }
 
-  // 2.5. Embed Player cho Doodstream / Filemoon hoặc fallback
+  // 2.5. Embed Player cho Doodstream / Filemoon nếu có nguồn ngoài
   const isEmbedIframe =
-    !directStreamUrl &&
-    !isResolvingDirect &&
-    !streamtapeBlocked &&
     effectiveSrc &&
     (effectiveSrc.includes("dood") ||
       effectiveSrc.includes("filemoon") ||
@@ -364,11 +329,6 @@ export default function VideoPlayer({
             controls
             preload={autoPlay || hasStarted ? "metadata" : "none"}
             poster={poster ? getBunnyImageUrl(poster, 'display') : undefined}
-            onError={() => {
-              if (directStreamUrl) {
-                console.warn("Direct stream playback error");
-              }
-            }}
             onPlay={() => {
               if (!hasStarted) {
                 setHasStarted(true);
@@ -376,6 +336,9 @@ export default function VideoPlayer({
                   hlsRef.current.startLoad();
                 }
               }
+            }}
+            onError={() => {
+              setErrorMsg("Không thể phát video này. Vui lòng tải lại trang hoặc thử lại sau.");
             }}
             onTimeUpdate={handleTimeUpdate}
             onEnded={onEnded}

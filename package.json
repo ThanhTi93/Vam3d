@@ -16,10 +16,14 @@
     "db:prod:pull": "npx tsx scripts/db-sync.ts pull",
     "db:restore-bunny": "npx tsx scripts/restore-from-bunny.ts",
     "db:migrate-supabase": "npx tsx scripts/migrate-to-supabase.ts",
+    "migrate:streamtape": "node scripts/migrate-streamtape-to-r2.mjs",
     "build:cf": "opennextjs-cloudflare build",
     "preview:cf": "opennextjs-cloudflare preview"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1161.0",
+    "@aws-sdk/lib-storage": "^3.1161.0",
+    "@aws-sdk/s3-request-presigner": "^3.1161.0",
     "@payos/node": "^2.0.5",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
