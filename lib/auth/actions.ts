@@ -4,11 +4,11 @@ import { cookies } from "next/headers";
 import crypto from "crypto";
 import { eq, and, gt, desc } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { accounts, payments, userSubscriptions, passwordResets } from "@/lib/db/schema";
+import { accounts, userSubscriptions, passwordResets } from "@/lib/db/schema";
 import { registerSchema, loginSchema } from "@/lib/validations/schemas";
 import { hashPassword, comparePassword } from "./password";
 import { encryptSession, decryptSession } from "./session";
-import { sendOtpEmail, sendNewPasswordEmail } from "@/lib/email";
+import { sendOtpEmail } from "@/lib/email";
 
 /**
  * Registers a new user. 

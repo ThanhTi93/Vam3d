@@ -15,19 +15,19 @@ const SheetContext = React.createContext<{
   setOpen: (open: boolean) => void
 }>({ open: false, setOpen: () => {} })
 
-function Sheet({ open = false, onOpenChange, children }: SheetProps) {
-  const [isOpen, setIsOpen] = React.useState(open)
-
-  React.useEffect(() => {
-    setIsOpen(open)
-  }, [open])
+function Sheet({ open, onOpenChange, children }: SheetProps) {
+  const [internalOpen, setInternalOpen] = React.useState(false)
+  const isControlled = open !== undefined
+  const isOpen = isControlled ? open : internalOpen
 
   const setOpen = React.useCallback(
     (val: boolean) => {
-      setIsOpen(val)
+      if (!isControlled) {
+        setInternalOpen(val)
+      }
       onOpenChange?.(val)
     },
-    [onOpenChange]
+    [isControlled, onOpenChange]
   )
 
   return (

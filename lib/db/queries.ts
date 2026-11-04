@@ -10,7 +10,7 @@ export const getAllMovies = cache(async (limit = 100) => {
 
     const result = await db.query.movies.findMany({
       where: (movies, { eq }) => eq(movies.status, 1),
-      orderBy: (movies, { asc, desc }) => [
+      orderBy: (movies, { desc }) => [
         sql`CASE WHEN ${movies.displayOrder} > 0 THEN ${movies.displayOrder} ELSE 999999 END ASC`,
         desc(movies.id),
       ],
@@ -42,7 +42,7 @@ export const getHotMovies = cache(async () => {
 
     const result = await db.query.movies.findMany({
       where: (movies, { eq }) => eq(movies.status, 1),
-      orderBy: (movies, { asc, desc }) => [
+      orderBy: (movies, { desc }) => [
         sql`CASE WHEN ${movies.displayOrder} > 0 THEN ${movies.displayOrder} ELSE 999999 END ASC`,
         desc(movies.id),
       ],
@@ -195,7 +195,7 @@ export const getTopMovies = cache(async (limit = 6) => {
 
     const result = await db.query.movies.findMany({
       where: (movies, { eq }) => eq(movies.status, 1),
-      orderBy: (movies, { asc, desc }) => [
+      orderBy: (movies, { desc }) => [
         sql`CASE WHEN ${movies.displayOrder} > 0 THEN ${movies.displayOrder} ELSE 999999 END ASC`,
         desc(movies.id),
       ],

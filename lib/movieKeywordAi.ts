@@ -5,7 +5,7 @@
  * - Powered by Google Gemini AI with intelligent local fallback dictionary
  */
 
-import { callGeminiJson, callGeminiText } from "./gemini";
+import { callGeminiJson } from "./gemini";
 import { POPULAR_CHARACTERS_DICT } from "./characterAi";
 
 export interface HotKeywordItem {

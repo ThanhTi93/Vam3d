@@ -89,12 +89,6 @@ async function seed() {
 
   const defaultAuthorId = authorRow?.id ?? 1;
 
-  // Helper function to parse duration strings like "166 phút" or "9 tập" to integers
-  function parseDuration(durationStr: string): number {
-    const match = durationStr.match(/\d+/);
-    return match ? parseInt(match[0], 10) : 0;
-  }
-
   // 5. Insert movies
   const movieValues = staticMovies.map((m) => ({
     name: m.title,

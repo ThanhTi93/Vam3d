@@ -26,7 +26,7 @@ export async function decryptChallengeClearance(token: string): Promise<any | nu
       algorithms: ["HS256"],
     });
     return payload;
-  } catch (error) {
+  } catch {
     // Silently ignore or log verification failures (expired/invalid)
     return null;
   }

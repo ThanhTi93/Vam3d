@@ -32,7 +32,7 @@ export async function uploadFileToBunny(
           errMsg += ` (Nguyên nhân: ${errJson.cause})`;
         }
       }
-    } catch (e) {}
+    } catch {}
     throw new Error(errMsg);
   }
 

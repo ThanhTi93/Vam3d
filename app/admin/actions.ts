@@ -514,15 +514,6 @@ export async function updateEpisode(
     }
   }
 
-  // If a new bunnyVideoId is uploaded/provided, delete the old one from Bunny Stream to avoid wasting storage
-  if (data.bunnyVideoId !== undefined && existing.bunnyVideoId && existing.bunnyVideoId !== data.bunnyVideoId) {
-    try {
-      await deleteBunnyVideo(existing.bunnyVideoId);
-    } catch (err) {
-      console.error("Failed to delete old Bunny video on update:", err);
-    }
-  }
-
   // If banner image was changed, clean up old banner image from Bunny Storage
   if (data.banner !== undefined && existing.banner && existing.banner !== data.banner) {
     try {
@@ -585,75 +576,26 @@ export async function updateEpisode(
   revalidateTag("movies:hot", "default");
 }
 
-export async function deleteBunnyVideo(videoId: string) {
+export async function getStreamtapeUploadUrlAction(): Promise<{
+  success: boolean;
+  uploadUrl?: string;
+  error?: string;
+}> {
   await verifyAdmin();
-  const libraryId = process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID;
-  const apiKey = process.env.BUNNY_API_KEY;
-  if (!libraryId || !apiKey) {
-    console.warn("Bunny Stream credentials missing, cannot delete video.");
-    return false;
-  }
-
   try {
-    const res = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`, {
-      method: "DELETE",
-      headers: {
-        "AccessKey": apiKey,
-        "Accept": "application/json",
-      },
+    const login = process.env.STREAMTAPE_API_LOGIN || "439070443d3e6fe76376";
+    const key = process.env.STREAMTAPE_API_KEY || "RpAWzXJbpXI0lR";
+    const res = await fetch(`https://api.streamtape.com/file/ul?login=${login}&key=${key}`, {
+      cache: "no-store",
     });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error(`Failed to delete video ${videoId} from Bunny Stream:`, errText);
-      return false;
+    const data = await res.json();
+    if (data.status === 200 && data.result?.url) {
+      return { success: true, uploadUrl: data.result.url };
     }
-
-    console.log(`Successfully deleted video ${videoId} from Bunny Stream`);
-    return true;
-  } catch (err) {
-    console.error(`Error deleting video ${videoId} from Bunny Stream:`, err);
-    return false;
+    return { success: false, error: data.msg || "Không thể lấy cổng tải lên từ Streamtape" };
+  } catch (err: any) {
+    return { success: false, error: err?.message || "Lỗi kết nối Streamtape API" };
   }
-}
-
-export async function prepareBunnyUpload(title: string) {
-  await verifyAdmin();
-  const libraryId = process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID;
-  const apiKey = process.env.BUNNY_API_KEY;
-  if (!libraryId || !apiKey) {
-    throw new Error("Bunny Stream credentials (NEXT_PUBLIC_BUNNY_LIBRARY_ID / BUNNY_API_KEY) are missing in environment variables.");
-  }
-
-  // 1. Create a video placeholder on Bunny Stream
-  const res = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos`, {
-    method: "POST",
-    headers: {
-      "AccessKey": apiKey,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ title }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Failed to create video on Bunny Stream: ${errText}`);
-  }
-
-  const data = await res.json();
-  const videoId = data.guid; // guid is the videoId
-
-  // 2. Generate TUS signature
-  const expirationTime = Math.floor(Date.now() / 1000) + 3600; // 1 hour expiration
-  const signatureText = libraryId + apiKey + expirationTime + videoId;
-  const signature = crypto.createHash("sha256").update(signatureText).digest("hex");
-
-  return {
-    libraryId,
-    videoId,
-    signature,
-    expirationTime,
-  };
 }
 
 export async function deleteEpisode(id: number) {
@@ -668,9 +610,6 @@ export async function deleteEpisode(id: number) {
     });
     if (existing) {
       idMovie = existing.idMovie;
-      if (existing.bunnyVideoId) {
-        await deleteBunnyVideo(existing.bunnyVideoId);
-      }
       if (existing.banner) {
         await deleteBunnyAsset(existing.banner);
       }

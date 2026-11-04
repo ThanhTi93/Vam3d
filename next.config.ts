@@ -1,10 +1,6 @@
 import type { NextConfig } from "next";
-import { PHASE_PRODUCTION_BUILD } from "next/constants";
 
-export default (phase: string) => {
-  const isBuild = phase === PHASE_PRODUCTION_BUILD;
-
-  const nextConfig: NextConfig = {
+const nextConfig: NextConfig = {
     staticPageGenerationTimeout: 180,
     typescript: {
       ignoreBuildErrors: true,
@@ -53,5 +49,4 @@ export default (phase: string) => {
     },
   };
 
-  return nextConfig;
-};
+  export default nextConfig;

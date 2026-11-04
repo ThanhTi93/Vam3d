@@ -4,7 +4,6 @@
  * - Automatically generates SEO-rich, engaging character descriptions linked with movies
  */
 
-import { generateAiSeoDescription } from "./aiDescription";
 import { callGeminiJson, callGeminiText, callOpenAiFallback } from "./gemini";
 
 // ═══════════════════════════════════════════════════════════════════════

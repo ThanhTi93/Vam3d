@@ -5,9 +5,9 @@ import Image from "next/image";
 import {
   Film, List, Users, User, Package, LayoutDashboard,
   Plus, Pencil, Trash2, Check, X, RefreshCw, Search,
-  ChevronDown, Eye, Star, Flame, Save, Loader2, BookOpen,
+  ChevronDown, Eye, Flame, Save, Loader2,
   Shield, Settings, Camera, ChevronLeft, ChevronRight, FolderOpen,
-  Tv, Play, Info, MousePointerClick, Globe, Smartphone, Monitor, BarChart3, TrendingUp,
+  Info, MousePointerClick, Globe, Smartphone, Monitor, BarChart3, TrendingUp,
   Sparkles, Wand2, Copy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ import {
   getAdminFeatures, createFeature, updateFeature, deleteFeature,
   getAdminPackages, createPackage, updatePackage, deletePackage,
   revalidateAllCache,
-  prepareBunnyUpload,
+  getStreamtapeUploadUrlAction,
   getAdminGalleries, getAdminGalleriesPaginated, createGallery, updateGallery, deleteGallery,
   getAdminCollections, createCollection, updateCollection, deleteCollection,
   addImageToCollection, removeImageFromCollection, getAdminAiImages,
@@ -50,7 +50,6 @@ import { ImagePicker } from "@/components/ui/image-picker";
 import { uploadFileToBunny } from "@/lib/uploadClient";
 import { getBunnyImageUrl, cleanFolderName, slugify, normalizeSearchText } from "@/lib/utils";
 import { getCultivationRealm } from "@/lib/cultivation";
-import * as tus from "tus-js-client";
 import StrategyTab from "./StrategyTab";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -2255,12 +2254,12 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
   }, [form.name, editing]);
 
   // Upload States
-  const [uploadMode, setUploadMode] = useState<"url" | "bunny">("url");
+  const [uploadMode, setUploadMode] = useState<"streamtape" | "url">("streamtape");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadStatusMsg, setUploadStatusMsg] = useState<string>("");
   const [uploading, setUploading] = useState<boolean>(false);
-  const [tusUpload, setTusUpload] = useState<any>(null);
+  const [streamtapeXhr, setStreamtapeXhr] = useState<XMLHttpRequest | null>(null);
 
   // Search states for relations selector
   const [charSearch, setCharSearch] = useState<string>("");
@@ -2291,99 +2290,100 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
   const paginatedEpisodes = filtered.slice(startIndex, startIndex + pageSize);
 
   const cancelUpload = () => {
-    if (tusUpload) {
-      tusUpload.abort();
-      setTusUpload(null);
+    if (streamtapeXhr) {
+      streamtapeXhr.abort();
+      setStreamtapeXhr(null);
     }
+    
     setUploading(false);
     setUploadProgress(null);
     setUploadStatusMsg("Đã hủy tải lên.");
     setUploadFile(null);
   };
 
-  const handleUploadToBunny = async () => {
+  const handleUploadToStreamtape = async () => {
     if (!uploadFile) {
       show("Vui lòng chọn file video trước", "error");
-      return;
-    }
-    if (form.idMovie === 0) {
-      show("Vui lòng chọn phim trước khi upload", "error");
       return;
     }
 
     setUploading(true);
     setUploadProgress(0);
-    setUploadStatusMsg("Đang chuẩn bị video...");
+    setUploadStatusMsg("Đang lấy cổng tải lên từ Streamtape API...");
 
     try {
-      const selectedMovie = movies.find((m: any) => m.id === form.idMovie);
-      const movieName = selectedMovie ? selectedMovie.name : "Movie";
-      const videoTitle = `${movieName} - ${form.name || "Tập mới"} (${uploadFile.name})`;
+      const resUrl = await getStreamtapeUploadUrlAction();
+      if (!resUrl.success || !resUrl.uploadUrl) {
+        throw new Error(resUrl.error || "Không thể lấy cổng upload Streamtape");
+      }
 
-      // 1. Server action: create video and get upload signature
-      const uploadParams = await prepareBunnyUpload(videoTitle);
-      const { libraryId, videoId, signature, expirationTime } = uploadParams;
+      setUploadStatusMsg("Đang truyền video trực tiếp sang Streamtape (0%)...");
 
-      setUploadStatusMsg("Đang kết nối Bunny TUS...");
+      const xhr = new XMLHttpRequest();
+      setStreamtapeXhr(xhr);
+      xhr.open("POST", resUrl.uploadUrl, true);
 
-      // 2. Start TUS upload
-      const upload = new tus.Upload(uploadFile, {
-        endpoint: "https://video.bunnycdn.com/tusupload",
-        retryDelays: [0, 3000, 5000, 10000],
-        headers: {
-          AuthorizationSignature: signature,
-          AuthorizationExpire: expirationTime.toString(),
-          VideoId: videoId,
-          LibraryId: libraryId,
-        },
-        metadata: {
-          filetype: uploadFile.type,
-          title: videoTitle,
-        },
-        onError: function (error) {
-          console.error("TUS upload error:", error);
-          setUploading(false);
-          setUploadProgress(null);
-          setUploadStatusMsg("Lỗi tải lên: " + error.message);
-          show("Lỗi khi tải video lên Bunny", "error");
-        },
-        onProgress: function (bytesUploaded, bytesTotal) {
-          const percent = Math.round((bytesUploaded / bytesTotal) * 100);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
           setUploadProgress(percent);
-          setUploadStatusMsg(`Đang tải lên: ${percent}%`);
-        },
-        onSuccess: function () {
-          setUploading(false);
-          setUploadProgress(100);
-          setUploadStatusMsg("Tải lên hoàn tất! Video đang được encode...");
-          setForm(prev => ({
-            ...prev,
-            bunnyVideoId: videoId,
-            bunnyStatus: "processing",
-            url: `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`,
-          }));
-          show("Tải video lên Bunny thành công!");
-        },
-      });
+          const loadedMb = (e.loaded / (1024 * 1024)).toFixed(1);
+          const totalMb = (e.total / (1024 * 1024)).toFixed(1);
+          setUploadStatusMsg(`Đang tải lên Streamtape: ${percent}% (${loadedMb}MB / ${totalMb}MB)...`);
+        }
+      };
 
-      setTusUpload(upload);
-      upload.start();
+      xhr.onload = () => {
+        setUploading(false);
+        setStreamtapeXhr(null);
+        try {
+          const resp = JSON.parse(xhr.responseText);
+          if (resp.status === 200 && resp.result?.id) {
+            const streamtapeId = resp.result.id;
+            const embedUrl = `https://streamtape.com/e/${streamtapeId}`;
+            setUploadProgress(100);
+            setUploadStatusMsg("✅ Tải lên Streamtape hoàn tất 100%!");
+            setForm((prev) => ({
+              ...prev,
+              url: embedUrl,
+            }));
+            show("Tải video lên Streamtape thành công!");
+          } else {
+            throw new Error(resp.msg || "Streamtape báo lỗi upload");
+          }
+        } catch (e: any) {
+          setUploadStatusMsg("Lỗi: " + e.message);
+          show("Lỗi từ Streamtape: " + e.message, "error");
+        }
+      };
+
+      xhr.onerror = () => {
+        setUploading(false);
+        setStreamtapeXhr(null);
+        setUploadProgress(null);
+        setUploadStatusMsg("Lỗi mạng khi tải lên Streamtape");
+        show("Lỗi mạng khi kết nối Streamtape", "error");
+      };
+
+      const formData = new FormData();
+      formData.append("file1", uploadFile, uploadFile.name);
+      xhr.send(formData);
     } catch (err: any) {
-      console.error(err);
       setUploading(false);
       setUploadProgress(null);
       setUploadStatusMsg("Lỗi: " + err.message);
-      show(err.message || "Lỗi khi khởi tạo upload", "error");
+      show(err.message || "Lỗi khởi tạo upload Streamtape", "error");
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const isEdit = editing !== null;
-    if (uploadMode === "bunny" && !form.bunnyVideoId) {
-      show("Vui lòng chọn và upload video lên Bunny trước", "error");
+    if (uploadMode === "streamtape" && !form.url) {
+      show("Vui lòng chọn và upload video lên Streamtape trước", "error");
       return;
     }
+
 
     if (duplicateCheck?.exists) {
       show("Tiêu đề hoặc Slug tập phim đã tồn tại trong database! Vui lòng chọn Hot Key khác.", "error");
@@ -2550,7 +2550,16 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
             )}
           </div>
 
-          <div className="flex bg-[#090a0f] rounded-lg p-1 border border-white/5">
+          <div className="flex bg-[#090a0f] rounded-lg p-1 border border-white/5 gap-1">
+            <button
+              type="button"
+              onClick={() => setUploadMode("streamtape")}
+              className={`flex-1 text-center text-xs font-bold py-1.5 rounded transition-all cursor-pointer ${
+                uploadMode === "streamtape" ? "bg-orange-500 text-white shadow" : "text-gray-400 hover:text-white"
+              }`}
+            >
+              ⚡ Streamtape (Miễn phí 100%)
+            </button>
             <button
               type="button"
               onClick={() => setUploadMode("url")}
@@ -2560,26 +2569,22 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
             >
               Nhập URL
             </button>
-            <button
-              type="button"
-              onClick={() => setUploadMode("bunny")}
-              className={`flex-1 text-center text-xs font-bold py-1.5 rounded transition-all cursor-pointer ${
-                uploadMode === "bunny" ? "bg-orange-500 text-white shadow" : "text-gray-400 hover:text-white"
-              }`}
-            >
-              Bunny Stream (TUS)
-            </button>
           </div>
 
-          {uploadMode === "url" ? (
+          {uploadMode === "url" && (
             <div>
               <label className="text-xs text-gray-400 mb-1 block">URL Video <span className="text-red-400">*</span></label>
-              <Input value={form.url} onChange={e => setForm(p => ({ ...p, url: e.target.value }))} placeholder="https://…mp4" required={uploadMode === "url"} className="bg-[#090a0f] border-white/5 text-sm h-9" />
+              <Input value={form.url} onChange={e => setForm(p => ({ ...p, url: e.target.value }))} placeholder="https://…mp4 hoặc https://streamtape.com/e/..." required={uploadMode === "url"} className="bg-[#090a0f] border-white/5 text-sm h-9" />
             </div>
-          ) : (
+          )}
+
+          {uploadMode === "streamtape" && (
             <div className="space-y-3">
+              <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-2.5 text-xs text-orange-300">
+                💡 <b>Khuyên dùng:</b> Tải video lên Streamtape để người xem xem phim không tốn bất kỳ chi phí băng thông nào ($0 CDN).
+              </div>
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Chọn video file <span className="text-red-400">*</span></label>
+                <label className="text-xs text-gray-400 mb-1 block">Chọn video file để tải lên Streamtape <span className="text-red-400">*</span></label>
                 <input
                   type="file"
                   accept="video/*"
@@ -2587,22 +2592,22 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
                     const file = e.target.files?.[0] || null;
                     setUploadFile(file);
                     if (file) {
-                      setForm(p => ({ ...p, bunnyVideoId: "", bunnyStatus: "uploading", url: "" }));
+                      setForm(p => ({ ...p, url: "" }));
                     }
                   }}
                   disabled={uploading}
-                  className="w-full text-xs text-gray-455 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-500/10 file:text-orange-400 hover:file:bg-orange-500/20 file:cursor-pointer"
+                  className="w-full text-xs text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-500/10 file:text-orange-400 hover:file:bg-orange-500/20 file:cursor-pointer"
                 />
               </div>
 
-              {uploadFile && !form.bunnyVideoId && (
+              {uploadFile && !form.url && (
                 <Button
                   type="button"
-                  onClick={handleUploadToBunny}
-                  disabled={uploading || form.idMovie === 0}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs h-9"
+                  onClick={handleUploadToStreamtape}
+                  disabled={uploading}
+                  className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-xs h-9 font-bold cursor-pointer"
                 >
-                  {uploading ? "Đang upload..." : "Bắt đầu tải lên Bunny"}
+                  {uploading ? "Đang tải lên Streamtape..." : "⚡ Bắt đầu tải lên Streamtape (Miễn phí 100%)"}
                 </Button>
               )}
 
@@ -2618,7 +2623,7 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
                     <button
                       type="button"
                       onClick={cancelUpload}
-                      className="text-[10px] text-red-400 hover:underline mt-2 block"
+                      className="text-[10px] text-red-400 hover:underline mt-2 block cursor-pointer"
                     >
                       Hủy upload
                     </button>
@@ -2626,15 +2631,15 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
                 </div>
               )}
 
-              {form.bunnyVideoId && (
+              {form.url && (
                 <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2.5 text-xs text-green-400 space-y-1">
-                  <p className="font-bold">✓ Đã liên kết Bunny Video</p>
-                  <p className="font-mono text-[10px] text-gray-400 truncate">ID: {form.bunnyVideoId}</p>
-                  <p className="text-[10px] text-gray-500 capitalize">Trạng thái transcode: {form.bunnyStatus}</p>
+                  <p className="font-bold">✓ Đã tải lên Streamtape thành công</p>
+                  <p className="font-mono text-[10px] text-gray-300 break-all">{form.url}</p>
                 </div>
               )}
             </div>
           )}
+
 
           <div>
             <label className="text-xs text-gray-400 mb-1.5 block">Diễn viên (chọn nhiều)</label>
@@ -2850,7 +2855,7 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
                           actorIds: ep.episodesActors?.map((ea: any) => ea.idActor) || [],
                           characterIds: ep.episodesCharacters?.map((ec: any) => ec.idCharacter) || []
                         }); 
-                        setUploadMode(ep.bunnyVideoId ? "bunny" : "url");
+                        setUploadMode("url");
                         setUploadFile(null);
                         setUploadProgress(null);
                         setUploadStatusMsg("");

@@ -1,5 +1,5 @@
 import { db, schema } from "./index";
-import { eq, and, desc, asc, isNull, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { getCultivationRealm } from "@/lib/cultivation";
 
 export interface CommentItem {
@@ -74,7 +74,7 @@ export async function getComments({
     // Fetch all active comments for this movie
     const rawComments = await db.query.comments.findMany({
       where: and(...conditions),
-      orderBy: (c, { desc, asc }) =>
+      orderBy: (c, { desc }) =>
         sortBy === "top" ? [desc(c.likes), desc(c.createdAt)] : [desc(c.createdAt)],
       with: {
         account: {

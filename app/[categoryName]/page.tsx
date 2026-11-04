@@ -9,16 +9,6 @@ interface PageProps {
   params: Promise<{ categoryName: string }>;
 }
 
-const formatCategoryLabel = (name: string) => {
-  const decoded = decodeURIComponent(name);
-  if (decoded === "phim-le") return "Phim Lẻ";
-  if (decoded === "phim-bo") return "Phim Bộ";
-  if (decoded === "chieu-rap") return "Chiếu Rạp";
-  if (decoded === "hoat-hinh") return "Hoạt Hình";
-  
-  return decoded.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-};
-
 // Generate dynamic metadata for search engine indexing
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { categoryName } = await params;

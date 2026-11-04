@@ -120,7 +120,7 @@ export async function callGeminiJson<T = any>(options: GeminiRequestOptions): Pr
       .replace(/\s*```$/i, "")
       .trim();
     return JSON.parse(cleaned) as T;
-  } catch (err) {
+  } catch {
     try {
       const titleMatch = rawText.match(/"title"\s*:\s*"([^"]+)"/);
       const descMatch = rawText.match(/"description"\s*:\s*"([^"]+)"/);
