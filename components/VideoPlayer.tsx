@@ -119,37 +119,16 @@ export default function VideoPlayer({
     } catch (e) {}
   }, [progressKey]);
 
-  // Mở 1 tab quảng cáo duy nhất khi bấm Play lần đầu
-  const triggerFirstAdOnce = useCallback(() => {
-    if (typeof window === "undefined") return;
-    const popKey = `pop_shown_${episodeId || src || "default"}`;
-    const alreadyPopped = sessionStorage.getItem(popKey);
-    if (!alreadyPopped) {
-      sessionStorage.setItem(popKey, "1");
-      const adUrl = src && src.includes("streamtape.com")
-        ? src.replace("/e/", "/v/")
-        : "https://streamtape.com";
-      try {
-        const win = window.open(adUrl, "_blank");
-        if (win) {
-          win.blur();
-          window.focus();
-        }
-      } catch {}
-    }
-  }, [episodeId, src]);
-
   // Handle manual start play
   const handleStartPlay = useCallback(() => {
     setHasStarted(true);
-    triggerFirstAdOnce();
     if (hlsRef.current) {
       hlsRef.current.startLoad();
     }
     if (videoRef.current) {
       videoRef.current.play().catch(() => {});
     }
-  }, [triggerFirstAdOnce]);
+  }, []);
 
   // Handle Resume action
   const handleResume = useCallback(() => {
@@ -393,7 +372,6 @@ export default function VideoPlayer({
             onPlay={() => {
               if (!hasStarted) {
                 setHasStarted(true);
-                triggerFirstAdOnce();
                 if (hlsRef.current) {
                   hlsRef.current.startLoad();
                 }
