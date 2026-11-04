@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth/actions";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+
+const isR2Configured =
+  !!process.env.R2_ACCOUNT_ID &&
+  !!process.env.R2_ACCESS_KEY_ID &&
+  !!process.env.R2_SECRET_ACCESS_KEY &&
+  !!process.env.R2_BUCKET_NAME;
 
 const isBunnyConfigured =
   !!process.env.BUNNY_STORAGE_ZONE_NAME &&
   !!process.env.BUNNY_STORAGE_ACCESS_KEY &&
   process.env.BUNNY_STORAGE_ACCESS_KEY !== "your_bunny_storage_access_key" &&
   !!process.env.NEXT_PUBLIC_BUNNY_CDN_URL;
-
-if (!isBunnyConfigured) {
-  console.warn(
-    "⚠️ WARNING: Bunny Storage credentials are not set or are default. Image uploads will fall back to mock images."
-  );
-}
 
 export async function POST(request: Request) {
   try {
@@ -84,9 +84,42 @@ export async function POST(request: Request) {
     }
 
     const fileBuffer = await file.arrayBuffer();
+    const r2Domain = (process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+    // 1. Prioritize Cloudflare R2 upload (Zero egress fee, high speed)
+    if (isR2Configured && r2Domain) {
+      const s3 = new S3Client({
+        region: "auto",
+        endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+        credentials: {
+          accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
+          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
+        },
+      });
+
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME,
+          Key: uploadPath,
+          Body: Buffer.from(fileBuffer),
+          ContentType: file.type || "image/webp",
+          CacheControl: "public, max-age=31536000, immutable",
+        })
+      );
+
+      const secureUrl = `https://${r2Domain}/${uploadPath}`;
+      const pathDir = uploadPath.substring(0, uploadPath.lastIndexOf("/")) || "";
+
+      return NextResponse.json({
+        secure_url: secureUrl,
+        pathDir,
+      });
+    }
+
+    // 2. Fallback to Bunny Storage if R2 not set
     const storageZone = process.env.BUNNY_STORAGE_ZONE_NAME;
     const accessKey = process.env.BUNNY_STORAGE_ACCESS_KEY;
-    const cdnUrl = process.env.NEXT_PUBLIC_BUNNY_CDN_URL?.replace(/\/$/, ""); // remove trailing slash
+    const cdnUrl = process.env.NEXT_PUBLIC_BUNNY_CDN_URL?.replace(/\/$/, "");
 
     const uploadToBunny = async (buffer: ArrayBuffer, targetPath: string, retries = 3) => {
       const url = `https://storage.bunnycdn.com/${storageZone}/${targetPath}`;
@@ -108,22 +141,15 @@ export async function POST(request: Request) {
             const errMsg = await res.text();
             throw new Error(`Bunny returned status ${res.status}: ${errMsg}`);
           }
-          return; // Success!
+          return;
         } catch (err: any) {
           console.error(`Attempt ${attempt} to upload to ${targetPath} failed:`, err.message || err);
-          if (err.cause) {
-            console.error(`Attempt ${attempt} cause:`, err.cause);
-          }
-          if (attempt === retries) {
-            throw err; // Re-throw if last attempt failed
-          }
-          // Wait before retrying (exponential backoff: 1s, 2s)
+          if (attempt === retries) throw err;
           await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
         }
       }
     };
 
-    // Upload single file directly
     await uploadToBunny(fileBuffer, uploadPath);
 
     const secureUrl = `${cdnUrl}/${uploadPath}`;

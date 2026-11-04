@@ -17,23 +17,28 @@ export function getBunnyImageUrl(
   }
 
   let processedUrl = url.trim();
-  const cdnUrl = (process.env.NEXT_PUBLIC_BUNNY_CDN_URL || "https://cdn.vam3dhentai.online").replace(/\/$/, "");
+  const r2Domain = (process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN || "pub-990b17b26195410f8d6faba5f800f6bf.r2.dev")
+    .replace(/^https?:\/\//, "")
+    .replace(/\/$/, "");
+  const cdnUrl = `https://${r2Domain}`;
 
   // Handle leading protocol-relative //
   if (processedUrl.startsWith("//")) {
     processedUrl = `https:${processedUrl}`;
   }
 
-  // Ensure all images are served from the active cdnUrl
+  // Convert old Bunny CDN domains over to Cloudflare R2 automatically
   processedUrl = processedUrl.replace(/https?:\/\/[a-zA-Z0-9._-]*b-cdn\.net/gi, cdnUrl);
+  processedUrl = processedUrl.replace(/https?:\/\/cdn\.vam3dhentai\.online/gi, cdnUrl);
   processedUrl = processedUrl.replace(/^[a-zA-Z0-9._-]*b-cdn\.net/gi, cdnUrl);
+  processedUrl = processedUrl.replace(/^cdn\.vam3dhentai\.online/gi, cdnUrl);
 
   if (!processedUrl.startsWith("http://") && !processedUrl.startsWith("https://")) {
     const cleanPath = processedUrl.startsWith("/") ? processedUrl : `/${processedUrl}`;
     processedUrl = `${cdnUrl}${cleanPath}`;
   }
 
-  // If it's a Bunny CDN image URL (ends with display.webp, thumb.webp, or original.png)
+  // If it's an image URL that has multiple sizes (ends with display.webp, thumb.webp, or original.png)
   if (processedUrl.endsWith('display.webp') || processedUrl.endsWith('thumb.webp') || processedUrl.endsWith('original.png')) {
     const lastSlashIdx = processedUrl.lastIndexOf('/');
     if (lastSlashIdx !== -1) {

@@ -17,6 +17,7 @@
     "db:restore-bunny": "npx tsx scripts/restore-from-bunny.ts",
     "db:migrate-supabase": "npx tsx scripts/migrate-to-supabase.ts",
     "migrate:streamtape": "node scripts/migrate-streamtape-to-r2.mjs",
+    "migrate:bunny-images": "node scripts/migrate-bunny-to-r2.mjs",
     "build:cf": "opennextjs-cloudflare build",
     "preview:cf": "opennextjs-cloudflare preview"
   },
