@@ -49,11 +49,50 @@ export default function VideoPlayer({
   const [resumeTime, setResumeTime] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [directStreamUrl, setDirectStreamUrl] = useState<string | null>(null);
+  const [isResolvingDirect, setIsResolvingDirect] = useState<boolean>(false);
+  const [streamtapeBlocked, setStreamtapeBlocked] = useState<boolean>(false);
   const progressKey = storageKey || (src ? `progress_src_${src}` : null);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Tự động phân giải Direct Stream sạch từ Streamtape
+  useEffect(() => {
+    if (!src || !src.includes("streamtape.com")) {
+      setDirectStreamUrl(null);
+      setIsResolvingDirect(false);
+      setStreamtapeBlocked(false);
+      return;
+    }
+
+    let active = true;
+    setIsResolvingDirect(true);
+    setStreamtapeBlocked(false);
+
+    fetch(`/api/streamtape/direct?url=${encodeURIComponent(src)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!active) return;
+        if (data.success && data.directUrl) {
+          setDirectStreamUrl(data.directUrl);
+        } else if (data.blocked) {
+          setStreamtapeBlocked(true);
+        }
+      })
+      .catch((err) => {
+        if (!active) return;
+        console.warn("Direct stream fetch failed:", err);
+      })
+      .finally(() => {
+        if (active) setIsResolvingDirect(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [src]);
 
   // Format seconds to mm:ss or hh:mm:ss
   const formatTime = (seconds: number) => {
@@ -80,16 +119,37 @@ export default function VideoPlayer({
     } catch (e) {}
   }, [progressKey]);
 
+  // Mở 1 tab quảng cáo duy nhất khi bấm Play lần đầu
+  const triggerFirstAdOnce = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const popKey = `pop_shown_${episodeId || src || "default"}`;
+    const alreadyPopped = sessionStorage.getItem(popKey);
+    if (!alreadyPopped) {
+      sessionStorage.setItem(popKey, "1");
+      const adUrl = src && src.includes("streamtape.com")
+        ? src.replace("/e/", "/v/")
+        : "https://streamtape.com";
+      try {
+        const win = window.open(adUrl, "_blank");
+        if (win) {
+          win.blur();
+          window.focus();
+        }
+      } catch {}
+    }
+  }, [episodeId, src]);
+
   // Handle manual start play
   const handleStartPlay = useCallback(() => {
     setHasStarted(true);
+    triggerFirstAdOnce();
     if (hlsRef.current) {
       hlsRef.current.startLoad();
     }
     if (videoRef.current) {
       videoRef.current.play().catch(() => {});
     }
-  }, []);
+  }, [triggerFirstAdOnce]);
 
   // Handle Resume action
   const handleResume = useCallback(() => {
@@ -124,7 +184,9 @@ export default function VideoPlayer({
 
   const streamHost = process.env.NEXT_PUBLIC_BUNNY_STREAM_HOST || "vz-df52fbd4-040.b-cdn.net";
   
-  let effectiveSrc = bunnyVideoId
+  let effectiveSrc = directStreamUrl
+    ? directStreamUrl
+    : bunnyVideoId
     ? `https://${streamHost}/${bunnyVideoId}/playlist.m3u8`
     : src;
 
@@ -247,7 +309,32 @@ export default function VideoPlayer({
 
 
 
-  // 2. No source available
+  // 2.1. Đang nạp direct stream
+  if (isResolvingDirect && !directStreamUrl && !streamtapeBlocked) {
+    return (
+      <div className={`relative w-full aspect-video bg-[#090a0f] rounded-xl flex flex-col items-center justify-center gap-3 text-orange-400 border border-white/5 ${className}`}>
+        <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs sm:text-sm font-medium text-gray-300">
+          Đang nạp luồng phát video tốc độ cao...
+        </span>
+      </div>
+    );
+  }
+
+  // 2.2. Video đang convert trên Streamtape
+  if (streamtapeBlocked) {
+    return (
+      <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-3 text-orange-400 rounded-xl border border-white/5 ${className}`}>
+        <AlertCircle className="w-10 h-10 text-orange-400" />
+        <h3 className="text-md font-bold text-white">Tập phim đang được xử lý chuyển đổi</h3>
+        <p className="text-xs text-gray-400 max-w-sm">
+          Tập phim này đang trong hàng đợi xử lý định dạng MP4 trên máy chủ. Vui lòng quay lại sau ít phút hoặc chọn tập khác trong danh sách!
+        </p>
+      </div>
+    );
+  }
+
+  // 2.3. No source available
   if (!effectiveSrc) {
     return (
       <div className={`w-full aspect-video flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center space-y-3 text-orange-400 ${className}`}>
@@ -258,11 +345,13 @@ export default function VideoPlayer({
     );
   }
 
-  // 2.5. Embed Player cho Streamtape / Doodstream / Filemoon (Tiết kiệm 100% băng thông Bunny CDN)
+  // 2.5. Embed Player cho Doodstream / Filemoon hoặc fallback
   const isEmbedIframe =
+    !directStreamUrl &&
+    !isResolvingDirect &&
+    !streamtapeBlocked &&
     effectiveSrc &&
-    (effectiveSrc.includes("streamtape.com/e/") ||
-      effectiveSrc.includes("dood") ||
+    (effectiveSrc.includes("dood") ||
       effectiveSrc.includes("filemoon") ||
       effectiveSrc.includes("/embed/"));
 
@@ -296,9 +385,15 @@ export default function VideoPlayer({
             controls
             preload={autoPlay || hasStarted ? "metadata" : "none"}
             poster={poster ? getBunnyImageUrl(poster, 'display') : undefined}
+            onError={() => {
+              if (directStreamUrl) {
+                console.warn("Direct stream playback error");
+              }
+            }}
             onPlay={() => {
               if (!hasStarted) {
                 setHasStarted(true);
+                triggerFirstAdOnce();
                 if (hlsRef.current) {
                   hlsRef.current.startLoad();
                 }
