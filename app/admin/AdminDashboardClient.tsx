@@ -2929,8 +2929,22 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
                       </div>
                     ) : (
                       <div className="flex flex-col gap-1">
-                        <Badge className="bg-purple-500/10 text-purple-400 border-0 text-[9px] px-1.5 py-0 h-4 w-fit">URL Trực tiếp</Badge>
-                        <span className="text-[10px] text-gray-500 truncate max-w-[200px] block mt-0.5">{ep.url}</span>
+                        {ep.url?.includes("r2.dev") ? (
+                          <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] px-1.5 py-0 h-4 w-fit font-bold">
+                            ☁️ Cloudflare R2 ✅
+                          </Badge>
+                        ) : ep.url?.includes("streamtape") ? (
+                          <Badge className="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[9px] px-1.5 py-0 h-4 w-fit font-bold">
+                            ⚡ Streamtape ⏳
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-purple-500/10 text-purple-400 border-0 text-[9px] px-1.5 py-0 h-4 w-fit">
+                            🔗 URL Trực tiếp
+                          </Badge>
+                        )}
+                        <span className="text-[10px] text-gray-400 truncate max-w-[200px] block mt-0.5" title={ep.url}>
+                          {ep.url}
+                        </span>
                       </div>
                     )}
                   </td>
