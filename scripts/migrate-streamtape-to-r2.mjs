@@ -107,7 +107,7 @@ async function migrateAll() {
         throw new Error(`Lỗi tải stream từ Streamtape CDN: HTTP ${videoResp.status}`);
       }
 
-      const r2Key = `episodes/ep-${ep.id}.mp4`;
+      const r2Key = `videos/ep-${ep.id}.mp4`;
       const nodeReadable = Readable.fromWeb(videoResp.body);
 
       const upload = new Upload({

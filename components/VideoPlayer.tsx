@@ -158,9 +158,8 @@ export default function VideoPlayer({
 
   const streamHost = process.env.NEXT_PUBLIC_BUNNY_STREAM_HOST || "vz-df52fbd4-040.b-cdn.net";
 
-  let effectiveSrc = bunnyVideoId
-    ? `https://${streamHost}/${bunnyVideoId}/playlist.m3u8`
-    : src;
+  // Prioritize Cloudflare R2 direct MP4 / URL over legacy Bunny
+  let effectiveSrc = src || (bunnyVideoId ? `https://${streamHost}/${bunnyVideoId}/playlist.m3u8` : null);
 
   // Bunny & CDN URL normalization
   if (effectiveSrc) {

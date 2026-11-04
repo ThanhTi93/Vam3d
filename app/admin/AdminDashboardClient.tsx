@@ -48,7 +48,7 @@ import {
   checkTitleExistsAction,
 } from "./actions";
 import { ImagePicker } from "@/components/ui/image-picker";
-import { uploadFileToBunny } from "@/lib/uploadClient";
+import { uploadFileToR2 } from "@/lib/uploadClient";
 import { getBunnyImageUrl, cleanFolderName, slugify, normalizeSearchText } from "@/lib/utils";
 import { getCultivationRealm } from "@/lib/cultivation";
 import StrategyTab from "./StrategyTab";
@@ -1220,7 +1220,7 @@ function OverviewTab({ show, onGoToStrategy }: { movies?: any[]; categories?: an
               </span>
             </div>
             <p className="text-xs text-gray-400 mt-0.5">
-              5 trụ cột bứt phá doanh thu: Vé xem trước 9k, Kinh tế Linh Thạch tu tiên, Phân tầng ảnh AI 4K & Giảm 45% chi phí CDN Bunny.
+              5 trụ cột bứt phá doanh thu: Vé xem trước 9k, Kinh tế Linh Thạch tu tiên, Phân tầng ảnh AI 4K & Tiết kiệm 100% chi phí CDN với Cloudflare R2.
             </p>
           </div>
         </div>
@@ -1423,7 +1423,7 @@ function MoviesTab({ movies, categories, actors, characters, authors, search, se
         if (form.imgUrl instanceof File) {
           const uniqueId = Math.random().toString(36).substring(2, 8);
           const extension = form.imgUrl.name.substring(form.imgUrl.name.lastIndexOf(".") + 1) || "webp";
-          finalImgUrl = await uploadFileToBunny(form.imgUrl, "movies", `movies/${safeName}_${uniqueId}.${extension}`);
+          finalImgUrl = await uploadFileToR2(form.imgUrl, "movies", `movies/${safeName}_${uniqueId}.${extension}`);
         }
  
         const submitData = {
@@ -2372,7 +2372,7 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
         body: JSON.stringify({
           filename: uploadFile.name,
           contentType: uploadFile.type || "video/mp4",
-          folder: "episodes",
+          folder: "videos",
         }),
       });
 
@@ -2453,7 +2453,7 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
           const safeName = cleanFolderName(form.name || "tap");
           const uniqueId = Math.random().toString(36).substring(2, 8);
           const extension = form.banner.name.substring(form.banner.name.lastIndexOf(".") + 1) || "webp";
-          finalBanner = await uploadFileToBunny(form.banner, "episodes", `episodes/${safeName}_${uniqueId}.${extension}`);
+          finalBanner = await uploadFileToR2(form.banner, "banners", `banners/${safeName}_${uniqueId}.${extension}`);
         }
 
         if (isEdit) {
@@ -2908,7 +2908,16 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
                     </div>
                   </td>
                   <td className="px-4 py-3 text-[10px] text-gray-500 font-mono">
-                    {ep.bunnyVideoId ? (
+                    {ep.url?.includes("r2.dev") ? (
+                      <div className="flex flex-col gap-1">
+                        <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] px-1.5 py-0 h-4 w-fit font-bold">
+                          ☁️ Cloudflare R2 ✅
+                        </Badge>
+                        <span className="text-[10px] text-gray-400 truncate max-w-[200px] block mt-0.5" title={ep.url}>
+                          {ep.url.replace(/^https?:\/\/[^/]+\//, "")}
+                        </span>
+                      </div>
+                    ) : ep.bunnyVideoId ? (
                       <div className="flex flex-col gap-1">
                         <div className="flex flex-wrap gap-1.5 items-center">
                           <Badge className="bg-blue-500/10 text-blue-400 border-0 text-[9px] px-1.5 py-0 h-4">Bunny Stream</Badge>
@@ -2929,11 +2938,7 @@ function EpisodesTab({ episodes, movies, actors, characters, plans = [], search,
                       </div>
                     ) : (
                       <div className="flex flex-col gap-1">
-                        {ep.url?.includes("r2.dev") ? (
-                          <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] px-1.5 py-0 h-4 w-fit font-bold">
-                            ☁️ Cloudflare R2 ✅
-                          </Badge>
-                        ) : ep.url?.includes("streamtape") ? (
+                        {ep.url?.includes("streamtape") ? (
                           <Badge className="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[9px] px-1.5 py-0 h-4 w-fit font-bold">
                             ⚡ Streamtape ⏳
                           </Badge>
@@ -3118,7 +3123,7 @@ function ActorsTab({ actors, search, setSearch, isPending, startTransition, onRe
           const safeName = cleanFolderName(form.name);
           const uniqueId = Math.random().toString(36).substring(2, 8);
           const extension = form.imgUrl.name.substring(form.imgUrl.name.lastIndexOf(".") + 1) || "webp";
-          finalImgUrl = await uploadFileToBunny(form.imgUrl, "actors", `actors/${safeName}_${uniqueId}.${extension}`);
+          finalImgUrl = await uploadFileToR2(form.imgUrl, "actors", `actors/${safeName}_${uniqueId}.${extension}`);
         }
         const submitData = { ...form, imgUrl: (finalImgUrl as string) || "" };
 
@@ -3651,7 +3656,7 @@ function CharactersTab({ movies = [], characters, search, setSearch, isPending, 
           const uniqueId = Math.random().toString(36).substring(2, 8);
           const extension = form.imgUrl.name.substring(form.imgUrl.name.lastIndexOf(".") + 1) || "webp";
           const customPath = `characters/${safeName}_${uniqueId}.${extension}`;
-          finalImgUrl = await uploadFileToBunny(form.imgUrl, "characters", customPath);
+          finalImgUrl = await uploadFileToR2(form.imgUrl, "characters", customPath);
         }
         const submitData = {
           ...form,
@@ -5558,7 +5563,7 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
 
     setUploading(true);
     setUploadProgress(0);
-    setUploadStatusMsg(uploadFiles.length > 0 ? "Chuẩn bị tải ảnh lên Bunny..." : "Đang lưu thông tin...");
+    setUploadStatusMsg(uploadFiles.length > 0 ? "Chuẩn bị tải ảnh lên Cloudflare R2..." : "Đang lưu thông tin...");
 
     const processedFiles: File[] = [];
     const urls: string[] = [];
@@ -5587,7 +5592,7 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
           const cleanFileBase = cleanFolderName(file.name.substring(0, file.name.lastIndexOf(".")));
           const specificPath = `${folderPath}/${imageUniqueId}_${cleanFileBase}.${extension}`;
           
-          const url = await uploadFileToBunny(file, "ai_galleries", specificPath);
+          const url = await uploadFileToR2(file, "ai_galleries", specificPath);
           urls.push(url);
           setUploadProgress(Math.round(((i + 1) / processedFiles.length) * 100));
         }
@@ -5638,7 +5643,7 @@ function GalleriesTab({ movies, characters, plans, collections = [], isPending, 
       setUploading(false);
       setUploadProgress(null);
       setUploadStatusMsg("Lỗi: " + err.message);
-      show("Lỗi trong quá trình upload ảnh lên Bunny Storage", "error");
+      show("Lỗi trong quá trình upload ảnh lên Cloudflare R2", "error");
     }
   };
 

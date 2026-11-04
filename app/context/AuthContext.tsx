@@ -31,8 +31,23 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserType | null>(null);
-  const [freeVipMode, setFreeVipModeState] = useState<boolean>(false);
+  const [user, setUser] = useState<UserType | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("vam3d_user");
+        if (saved) return JSON.parse(saved);
+      } catch (_) {}
+    }
+    return null;
+  });
+  const [freeVipMode, setFreeVipModeState] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("vam3d_free_vip") === "1";
+      } catch (_) {}
+    }
+    return false;
+  });
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
@@ -43,15 +58,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         const serverUser = data.user || null;
         setUser(serverUser);
-        setFreeVipModeState(!!data.freeVipMode);
+        const isFreeVip = !!data.freeVipMode;
+        setFreeVipModeState(isFreeVip);
 
-        if (serverUser && typeof window !== "undefined") {
+        if (typeof window !== "undefined") {
           try {
-            localStorage.setItem("vam3d_user", JSON.stringify(serverUser));
-          } catch (_) {}
-        } else if (typeof window !== "undefined") {
-          try {
-            localStorage.removeItem("vam3d_user");
+            if (serverUser) {
+              localStorage.setItem("vam3d_user", JSON.stringify(serverUser));
+            } else {
+              localStorage.removeItem("vam3d_user");
+            }
+            localStorage.setItem("vam3d_free_vip", isFreeVip ? "1" : "0");
           } catch (_) {}
         }
       }

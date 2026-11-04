@@ -488,22 +488,18 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
         }
         if (keyOverride) {
           setShowBunnyKeyModal(false);
-          showToast(
-            res.data.mode === "exact_account_api"
-              ? "✅ Đã kết nối Bunny Account API & đồng bộ chi phí băng thông thực tế!"
-              : "Đã lưu mã và cập nhật bảng đối soát chi phí Bunny vs Ads!"
-          );
+          showToast("✅ Đã lưu dung lượng Cloudflare R2 và cập nhật bảng đối soát lợi nhuận!");
         } else {
           const latestRow = res.data.dailyRows[0];
           showToast(
             latestRow
-              ? `✅ Đã kéo Adsterra API trực tiếp (${latestRow.date}: ${latestRow.adImpressions.toLocaleString("vi-VN")} imp · +$${latestRow.adRevenueUsd.toFixed(3)}) & cập nhật Lợi Nhuận!`
-              : "✅ Đã đồng bộ dữ liệu trực tiếp & cập nhật bảng Lợi Nhuận Ròng!"
+              ? `✅ Đã kéo Adsterra API (${latestRow.date}: ${latestRow.adImpressions.toLocaleString("vi-VN")} imp · +$${latestRow.adRevenueUsd.toFixed(3)}) & tính chi phí Cloudflare R2!`
+              : "✅ Đã đồng bộ dữ liệu trực tiếp & cập nhật bảng Lợi Nhuận Ròng Cloudflare R2!"
           );
         }
       }
     } catch {
-      showToast("Không thể đồng bộ thống kê Bunny CDN", "error");
+      showToast("Không thể đồng bộ thống kê Cloudflare R2 & Ads", "error");
     } finally {
       setIsSyncingBunny(false);
     }
@@ -576,8 +572,8 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
   const dailyAdsUsd = (dailyImpressions / 1000) * simAvgCpm;
   const dailyAdsVnd = Math.round(dailyAdsUsd * USD_VND);
   const monthlyAdsVnd = dailyAdsVnd * 30 + simBannerRentals;
-  const estimatedCdnCost = Math.round(simDailyVisits * 30 * 45); // ~45đ CDN per visit
-  const netAdsProfitMonthly = Math.max(0, monthlyAdsVnd - estimatedCdnCost);
+  const estimatedR2Cost = 15000; // Cloudflare R2: Băng thông $0.00 Miễn Phí, chỉ tốn ~15.000đ/tháng tiền lưu trữ
+  const netAdsProfitMonthly = Math.max(0, monthlyAdsVnd - estimatedR2Cost);
 
   // Find max clicks in 7 days for bar chart scale
   const maxClicksInTrend = Math.max(
@@ -1484,7 +1480,7 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
             </div>
           </div>
 
-          {/* ── BUNNY CDN COST VS ADSTERRA REVENUE DAILY NET PROFIT AUDITOR ── */}
+          {/* ── CLOUDFLARE R2 COST VS ADSTERRA REVENUE DAILY NET PROFIT AUDITOR ── */}
           {bunnyProfit && (
             <div className="bg-gradient-to-b from-[#111822] to-[#0d111a] border border-cyan-500/35 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-5">
@@ -1492,25 +1488,17 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                       <Coins className="w-3.5 h-3.5" />
-                      ĐỐI SOÁT LỢI NHUẬN RÒNG: DOANH THU ADSTERRA VS CHI PHÍ BUNNY CDN
+                      ĐỐI SOÁT LỢI NHUẬN RÒNG: DOANH THU ADSTERRA VS CHI PHÍ CLOUDFLARE R2
                     </span>
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
-                        bunnyProfit.mode === "exact_account_api"
-                          ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                          : "bg-amber-500/15 text-amber-300 border-amber-500/30"
-                      }`}
-                    >
-                      {bunnyProfit.mode === "exact_account_api"
-                        ? "● Đã đồng bộ 100% từ Bunny Billing API"
-                        : `● Đã đọc Bunny Stream Library #689414 (${bunnyProfit.streamVideosCount} video • ${bunnyProfit.streamStorageGb} GB)`}
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                      ● Cloudflare R2: Băng thông $0.00 Miễn Phí (Zero Egress) • Lưu trữ $0.015/GB
                     </span>
                   </div>
                   <h4 className="text-lg sm:text-xl font-black text-white">
-                    Bảng Tính Chi Phí Bunny Trả Mỗi Ngày vs Doanh Thu Quảng Cáo (Biên Lợi Nhuận Thực Tế)
+                    Bảng Tính Chi Phí Cloudflare R2 vs Doanh Thu Quảng Cáo (Biên Lợi Nhuận Thực Tế)
                   </h4>
                   <p className="text-xs text-gray-400">
-                    Đọc trực tiếp dung lượng lưu trữ từ Bunny Stream API (<strong className="text-white">{bunnyProfit.streamStorageGb} GB</strong> / {bunnyProfit.streamVideosCount} tập phim) và tính chi phí băng thông CDN mỗi ngày để so sánh lãi/lỗ ròng với tiền quảng cáo Adsterra.
+                    Lưu trữ trên Cloudflare R2 bucket <strong className="text-white">vam3d</strong> (<strong className="text-cyan-300">{bunnyProfit.streamStorageGb} GB</strong> / {bunnyProfit.streamVideosCount} tập phim & toàn bộ ảnh). Băng thông người xem tải là <strong className="text-emerald-400">100% MIỄN PHÍ ($0.00 Egress)</strong>, giúp doanh thu quảng cáo Adsterra chuyển trọn vẹn thành lãi ròng!
                   </p>
                 </div>
 
@@ -1531,17 +1519,17 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                     className="border-cyan-500/30 hover:bg-cyan-500/10 text-cyan-300 text-xs h-9 px-3 gap-1.5 cursor-pointer"
                   >
                     <Key className="w-3.5 h-3.5" />
-                    {bunnyProfit.hasAccountKey ? "Đổi Bunny Account Key" : "Kết Nối Bunny Account Key"}
+                    Cài Đặt Dung Lượng R2 (GB)
                   </Button>
                 </div>
               </div>
 
-              {/* Optional Bunny Master Account API Key Modal */}
+              {/* R2 Storage Configuration Modal */}
               {showBunnyKeyModal && (
                 <div className="p-5 rounded-2xl bg-black/60 border border-cyan-500/40 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h5 className="text-xs sm:text-sm font-bold text-white">
-                      🔑 Kết Nối Bunny.net Master Account API Key (Tùy chọn để lấy số dư Balance & GB chính xác 100%)
+                    <h5 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                      ⚙️ Cài Đặt Dung Lượng Lưu Trữ Cloudflare R2 (GB)
                     </h5>
                     <button
                       onClick={() => setShowBunnyKeyModal(false)}
@@ -1551,14 +1539,16 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                     </button>
                   </div>
                   <p className="text-[11px] text-gray-400 leading-relaxed">
-                    Hiện tại hệ thống đã có <code className="text-cyan-400">BUNNY_API_KEY</code> của Stream Library (#689414) để đọc dung lượng video ({bunnyProfit.streamStorageGb} GB). Nếu muốn đọc thêm hóa đơn tiền <code className="text-white">api.bunny.net/billing</code>, bạn vào <strong className="text-white">dash.bunny.net → Account Settings → API</strong> copy khóa chính dán vào đây:
+                    Cloudflare R2 tặng <strong className="text-emerald-400">10 GB lưu trữ miễn phí</strong> mỗi tháng. Phần dung lượng vượt 10 GB chỉ tính phí siêu rẻ <strong className="text-white">$0.015 / GB / tháng</strong> (~380đ/GB/tháng) và <strong className="text-emerald-400">băng thông tải về là $0.00 (Hoàn toàn miễn phí)</strong>. Bạn có thể cập nhật số GB thực tế từ Cloudflare Dashboard vào đây (mặc định: {bunnyProfit.streamStorageGb} GB):
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <input
-                      type="password"
+                      type="number"
+                      step="0.5"
+                      min="0.1"
                       value={bunnyAccountKeyInput}
                       onChange={(e) => setBunnyAccountKeyInput(e.target.value)}
-                      placeholder="Nhập Bunny Account API Key..."
+                      placeholder={`Ví dụ: ${bunnyProfit.streamStorageGb}`}
                       className="flex-1 bg-black/80 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500"
                     />
                     <Button
@@ -1567,13 +1557,13 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                       disabled={isSyncingBunny || !bunnyAccountKeyInput.trim()}
                       className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold text-xs h-9 px-4 cursor-pointer"
                     >
-                      Lưu & Đồng Bộ Bunny Billing
+                      Lưu Dung Lượng R2
                     </Button>
                   </div>
                 </div>
               )}
 
-              {/* 4 Summary Cards for Current Month: Revenue vs Bunny + Hosting Cost vs Net Profit */}
+              {/* 4 Summary Cards for Current Month: Revenue vs R2 + Hosting Cost vs Net Profit */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-4 rounded-2xl bg-black/40 border border-emerald-500/30 space-y-1">
                   <span className="text-xs text-gray-400 font-semibold">
@@ -1589,13 +1579,13 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
 
                 <div className="p-4 rounded-2xl bg-black/40 border border-rose-500/30 space-y-1">
                   <span className="text-xs text-gray-400 font-semibold">
-                    2. Chi Phí Bunny + Hosting ({bunnyProfit.currentMonthLabel})
+                    2. Chi Phí R2 + Hosting ({bunnyProfit.currentMonthLabel})
                   </span>
                   <div className="text-2xl font-black text-rose-400">
                     -${bunnyProfit.totalCostWithProratedHostingUsd.toFixed(2)} USD
                   </div>
                   <p className="text-[11px] text-gray-400">
-                    Bunny: -${bunnyProfit.totalBunnyCostUsd.toFixed(2)} • Hosting phân bổ: -${bunnyProfit.proratedHostingCostUsd.toFixed(2)}
+                    R2 Storage: -${bunnyProfit.totalBunnyCostUsd.toFixed(2)} • Hosting phân bổ: -${bunnyProfit.proratedHostingCostUsd.toFixed(2)}
                   </p>
                 </div>
 
@@ -1607,7 +1597,7 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                     {bunnyProfit.totalNetProfitUsd >= 0 ? "+" : ""}${bunnyProfit.totalNetProfitUsd.toFixed(2)} USD
                   </div>
                   <p className="text-[11px] text-emerald-300 font-bold">
-                    Sau riêng Bunny:{" "}
+                    Sau riêng Cloudflare R2:{" "}
                     {bunnyProfit.totalNetAfterBunnyUsd >= 0 ? "+" : ""}${bunnyProfit.totalNetAfterBunnyUsd.toFixed(2)} (
                     {bunnyProfit.totalNetProfitVnd >= 0 ? "+" : ""}
                     {bunnyProfit.totalNetProfitVnd.toLocaleString("vi-VN")} đ)
@@ -1615,14 +1605,12 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                 </div>
 
                 <div className="p-4 rounded-2xl bg-black/40 border border-cyan-500/30 space-y-1">
-                  <span className="text-xs text-gray-400 font-semibold">4. Định Phí Hosting & Lưu Trữ Tháng</span>
+                  <span className="text-xs text-gray-400 font-semibold">4. Định Phí R2 & Hosting Tháng</span>
                   <div className="text-xl font-black text-cyan-400">
-                    $5.00 Hosting + ${bunnyProfit.monthlyStorageCostUsd} Storage
+                    $5.00 Hosting + ${bunnyProfit.monthlyStorageCostUsd} R2
                   </div>
-                  <p className="text-[11px] text-gray-400">
-                    {bunnyProfit.accountBalanceUsd !== null
-                      ? `Số dư ví Bunny: $${bunnyProfit.accountBalanceUsd.toFixed(2)}`
-                      : `Hosting cố định: $5.00/tháng (~127.000đ/tháng)`}
+                  <p className="text-[11px] text-emerald-400 font-semibold">
+                    Băng thông R2: Miễn phí $0.00 (Zero Egress)
                   </p>
                 </div>
               </div>
@@ -1632,7 +1620,7 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <h5 className="text-xs font-extrabold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
-                    1. Chi Tiết Từng Ngày Trong Tháng Mới ({bunnyProfit.currentMonthLabel} — Reset từ ngày 01)
+                    1. Chi Tiết Từng Ngày Trong Tháng Mới ({bunnyProfit.currentMonthLabel} — Băng thông R2 Miễn Phí)
                   </h5>
                   <span className="text-[11px] text-gray-400">
                     Chỉ thống kê các ngày thuộc {bunnyProfit.currentMonthLabel} (Phí Hosting $5/tháng = -$0.167/ngày)
@@ -1647,9 +1635,9 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                         <th className="py-3 px-4 text-right">Impressions QC</th>
                         <th className="py-3 px-4 text-right">CTR / CPM</th>
                         <th className="py-3 px-4 text-right text-emerald-400">Thu Quảng Cáo (+)</th>
-                        <th className="py-3 px-4 text-right text-rose-400">Phí Bunny (-)</th>
+                        <th className="py-3 px-4 text-right text-rose-400">Phí R2 (-)</th>
                         <th className="py-3 px-4 text-right text-amber-400">Phí Hosting Ngày (-)</th>
-                        <th className="py-3 px-4 text-right text-emerald-300">Lãi Sau Bunny</th>
+                        <th className="py-3 px-4 text-right text-emerald-300">Lãi Sau R2</th>
                         <th className="py-3 px-4 text-right text-cyan-300">Lãi Ròng Cuối (Trừ Cả Hosting)</th>
                       </tr>
                     </thead>
@@ -1675,7 +1663,7 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                                 +${row.adRevenueUsd.toFixed(3)}
                               </td>
                               <td className="py-3 px-4 text-right font-mono font-semibold text-rose-400">
-                                -${row.totalBunnyCostUsd.toFixed(3)} (~{row.bandwidthGb.toFixed(1)}GB)
+                                -${row.totalBunnyCostUsd.toFixed(3)} <span className="text-gray-400 font-normal">(~{row.bandwidthGb.toFixed(1)}GB • $0.00)</span>
                               </td>
                               <td className="py-3 px-4 text-right font-mono text-amber-400">
                                 -${row.dailyHostingCostUsd.toFixed(3)}
@@ -1707,15 +1695,15 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                 </div>
               </div>
 
-              {/* Section 2: Past Months Summary ONLY (Total Profit + Bunny Reset Invoice + $5 Hosting) */}
+              {/* Section 2: Past Months Summary ONLY (Total Profit + Reset Invoice + $5 Hosting) */}
               <div className="space-y-2.5 pt-2 border-t border-white/10">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <h5 className="text-xs font-extrabold uppercase tracking-wider text-amber-400 flex items-center gap-2">
                     <Layers className="w-4 h-4" />
-                    2. Bảng Chốt Sổ Tổng Kết Các Tháng Cũ (Theo Kỳ Reset Đầu Tháng Của Bunny + $5.00 Hosting/Tháng)
+                    2. Bảng Chốt Sổ Tổng Kết Các Tháng (So Sánh Kỳ Bunny Cũ vs Cloudflare R2 Mới + $5.00 Hosting)
                   </h5>
                   <span className="text-[11px] text-gray-400">
-                    Các tháng cũ chỉ thống kê 1 dòng Tổng Lãi, Hóa đơn Bunny và $5.00 Hosting mỗi tháng
+                    Các tháng cũ thống kê 1 dòng Tổng Thu, Chi phí Lưu Trữ/CDN và $5.00 Hosting mỗi tháng
                   </span>
                 </div>
 
@@ -1723,12 +1711,12 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="bg-white/5 text-gray-400 border-b border-white/10 font-bold uppercase text-[10px]">
-                        <th className="py-3 px-4">Kỳ Tháng Cũ</th>
-                        <th className="py-3 px-4">Ngày Reset Bunny</th>
+                        <th className="py-3 px-4">Kỳ Tháng</th>
+                        <th className="py-3 px-4">Kỳ Chốt Sổ</th>
                         <th className="py-3 px-4 text-right text-emerald-400">Tổng Thu Ads (+)</th>
-                        <th className="py-3 px-4 text-right text-rose-400">Hóa Đơn Bunny (-)</th>
+                        <th className="py-3 px-4 text-right text-rose-400">Phí CDN / R2 (-)</th>
                         <th className="py-3 px-4 text-right text-amber-400">Phí Hosting (-)</th>
-                        <th className="py-3 px-4 text-right text-emerald-300">Lãi Sau Bunny</th>
+                        <th className="py-3 px-4 text-right text-emerald-300">Lãi Sau CDN/R2</th>
                         <th className="py-3 px-4 text-right text-cyan-300">Tổng Lãi/Lỗ Ròng (Trừ Cả $5 Hosting)</th>
                         <th className="py-3 px-4">Ghi Chú Kỳ Chốt Sổ</th>
                       </tr>
@@ -3062,8 +3050,8 @@ export default function StrategyTab({ showToast }: StrategyTabProps) {
                   <strong className="text-purple-400 font-bold">{simBannerRentals.toLocaleString("vi-VN")} đ</strong>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Chi phí CDN Bunny ước tính:</span>
-                  <strong className="text-rose-400 font-bold">-{estimatedCdnCost.toLocaleString("vi-VN")} đ</strong>
+                  <span className="text-gray-400">Chi phí Cloudflare R2 ước tính (Băng thông $0):</span>
+                  <strong className="text-emerald-400 font-bold">-{estimatedR2Cost.toLocaleString("vi-VN")} đ</strong>
                 </div>
               </div>
 

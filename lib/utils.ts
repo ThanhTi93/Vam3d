@@ -57,6 +57,8 @@ export function getBunnyImageUrl(
   return processedUrl;
 }
 
+export const getR2ImageUrl = getBunnyImageUrl;
+
 export function getUserAvatarUrl(url: string | null | undefined): string {
   if (!url || typeof url !== "string" || !url.trim()) {
     return "/images/default_avatar.webp";

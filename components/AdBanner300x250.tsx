@@ -15,6 +15,8 @@ const srcDoc = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
+  <base href="https://vam3dhentai.online/">
+  <meta name="referrer" content="always">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { 

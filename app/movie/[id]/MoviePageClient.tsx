@@ -36,7 +36,7 @@ export default function MoviePageClient({
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const isCurrentRoute = pathname === `/movie/${movie.id}` || (movie.slug && pathname === `/movie/${movie.slug}`) || pathname.includes(`/movie/`);
-  const { user, freeVipMode } = useAuth();
+  const { user, freeVipMode, loading: authLoading } = useAuth();
   const { toggleWatchlist, isInWatchlist } = useWatchlist();
 
   const activeEpFromParam = searchParams?.get("ep") ?? initialEp;
@@ -91,6 +91,9 @@ export default function MoviePageClient({
 
   // Sync episode selection with URL query parameter '?ep=...' and perform VIP access check
   useEffect(() => {
+    // Nếu trạng thái xác thực đang tải và chưa có user/freeVipMode, đợi nạp xong
+    if (authLoading && !user) return;
+
     const epParam = searchParams.get("ep");
     if (epParam && movie.episodes && movie.episodes.length > 0) {
       const epIndex = resolveEpisodeIndex(epParam);
@@ -121,11 +124,12 @@ export default function MoviePageClient({
           return;
         }
 
+        setRestrictedError(null);
         setActiveEpisode(epIndex);
         setShowPlayer(true);
       }
     }
-  }, [searchParams, movie.episodes]);
+  }, [searchParams, movie.episodes, authLoading, user, freeVipMode]);
 
   // Increment view count when episode starts playing or changes
   useEffect(() => {
@@ -164,6 +168,19 @@ export default function MoviePageClient({
       : movie.episodes?.findIndex((x: any) => x.id === ep.id);
 
     if (isSameMovie && resolvedIdx !== undefined && resolvedIdx !== -1) {
+      const targetEp = movie.episodes?.[resolvedIdx] || ep;
+      if (movie.plan && !checkAccess(movie.plan)) {
+        setRestrictedError(
+          `Bộ phim này yêu cầu gói cước từ ${movie.plan.name} trở lên và gói phải còn hạn dùng.`
+        );
+        return;
+      }
+      if (targetEp?.plan && !checkAccess(targetEp.plan)) {
+        setRestrictedError(
+          `Tập phim này yêu cầu gói cước từ ${targetEp.plan.name} trở lên và gói phải còn hạn dùng.`
+        );
+        return;
+      }
       setAutoPlayRequested(true);
       handleEpisodeChange(resolvedIdx, true);
       setShowPlayer(true);
@@ -316,7 +333,7 @@ export default function MoviePageClient({
               <span className="px-2 py-0.5 rounded bg-orange-500/20 text-orange-400 font-bold border border-orange-500/30 flex items-center gap-1">
                 <Server className="w-3 h-3" /> Server VIP (HD)
               </span>
-              <span className="text-gray-400 hidden sm:inline">• Streamtape tốc độ cao</span>
+              <span className="text-gray-400 hidden sm:inline">• Cloudflare R2 tốc độ cao</span>
             </div>
 
             <div className="flex items-center gap-2">
