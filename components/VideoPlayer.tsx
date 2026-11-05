@@ -5,7 +5,6 @@ import Hls from "hls.js";
 import { Settings, Play, RotateCcw, AlertCircle } from "lucide-react";
 import { getBunnyImageUrl } from "@/lib/utils";
 import { useAuth } from "@/app/context/AuthContext";
-import { getClientAdConfig, type ClientAdConfig } from "@/lib/adConfigClient";
 
 export interface VideoPlayerProps {
   src?: string | null;
@@ -52,14 +51,10 @@ export default function VideoPlayer({
   const [resumeTime, setResumeTime] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
-  const [adConfig, setAdConfig] = useState<ClientAdConfig | null>(null);
   const progressKey = storageKey || (src ? `progress_src_${src}` : null);
 
   useEffect(() => {
     setIsClient(true);
-    getClientAdConfig()
-      .then((cfg) => setAdConfig(cfg))
-      .catch(() => {});
   }, []);
 
   // Format seconds to mm:ss or hh:mm:ss
@@ -87,35 +82,8 @@ export default function VideoPlayer({
     } catch (e) {}
   }, [progressKey]);
 
-  // Trigger 1-time ad popunder synchronously upon user clicking "Bấm để xem phim"
-  const triggerOneTimeAd = useCallback(() => {
-    if (typeof window === "undefined") return;
-    // Don't show ads to VIP or Admin
-    if (user && ((user.level && user.level > 0) || user.role === "admin")) return;
-    if (!adConfig || !adConfig.popunderEnabled || !adConfig.popunderUrl) return;
-
-    const adKey = `vam_ad_shown_${episodeId || "global"}`;
-    const epAlreadyShown = sessionStorage.getItem(adKey);
-    const lastShownGlobal = localStorage.getItem("vam_last_popunder_time");
-    const intervalMs = (adConfig.popunderIntervalHours || 12) * 3600 * 1000;
-    const now = Date.now();
-
-    const isIntervalExpired = !lastShownGlobal || (now - parseInt(lastShownGlobal, 10)) > intervalMs;
-
-    if (!epAlreadyShown && isIntervalExpired) {
-      sessionStorage.setItem(adKey, "1");
-      localStorage.setItem("vam_last_popunder_time", now.toString());
-      try {
-        window.open(adConfig.popunderUrl, "_blank", "noopener,noreferrer");
-      } catch (e) {
-        console.warn("Popunder blocked or failed:", e);
-      }
-    }
-  }, [user, adConfig, episodeId]);
-
   // Handle manual start play
   const handleStartPlay = useCallback(() => {
-    triggerOneTimeAd();
     setHasStarted(true);
     if (hlsRef.current) {
       hlsRef.current.startLoad();
@@ -123,7 +91,7 @@ export default function VideoPlayer({
     if (videoRef.current) {
       videoRef.current.play().catch(() => {});
     }
-  }, [triggerOneTimeAd]);
+  }, []);
 
   // Handle Resume action
   const handleResume = useCallback(() => {

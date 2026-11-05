@@ -3570,6 +3570,7 @@ function buildDiagnosticsFromPlacements(
   const movieClientSrc = safeReadWorkspaceFile("app/movie/[id]/MoviePageClient.tsx");
   const layoutSrc = safeReadWorkspaceFile("app/layout.tsx");
   const popunderSrc = safeReadWorkspaceFile("components/SmartPopunder.tsx");
+  const videoPlayerSrc = safeReadWorkspaceFile("components/VideoPlayer.tsx");
 
   const socialBarBlocksHome =
     !socialBarSrc || (socialBarSrc.includes('pathname === "/"') && socialBarSrc.includes("googlebot"));
@@ -3582,7 +3583,8 @@ function buildDiagnosticsFromPlacements(
     (nativeBannerSrc.includes("IntersectionObserver") && nativeBannerSrc.includes("googlebot"));
   const popunderIsClean =
     (!layoutSrc || !layoutSrc.includes("<SmartPopunder")) &&
-    (!popunderSrc || !popunderSrc.includes("window.open"));
+    (!popunderSrc || !popunderSrc.includes("window.open")) &&
+    (!videoPlayerSrc || !videoPlayerSrc.includes("window.open"));
 
   if (!socialBarBlocksHome) {
     score -= 15;
@@ -3662,17 +3664,19 @@ function buildDiagnosticsFromPlacements(
     }
   }
 
-  // 2. Chỉ cảnh báo nếu Smartlink vẫn còn phát sinh > 20 impressions trong ngày mới nhất (tức là chưa gỡ hết)
+  // 2. Chỉ cảnh báo nếu Smartlink vẫn còn phát sinh > 20 impressions trong ngày mới nhất VÀ mã nguồn chưa được gỡ
   if (smartlink && smartlink.latestImpressions > 20 && smartlink.latestDate === dailyStats[0]?.date) {
-    score -= 15;
-    alerts.push({
-      id: "smartlink-still-active",
-      severity: "critical",
-      title: `Phát hiện ${smartlink.title} vẫn còn phát sinh ${smartlink.latestImpressions} imp hôm nay`,
-      metricBadge: `CPM thấp: $${smartlink.latestCpm.toFixed(3)}`,
-      detail: `Mã Smartlink vẫn đang chạy ở một vị trí nào đó trên trang, làm rớt lượt hiển thị của Social Bar.`,
-      solution: `Kiểm tra và gỡ bỏ hoàn toàn mã Smartlink còn sót lại.`,
-    });
+    if (!popunderIsClean) {
+      score -= 15;
+      alerts.push({
+        id: "smartlink-still-active",
+        severity: "critical",
+        title: `Phát hiện ${smartlink.title} vẫn còn phát sinh ${smartlink.latestImpressions} imp hôm nay`,
+        metricBadge: `CPM thấp: $${smartlink.latestCpm.toFixed(3)}`,
+        detail: `Mã Smartlink vẫn đang chạy ở một vị trí nào đó trên trang, làm rớt lượt hiển thị của Social Bar.`,
+        solution: `Kiểm tra và gỡ bỏ hoàn toàn mã Smartlink còn sót lại.`,
+      });
+    }
   }
 
   // 3. Chỉ kiến nghị mới nếu NativeBanner_1 đã chạy > 600 impressions mà CTR quá thấp (< 0.15%)
@@ -3688,8 +3692,10 @@ function buildDiagnosticsFromPlacements(
     });
   }
 
-  // 4. Chỉ cảnh báo nếu một ngày ĐÃ CHẠY ĐỦ (>= 1.200 imp) mà CTR tổng bị sụt bất thường xuống dưới 8%
-  if (latestFullDay && latestFullDay.impressions >= 1200 && latestFullDay.ctr < 8) {
+  // 4. Cảnh báo nếu một ngày ĐÃ CHẠY ĐỦ (>= 1.200 imp) mà CTR tổng bị sụt bất thường
+  // Khi chạy kết hợp Banner 300x250 (CTR ~1-2%) và Social Bar (CTR ~8-15%), ngưỡng CTR gộp lành mạnh là >= 4.5%.
+  const minHealthyCtr = banner300 ? 4.5 : 8.0;
+  if (latestFullDay && latestFullDay.impressions >= 1200 && latestFullDay.ctr < minHealthyCtr) {
     score -= 10;
     alerts.push({
       id: "full-day-ctr-drop",
