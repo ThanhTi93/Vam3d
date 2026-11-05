@@ -28,7 +28,11 @@ export default function AdGalleryNativeBanner({
   const canShow = enabled && !loading && !isAdFreeUser(user);
 
   useEffect(() => {
-    if (isBotUserAgent()) return;
+    // Chặn bot tìm kiếm (googlebot, bingbot) để tối ưu SEO và Core Web Vitals
+    const isBot =
+      typeof navigator !== "undefined" &&
+      (/googlebot|bingbot|crawler/i.test(navigator.userAgent || "") || isBotUserAgent());
+    if (isBot) return;
     let cancelled = false;
     getClientAdConfig().then((cfg) => {
       if (!cancelled) setEnabled(cfg.nativeBannerEnabled);

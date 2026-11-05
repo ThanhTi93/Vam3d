@@ -605,8 +605,6 @@ export default function MoviePageClient({
                 <Heart className={`w-4 h-4 ${isInWatchlist(movie.id) ? "fill-white" : ""}`} />
                 {isInWatchlist(movie.id) ? "Bỏ lưu tủ phim" : "Lưu vào tủ phim"}
               </Button>
-              {/* Banner 300x250 cho trang thông tin phim: khách chưa có VIP dừng ở đây nên đây là vị trí có nhiều lượt xem nhất */}
-              <AdBanner300x250 className="my-2" adKey={`movie-${movie.id}-detail`} />
               <div className="bg-[#090a0f]/40 p-4 rounded-xl border border-white/5">
                 <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-2">Thể loại</span>
                 <div className="flex flex-wrap gap-1.5">

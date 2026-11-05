@@ -18,10 +18,19 @@ export default function AdsterraSocialBar() {
   const pathname = usePathname();
   const { user, loading } = useAuth();
 
-  const blocked = !pathname || pathname.startsWith("/admin") || isAdFreeUser(user);
+  // Chặn trên Trang Chủ '/', trang Admin, và thành viên VIP
+  const blocked = !pathname || pathname === "/" || pathname.startsWith("/admin") || isAdFreeUser(user);
 
   useEffect(() => {
-    if (typeof window === "undefined" || isBotUserAgent()) return;
+    // 1. Chặn bot thu thập dữ liệu (googlebot, bingbot) để bảo vệ điểm Core Web Vitals & SEO
+    const isBot =
+      typeof navigator !== "undefined" &&
+      (/googlebot|bingbot|crawler/i.test(navigator.userAgent || "") || isBotUserAgent());
+    if (typeof window === "undefined" || isBot) return;
+
+    // 2. Chặn tuyệt đối trên Trang Chủ '/'
+    if (pathname === "/") return;
+
     // Đợi xác thực xong để VIP không bị nạp quảng cáo trong lúc chờ /api/auth/me
     if (loading || blocked) return;
     if (document.querySelector(`script[${SCRIPT_ATTR}]`)) return;
@@ -41,7 +50,7 @@ export default function AdsterraSocialBar() {
     return () => {
       cancelled = true;
     };
-  }, [loading, blocked]);
+  }, [pathname, loading, blocked]);
 
   return null;
 }
