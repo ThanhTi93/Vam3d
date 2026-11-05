@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { getClientAdConfig } from "@/lib/adConfigClient";
+import { isAdFreeUser, isBotUserAgent } from "@/lib/adEligibility";
 
 interface AdGalleryNativeBannerProps {
   className?: string;
@@ -17,40 +18,25 @@ export default function AdGalleryNativeBanner({
   className = "",
   refreshKey = "gallery",
 }: AdGalleryNativeBannerProps) {
-  const { user } = useAuth();
-  const [canShow, setCanShow] = useState(false);
+  const { user, loading } = useAuth();
+  const [enabled, setEnabled] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  // Ẩn với bot, Admin, VIP còn hạn; đợi xác thực xong mới nạp
+  const canShow = enabled && !loading && !isAdFreeUser(user);
+
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    // 1. Chặn bot Google / Web crawlers / Lighthouse để bảo vệ SEO 100%
-    const isBot =
-      /bot|googlebot|crawler|spider|robot|crawling|lighthouse|google-inspectiontool/i.test(
-        navigator.userAgent || ""
-      );
-    if (isBot) return;
-
-    // 2. Ẩn hoàn toàn với tài khoản VIP hoặc Admin
-    const isVipOrAdmin =
-      !!user && ((user.level && user.level > 0) || user.role === "admin");
-    if (isVipOrAdmin) {
-      setCanShow(false);
-      return;
-    }
-
+    if (isBotUserAgent()) return;
     let cancelled = false;
     getClientAdConfig().then((cfg) => {
-      if (!cancelled) {
-        setCanShow(cfg.nativeBannerEnabled);
-      }
+      if (!cancelled) setEnabled(cfg.nativeBannerEnabled);
     });
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, []);
 
   // 3. Lazy-load bằng IntersectionObserver để đảm bảo 100% Viewability & 0 ảnh hưởng Core Web Vitals
   useEffect(() => {
@@ -101,6 +87,7 @@ export default function AdGalleryNativeBanner({
 
     return () => {
       script.remove();
+      containerEl.innerHTML = "";
     };
   }, [canShow, isVisible, refreshKey]);
 

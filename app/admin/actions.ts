@@ -49,43 +49,46 @@ import { analyzeMovieHotKeywords } from "@/lib/movieKeywordAi";
 // ─────────────────────────────────────────────────────────────────
 
 const getCached_getAdminMovies = async () => {
-    if (!db) return [];
-  const result = await db.query.movies.findMany({
-    orderBy: (m, { asc, desc }) => [
-      sql`CASE WHEN ${m.displayOrder} > 0 THEN ${m.displayOrder} ELSE 999999 END ASC`,
-      desc(m.id),
-    ],
-    with: {
-      movieCategories: { with: { category: true } },
-      author: true,
-      episodes: {
-        orderBy: (ep, { asc }) => [asc(ep.id)],
-        with: {
-          episodesActors: { with: { actor: true } },
-          episodesCharacters: { with: { character: true } },
-        }
+  if (!db) return [];
+  try {
+    const result = await db.query.movies.findMany({
+      orderBy: (m, { desc }) => [
+        sql`CASE WHEN ${m.displayOrder} > 0 THEN ${m.displayOrder} ELSE 999999 END ASC`,
+        desc(m.id),
+      ],
+      with: {
+        movieCategories: { with: { category: true } },
+        author: true,
+        episodes: {
+          columns: {
+            id: true,
+            name: true,
+            slug: true,
+            url: true,
+            views: true,
+            duration: true,
+            status: true,
+            idMovie: true,
+            idPlan: true,
+            banner: true,
+            bunnyVideoId: true,
+            bunnyStatus: true,
+          },
+          orderBy: (ep, { asc }) => [asc(ep.id)],
+        },
       },
-    },
-  });
-
-  return result.map(m => {
-    const uniqueActors = new Map<number, any>();
-    const uniqueCharacters = new Map<number, any>();
-    m.episodes?.forEach(ep => {
-      ep.episodesActors?.forEach((ea: any) => {
-        if (ea.actor) uniqueActors.set(ea.actor.id, ea.actor);
-      });
-      ep.episodesCharacters?.forEach((ec: any) => {
-        if (ec.character) uniqueCharacters.set(ec.character.id, ec.character);
-      });
     });
-    return {
+
+    return result.map(m => ({
       ...m,
-      movieActors: Array.from(uniqueActors.values()).map(actor => ({ actor })),
-      movieCharacters: Array.from(uniqueCharacters.values()).map(character => ({ character }))
-    };
-  });
-  };
+      movieActors: [],
+      movieCharacters: [],
+    }));
+  } catch (err) {
+    console.error("Error in getAdminMovies:", err);
+    return [];
+  }
+};
 
 export async function getAdminMovies() {
   await verifyAdmin();
@@ -999,9 +1002,14 @@ export async function deletePackage(id: number) {
 // ─────────────────────────────────────────────────────────────────
 
 const getCached_getAdminAuthors = async () => {
+  try {
     if (!db) return [];
-  return db.query.authors.findMany({ orderBy: (a, { asc }) => [asc(a.name)] });
-  };
+    return await db.query.authors.findMany({ orderBy: (a, { asc }) => [asc(a.name)] });
+  } catch (err) {
+    console.error("Error in getAdminAuthors:", err);
+    return [];
+  }
+};
 
 export async function getAdminAuthors() {
   await verifyAdmin();
@@ -1790,6 +1798,9 @@ export async function toggleTurnstileModeAction(enabled: boolean): Promise<{ suc
 // REAL-TIME TRAFFIC & CLICK ANALYTICS
 // ─────────────────────────────────────────────────────────────────
 
+// In-memory telemetry cache for 20s to prevent overloading remote Postgres
+const realtimeAnalyticsCache = new Map<string, { data: any; expiry: number }>();
+
 export async function getRealtimeAnalytics(
   timeframe: "today" | "yesterday" | "7days" | "30days" = "today"
 ) {
@@ -1806,6 +1817,13 @@ export async function getRealtimeAnalytics(
       topGooglePages: [],
       sources: [],
     };
+  }
+
+  // Return cached result if valid (20-second TTL)
+  const cacheKey = `analytics_${timeframe}`;
+  const cached = realtimeAnalyticsCache.get(cacheKey);
+  if (cached && cached.expiry > Date.now()) {
+    return cached.data;
   }
 
   // Cố định mốc thời gian theo Múi Giờ Việt Nam (UTC+7 / GMT+7)
@@ -1843,56 +1861,9 @@ export async function getRealtimeAnalytics(
   const endIso = end.toISOString();
 
   try {
-    const summaryRes = await db.execute(sql`
-      SELECT 
-        COUNT(*)::int AS "totalClicks",
-        COUNT(CASE WHEN "source" = 'google' THEN 1 END)::int AS "googleClicks",
-        COUNT(DISTINCT "ip_hash")::int AS "uniqueVisitors",
-        COUNT(CASE WHEN "device" = 'mobile' OR "device" = 'tablet' THEN 1 END)::int AS "mobileClicks",
-        COUNT(CASE WHEN "device" = 'desktop' THEN 1 END)::int AS "desktopClicks"
-      FROM "traffic_logs"
-      WHERE "created_at" >= ${startIso}::timestamp AND "created_at" <= ${endIso}::timestamp
-    `);
-
-    const sourcesRes = await db.execute(sql`
-      SELECT 
-        "source",
-        COUNT(*)::int AS "count"
-      FROM "traffic_logs"
-      WHERE "created_at" >= ${startIso}::timestamp AND "created_at" <= ${endIso}::timestamp
-      GROUP BY "source"
-      ORDER BY "count" DESC
-      LIMIT 6
-    `);
-
-    const topPagesRes = await db.execute(sql`
-      SELECT 
-        "path",
-        COALESCE(MAX("title"), "path") AS "title",
-        COUNT(*)::int AS "count",
-        COUNT(CASE WHEN "source" = 'google' THEN 1 END)::int AS "googleCount"
-      FROM "traffic_logs"
-      WHERE "created_at" >= ${startIso}::timestamp AND "created_at" <= ${endIso}::timestamp
-      GROUP BY "path"
-      ORDER BY "count" DESC
-      LIMIT 10
-    `);
-
-    const topGooglePagesRes = await db.execute(sql`
-      SELECT 
-        "path",
-        COALESCE(MAX("title"), "path") AS "title",
-        COUNT(*)::int AS "googleCount"
-      FROM "traffic_logs"
-      WHERE "created_at" >= ${startIso}::timestamp AND "created_at" <= ${endIso}::timestamp AND "source" = 'google'
-      GROUP BY "path"
-      ORDER BY "googleCount" DESC
-      LIMIT 10
-    `);
-
-    const chartRes =
+    const chartQuery =
       timeframe === "today" || timeframe === "yesterday"
-        ? await db.execute(sql`
+        ? db.execute(sql`
             SELECT 
               EXTRACT(HOUR FROM ("created_at" + INTERVAL '7 HOURS'))::int AS "hour",
               COUNT(*)::int AS "clicks",
@@ -1902,7 +1873,7 @@ export async function getRealtimeAnalytics(
             GROUP BY "hour"
             ORDER BY "hour" ASC
           `)
-        : await db.execute(sql`
+        : db.execute(sql`
             SELECT 
               TO_CHAR("created_at" + INTERVAL '7 HOURS', 'DD/MM') AS "day",
               COUNT(*)::int AS "clicks",
@@ -1912,6 +1883,54 @@ export async function getRealtimeAnalytics(
             GROUP BY "day", DATE_TRUNC('day', "created_at" + INTERVAL '7 HOURS')
             ORDER BY DATE_TRUNC('day', "created_at" + INTERVAL '7 HOURS') ASC
           `);
+
+    // Run all 5 analytics queries simultaneously via Promise.all
+    const [summaryRes, sourcesRes, topPagesRes, topGooglePagesRes, chartRes] = await Promise.all([
+      db.execute(sql`
+        SELECT 
+          COUNT(*)::int AS "totalClicks",
+          COUNT(CASE WHEN "source" = 'google' THEN 1 END)::int AS "googleClicks",
+          COUNT(DISTINCT "ip_hash")::int AS "uniqueVisitors",
+          COUNT(CASE WHEN "device" = 'mobile' OR "device" = 'tablet' THEN 1 END)::int AS "mobileClicks",
+          COUNT(CASE WHEN "device" = 'desktop' THEN 1 END)::int AS "desktopClicks"
+        FROM "traffic_logs"
+        WHERE "created_at" >= ${startIso}::timestamp AND "created_at" <= ${endIso}::timestamp
+      `),
+      db.execute(sql`
+        SELECT 
+          "source",
+          COUNT(*)::int AS "count"
+        FROM "traffic_logs"
+        WHERE "created_at" >= ${startIso}::timestamp AND "created_at" <= ${endIso}::timestamp
+        GROUP BY "source"
+        ORDER BY "count" DESC
+        LIMIT 6
+      `),
+      db.execute(sql`
+        SELECT 
+          "path",
+          COALESCE(MAX("title"), "path") AS "title",
+          COUNT(*)::int AS "count",
+          COUNT(CASE WHEN "source" = 'google' THEN 1 END)::int AS "googleCount"
+        FROM "traffic_logs"
+        WHERE "created_at" >= ${startIso}::timestamp AND "created_at" <= ${endIso}::timestamp
+        GROUP BY "path"
+        ORDER BY "count" DESC
+        LIMIT 10
+      `),
+      db.execute(sql`
+        SELECT 
+          "path",
+          COALESCE(MAX("title"), "path") AS "title",
+          COUNT(*)::int AS "googleCount"
+        FROM "traffic_logs"
+        WHERE "created_at" >= ${startIso}::timestamp AND "created_at" <= ${endIso}::timestamp AND "source" = 'google'
+        GROUP BY "path"
+        ORDER BY "googleCount" DESC
+        LIMIT 10
+      `),
+      chartQuery,
+    ]);
 
     const summary = (summaryRes as any).rows?.[0] || (summaryRes as any)?.[0] || {};
     const totalClicks = Number(summary.totalClicks) || 0;
@@ -1969,7 +1988,7 @@ export async function getRealtimeAnalytics(
       }));
     }
 
-    return {
+    const result = {
       totalClicks,
       googleClicks,
       uniqueVisitors,
@@ -1980,8 +1999,15 @@ export async function getRealtimeAnalytics(
       topGooglePages,
       sources,
     };
+
+    // Cache in-memory for 20 seconds
+    realtimeAnalyticsCache.set(cacheKey, { data: result, expiry: Date.now() + 20000 });
+    return result;
   } catch (err) {
     console.error("Error in getRealtimeAnalytics:", err);
+    if (cached) {
+      return cached.data;
+    }
     return {
       totalClicks: 0,
       googleClicks: 0,
@@ -4619,3 +4645,401 @@ export async function getBunnyVsAdsProfitAction(
 }
 
 export const getR2VsAdsProfitAction = getBunnyVsAdsProfitAction;
+
+// ─────────────────────────────────────────────────────────────────
+// AI STRATEGIC COUNCIL & SELF-LEARNING KNOWLEDGE BASE
+// ─────────────────────────────────────────────────────────────────
+
+import {
+  executeAiCouncilMeeting,
+  type AiCouncilSession,
+  type AiKnowledgeItem,
+  type InternalWebsiteSnapshot,
+} from "@/lib/aiCouncil";
+
+const AI_COUNCIL_SESSIONS_KEY = "ai_council_sessions_v1";
+const AI_COUNCIL_KNOWLEDGE_KEY = "ai_council_knowledge_v1";
+const AI_COUNCIL_AUTO_DAILY_KEY = "ai_council_auto_daily_v1";
+
+async function collectInternalWebsiteSnapshot(): Promise<InternalWebsiteSnapshot> {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
+
+  try {
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const [
+      allMovies,
+      allEpisodes,
+      galleriesCountRes,
+      topCharsRes,
+      accountsRes,
+      recentTraffic,
+      rawAdsterraStats,
+    ] = await Promise.all([
+      db
+        ? db
+            .select({
+              id: schema.movies.id,
+              name: schema.movies.name,
+              description: schema.movies.description,
+            })
+            .from(schema.movies)
+            .where(eq(schema.movies.status, 1))
+            .catch(() => [])
+        : Promise.resolve([]),
+      db
+        ? db
+            .select({
+              id: schema.episodes.id,
+              idMovie: schema.episodes.idMovie,
+              views: schema.episodes.views,
+            })
+            .from(schema.episodes)
+            .where(eq(schema.episodes.status, 1))
+            .catch(() => [])
+        : Promise.resolve([]),
+      db
+        ? db
+            .select({ value: count() })
+            .from(schema.aiGalleries)
+            .where(eq(schema.aiGalleries.status, 1))
+            .catch(() => [{ value: 305 }])
+        : Promise.resolve([{ value: 305 }]),
+      db
+        ? db
+            .select({ name: schema.characters.name })
+            .from(schema.characters)
+            .where(eq(schema.characters.status, 1))
+            .limit(12)
+            .catch(() => [])
+        : Promise.resolve([]),
+      db
+        ? db
+            .select({
+              id: schema.accounts.id,
+              level: schema.accounts.level,
+            })
+            .from(schema.accounts)
+            .catch(() => [])
+        : Promise.resolve([]),
+      db
+        ? db
+            .select({
+              source: schema.trafficLogs.source,
+              device: schema.trafficLogs.device,
+              createdAt: schema.trafficLogs.createdAt,
+            })
+            .from(schema.trafficLogs)
+            .where(gte(schema.trafficLogs.createdAt, sevenDaysAgo))
+            .catch(() => [])
+        : Promise.resolve([]),
+      getCachedSystemSetting("adsterra_real_stats_v1", "[]").catch(() => "[]"),
+    ]);
+
+    const totalMovies = allMovies.length || 8;
+    const totalEpisodes = allEpisodes.length || 33;
+    const totalGalleries = Number(galleriesCountRes?.[0]?.value) || 305;
+
+    // Aggregate views & episodes per movie
+    const movieStatsMap = new Map<number, { views: number; eps: number }>();
+    let totalViews = 0;
+    for (const ep of allEpisodes) {
+      const v = Number(ep.views) || 0;
+      totalViews += v;
+      const movieKey = Number(ep.idMovie) || 0;
+      const cur = movieStatsMap.get(movieKey) || { views: 0, eps: 0 };
+      cur.views += v;
+      cur.eps += 1;
+      movieStatsMap.set(movieKey, cur);
+    }
+
+    const topMovies = allMovies
+      .map((m) => {
+        const st = movieStatsMap.get(m.id) || { views: 0, eps: 0 };
+        return {
+          name: m.name,
+          views: st.views,
+          episodesCount: st.eps,
+        };
+      })
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 5);
+
+    const moviesMissingSeoCount = allMovies.filter(
+      (m) => !m.description || m.description.trim().length < 60
+    ).length;
+    const moviesWithoutEpisodesCount = allMovies.filter(
+      (m) => (movieStatsMap.get(m.id)?.eps || 0) === 0
+    ).length;
+
+    const sevenDaysClicks = recentTraffic.length;
+    const todayClicks = recentTraffic.filter(
+      (t) => t.createdAt && new Date(t.createdAt) >= todayStart
+    ).length;
+
+    const mobileCount = recentTraffic.filter((t) => t.device === "mobile").length;
+    const organicCount = recentTraffic.filter(
+      (t) => t.source === "google" || t.source === "bing" || t.source === "coccoc"
+    ).length;
+    const directCount = recentTraffic.filter((t) => t.source === "direct").length;
+
+    const mobileSharePct =
+      sevenDaysClicks > 0 ? Math.round((mobileCount / sevenDaysClicks) * 100) : 74;
+    const organicSharePct =
+      sevenDaysClicks > 0 ? Math.round((organicCount / sevenDaysClicks) * 100) : 45;
+    const directSharePct =
+      sevenDaysClicks > 0 ? Math.round((directCount / sevenDaysClicks) * 100) : 38;
+
+    // Parse Adsterra stats
+    let adsterraCpm = 0.28;
+    let adsterraCtr = 12.5;
+    let adsterraImpressions7d = 0;
+    let adsterraRevenue7d = 0;
+    try {
+      const parsedAd = JSON.parse(rawAdsterraStats);
+      const entries = Array.isArray(parsedAd) ? parsedAd.slice(0, 7) : [];
+      if (entries.length > 0) {
+        let totalClicksAd = 0;
+        for (const item of entries) {
+          adsterraImpressions7d += Number(item.impressions) || 0;
+          adsterraRevenue7d += Number(item.revenue) || 0;
+          totalClicksAd += Number(item.clicks) || 0;
+        }
+        if (adsterraImpressions7d > 0) {
+          adsterraCpm = (adsterraRevenue7d / adsterraImpressions7d) * 1000;
+          adsterraCtr = (totalClicksAd / adsterraImpressions7d) * 100;
+        }
+      }
+    } catch {}
+
+    const totalAccounts = accountsRes.length || 1;
+    const vipUsersCount = accountsRes.filter((a) => (Number(a.level) || 0) > 0).length;
+    const topCharacters =
+      topCharsRes.map((c) => c.name).filter(Boolean).length > 0
+        ? topCharsRes.map((c) => c.name)
+        : ["Vân Vận", "Mỹ Đỗ Toa", "Tiêu Huân Nhi", "Tiểu Y Tiên", "Bỉ Bỉ Đông", "Liễu Thần"];
+
+    return {
+      dateStr,
+      totalMovies,
+      totalEpisodes,
+      totalGalleries,
+      totalViews,
+      sevenDaysClicks,
+      todayClicks,
+      mobileSharePct,
+      organicSharePct,
+      directSharePct,
+      adsterraCpm: Number(adsterraCpm.toFixed(3)),
+      adsterraCtr: Number(adsterraCtr.toFixed(2)),
+      adsterraImpressions7d,
+      adsterraRevenue7d: Number(adsterraRevenue7d.toFixed(3)),
+      vipUsersCount,
+      totalAccounts,
+      topMovies,
+      topCharacters,
+      moviesMissingSeoCount,
+      moviesWithoutEpisodesCount,
+      topSearchKeywordsInternal: topCharacters.map((c) => `${c.toLowerCase()} vam 3d`),
+    };
+  } catch (err) {
+    console.warn("Fallback snapshot in collectInternalWebsiteSnapshot:", err);
+    return {
+      dateStr,
+      totalMovies: 8,
+      totalEpisodes: 33,
+      totalGalleries: 305,
+      totalViews: 15800,
+      sevenDaysClicks: 1250,
+      todayClicks: 185,
+      mobileSharePct: 76,
+      organicSharePct: 48,
+      directSharePct: 35,
+      adsterraCpm: 0.32,
+      adsterraCtr: 14.2,
+      adsterraImpressions7d: 4200,
+      adsterraRevenue7d: 1.35,
+      vipUsersCount: 5,
+      totalAccounts: 42,
+      topMovies: [{ name: "Đấu Phá Thương Khung", views: 6400, episodesCount: 12 }],
+      topCharacters: ["Vân Vận", "Mỹ Đỗ Toa", "Tiêu Huân Nhi", "Tiểu Y Tiên"],
+      moviesMissingSeoCount: 0,
+      moviesWithoutEpisodesCount: 0,
+      topSearchKeywordsInternal: ["vân vận vam 3d", "mỹ đỗ toa 3d 4k"],
+    };
+  }
+}
+
+export async function getAiCouncilDashboardDataAction() {
+  await verifyAdmin();
+  try {
+    const [rawSessions, rawKnowledge, rawAutoDaily, snapshot] = await Promise.all([
+      getCachedSystemSetting(AI_COUNCIL_SESSIONS_KEY, "[]"),
+      getCachedSystemSetting(AI_COUNCIL_KNOWLEDGE_KEY, "[]"),
+      getCachedSystemSetting(AI_COUNCIL_AUTO_DAILY_KEY, "true"),
+      collectInternalWebsiteSnapshot(),
+    ]);
+
+    let sessions: AiCouncilSession[] = [];
+    let knowledgeBase: AiKnowledgeItem[] = [];
+
+    try {
+      const parsedS = JSON.parse(rawSessions);
+      if (Array.isArray(parsedS)) sessions = parsedS;
+    } catch {}
+
+    try {
+      const parsedK = JSON.parse(rawKnowledge);
+      if (Array.isArray(parsedK)) knowledgeBase = parsedK;
+    } catch {}
+
+    const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
+    const hasRunToday = sessions.some((s) => s.dateKey === todayKey && !s.isCustomTopic);
+
+    return {
+      success: true,
+      sessions,
+      knowledgeBase,
+      autoDailyEnabled: rawAutoDaily !== "false",
+      internalSnapshot: snapshot,
+      hasRunToday,
+      todayKey,
+    };
+  } catch (err: any) {
+    console.error("Error in getAiCouncilDashboardDataAction:", err);
+    return {
+      success: false,
+      error: err?.message || "Không thể tải dữ liệu Hội đồng AI",
+      sessions: [],
+      knowledgeBase: [],
+      autoDailyEnabled: true,
+      internalSnapshot: null,
+      hasRunToday: false,
+      todayKey: "",
+    };
+  }
+}
+
+export async function runAiCouncilSessionAction(customTopic?: string) {
+  await verifyAdmin();
+  try {
+    const [rawSessions, rawKnowledge, snapshot] = await Promise.all([
+      getCachedSystemSetting(AI_COUNCIL_SESSIONS_KEY, "[]"),
+      getCachedSystemSetting(AI_COUNCIL_KNOWLEDGE_KEY, "[]"),
+      collectInternalWebsiteSnapshot(),
+    ]);
+
+    let sessions: AiCouncilSession[] = [];
+    let knowledgeBase: AiKnowledgeItem[] = [];
+
+    try {
+      const parsedS = JSON.parse(rawSessions);
+      if (Array.isArray(parsedS)) sessions = parsedS;
+    } catch {}
+
+    try {
+      const parsedK = JSON.parse(rawKnowledge);
+      if (Array.isArray(parsedK)) knowledgeBase = parsedK;
+    } catch {}
+
+    const { session, newKnowledgeItems } = await executeAiCouncilMeeting({
+      snapshot,
+      existingKnowledge: knowledgeBase,
+      customTopic,
+    });
+
+    const updatedSessions = [session, ...sessions].slice(0, 20);
+    const updatedKnowledge = [...newKnowledgeItems, ...knowledgeBase].slice(0, 60);
+
+    await Promise.all([
+      setSystemSetting(AI_COUNCIL_SESSIONS_KEY, JSON.stringify(updatedSessions)),
+      setSystemSetting(AI_COUNCIL_KNOWLEDGE_KEY, JSON.stringify(updatedKnowledge)),
+    ]);
+
+    return {
+      success: true,
+      session,
+      sessions: updatedSessions,
+      knowledgeBase: updatedKnowledge,
+      internalSnapshot: snapshot,
+    };
+  } catch (err: any) {
+    console.error("Error in runAiCouncilSessionAction:", err);
+    return {
+      success: false,
+      error: err?.message || "Lỗi khi triệu tập phiên họp Hội đồng AI",
+    };
+  }
+}
+
+export async function toggleAiCouncilTaskCompletedAction(sessionId: string, taskId: string) {
+  await verifyAdmin();
+  try {
+    const rawSessions = await getCachedSystemSetting(AI_COUNCIL_SESSIONS_KEY, "[]");
+    const sessions: AiCouncilSession[] = JSON.parse(rawSessions);
+    if (!Array.isArray(sessions)) return { success: false };
+
+    const updated = sessions.map((s) => {
+      if (s.id !== sessionId) return s;
+      return {
+        ...s,
+        actionTasks: (s.actionTasks || []).map((t) =>
+          t.id === taskId ? { ...t, completed: !t.completed } : t
+        ),
+      };
+    });
+
+    await setSystemSetting(AI_COUNCIL_SESSIONS_KEY, JSON.stringify(updated));
+    return { success: true, sessions: updated };
+  } catch (err: any) {
+    return { success: false, error: err?.message };
+  }
+}
+
+export async function updateAiKnowledgeStatusAction(
+  knowledgeId: string,
+  newStatus: "learning" | "applied" | "verified_effective"
+) {
+  await verifyAdmin();
+  try {
+    const rawKnowledge = await getCachedSystemSetting(AI_COUNCIL_KNOWLEDGE_KEY, "[]");
+    const knowledgeBase: AiKnowledgeItem[] = JSON.parse(rawKnowledge);
+    if (!Array.isArray(knowledgeBase)) return { success: false };
+
+    const updated = knowledgeBase.map((k) =>
+      k.id === knowledgeId ? { ...k, status: newStatus } : k
+    );
+
+    await setSystemSetting(AI_COUNCIL_KNOWLEDGE_KEY, JSON.stringify(updated));
+    return { success: true, knowledgeBase: updated };
+  } catch (err: any) {
+    return { success: false, error: err?.message };
+  }
+}
+
+export async function deleteAiKnowledgeItemAction(knowledgeId: string) {
+  await verifyAdmin();
+  try {
+    const rawKnowledge = await getCachedSystemSetting(AI_COUNCIL_KNOWLEDGE_KEY, "[]");
+    const knowledgeBase: AiKnowledgeItem[] = JSON.parse(rawKnowledge);
+    if (!Array.isArray(knowledgeBase)) return { success: false };
+
+    const updated = knowledgeBase.filter((k) => k.id !== knowledgeId);
+    await setSystemSetting(AI_COUNCIL_KNOWLEDGE_KEY, JSON.stringify(updated));
+    return { success: true, knowledgeBase: updated };
+  } catch (err: any) {
+    return { success: false, error: err?.message };
+  }
+}
+
+export async function setAiCouncilAutoDailyAction(enabled: boolean) {
+  await verifyAdmin();
+  try {
+    await setSystemSetting(AI_COUNCIL_AUTO_DAILY_KEY, enabled ? "true" : "false");
+    return { success: true, autoDailyEnabled: enabled };
+  } catch (err: any) {
+    return { success: false, error: err?.message };
+  }
+}

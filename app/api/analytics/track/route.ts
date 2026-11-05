@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    console.error("Traffic tracker error:", err);
-    return NextResponse.json({ success: false, error: err?.message }, { status: 500 });
+    console.warn("Traffic tracker warning (DB unreachable):", err?.message);
+    return NextResponse.json({ success: false, error: err?.message }, { status: 200 });
   }
 }

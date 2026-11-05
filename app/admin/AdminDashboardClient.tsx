@@ -8,7 +8,7 @@ import {
   ChevronDown, Eye, Flame, Save, Loader2,
   Shield, Settings, Camera, ChevronLeft, ChevronRight, FolderOpen,
   Info, MousePointerClick, Globe, Smartphone, Monitor, BarChart3, TrendingUp,
-  Sparkles, Wand2, Copy
+  Sparkles, Wand2, Copy, Brain
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,9 +52,10 @@ import { uploadFileToR2 } from "@/lib/uploadClient";
 import { getBunnyImageUrl, cleanFolderName, slugify, normalizeSearchText } from "@/lib/utils";
 import { getCultivationRealm } from "@/lib/cultivation";
 import StrategyTab from "./StrategyTab";
+import AiCouncilTab from "./AiCouncilTab";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-type AdminTab = "overview" | "strategy" | "movies" | "categories" | "episodes" | "actors" | "characters" | "plans" | "features" | "packages" | "authors" | "accounts" | "galleries" | "collections";
+type AdminTab = "overview" | "ai_council" | "strategy" | "movies" | "categories" | "episodes" | "actors" | "characters" | "plans" | "features" | "packages" | "authors" | "accounts" | "galleries" | "collections";
 
 // ─── Notification toast ─────────────────────────────────────────────────────
 function useToast() {
@@ -229,6 +230,7 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
 
   const navItems: NavItem[] = [
     { id: "overview", label: "Tổng Quan", icon: <LayoutDashboard className="w-4 h-4" /> },
+    { id: "ai_council", label: "Đội Ngũ AI Tự Học", icon: <Brain className="w-4 h-4 text-violet-400" /> },
     { id: "strategy", label: "Chiến Lược & Sinh Lời", icon: <TrendingUp className="w-4 h-4 text-emerald-400" /> },
     { id: "movies", label: "Phim", icon: <Film className="w-4 h-4" />, count: movies.length },
     { id: "categories", label: "Thể Loại", icon: <List className="w-4 h-4" />, count: categories.length },
@@ -509,6 +511,11 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
           {/* ═══ OVERVIEW ═══════════════════════════════════════════════════ */}
           {tab === "overview" && (
             <OverviewTab movies={movies} categories={categories} show={show} onGoToStrategy={() => handleTab("strategy")} />
+          )}
+
+          {/* ═══ AI STRATEGIC COUNCIL ═══════════════════════════════════════ */}
+          {tab === "ai_council" && (
+            <AiCouncilTab showToast={show} />
           )}
 
           {/* ═══ STRATEGY & MONETIZATION ════════════════════════════════════ */}
@@ -860,24 +867,31 @@ function RealtimeAnalyticsCard() {
     sources: { source: string; count: number }[];
   } | null>(null);
 
-  const fetchAnalytics = async (tf: typeof timeframe) => {
-    setLoading(true);
+  const fetchAnalytics = async (tf: typeof timeframe, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await getRealtimeAnalytics(tf);
-      setData(res);
-    } catch (err) {
-      console.error("Failed to load realtime analytics:", err);
+      if (res) setData(res);
+    } catch (err: any) {
+      // Gracefully handle dev hot reloads or transient network hiccups without triggering browser error toasts
+      console.warn("Realtime analytics sync paused (temporary network/server busy):", err?.message || err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAnalytics(timeframe);
+    let active = true;
+    fetchAnalytics(timeframe, false);
     const interval = setInterval(() => {
-      fetchAnalytics(timeframe);
-    }, 15000);
-    return () => clearInterval(interval);
+      if (active) {
+        fetchAnalytics(timeframe, true);
+      }
+    }, 30000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, [timeframe]);
 
   const maxClicks = Math.max(

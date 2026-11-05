@@ -46,12 +46,11 @@ export async function callGeminiText(options: GeminiRequestOptions): Promise<str
     return null;
   }
 
-  const { prompt, systemInstruction, temperature = 0.7, maxTokens = 1500, jsonMode = false } = options;
+  const { prompt, systemInstruction, temperature = 0.7, maxTokens = 2500, jsonMode = false } = options;
   const models = [
-    "gemini-3.1-flash-lite",
     "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
     "gemini-flash-latest",
-    "gemini-3.8-flash",
   ];
 
   for (const model of models) {
@@ -83,7 +82,7 @@ export async function callGeminiText(options: GeminiRequestOptions): Promise<str
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(20000),
       });
 
       if (!response.ok) {
@@ -178,6 +177,117 @@ export async function callOpenAiFallback(options: GeminiRequestOptions): Promise
     }
   } catch (err: any) {
     console.warn("OpenAI fallback failed:", err?.message || err);
+  }
+
+  return null;
+}
+
+export interface GeminiWebSearchResult {
+  text: string;
+  searchQueries: string[];
+  sources: { title: string; uri: string }[];
+  usedWebSearch: boolean;
+}
+
+/**
+ * Invoke Gemini with Google Search Grounding (Live Internet Search)
+ * Automatically extracts web sources & search queries, with seamless fallback.
+ */
+export async function callGeminiWithWebSearch(options: {
+  prompt: string;
+  systemInstruction?: string;
+  temperature?: number;
+  maxTokens?: number;
+}): Promise<GeminiWebSearchResult | null> {
+  const apiKey = getGeminiApiKey();
+  if (!apiKey) return null;
+
+  const { prompt, systemInstruction, temperature = 0.65, maxTokens = 2500 } = options;
+  const searchModels = ["gemini-3.5-flash", "gemini-flash-latest"];
+
+  for (const model of searchModels) {
+    try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+      const requestBody: any = {
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }],
+          },
+        ],
+        tools: [{ googleSearch: {} }],
+        safetySettings: SAFETY_SETTINGS,
+        generationConfig: {
+          temperature,
+          maxOutputTokens: maxTokens,
+        },
+      };
+
+      if (systemInstruction) {
+        requestBody.systemInstruction = {
+          parts: [{ text: systemInstruction }],
+        };
+      }
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (!response.ok) {
+        continue;
+      }
+
+      const data = await response.json();
+      const candidate = data?.candidates?.[0];
+      const parts = candidate?.content?.parts || [];
+      const text = parts.map((p: any) => p.text || "").join("\n").trim();
+
+      if (text) {
+        const groundingMeta = candidate?.groundingMetadata || {};
+        const searchQueries: string[] = Array.isArray(groundingMeta.webSearchQueries)
+          ? groundingMeta.webSearchQueries
+          : [];
+        const chunks: any[] = Array.isArray(groundingMeta.groundingChunks)
+          ? groundingMeta.groundingChunks
+          : [];
+        const sources = chunks
+          .filter((c: any) => c?.web?.uri)
+          .map((c: any) => ({
+            title: c.web.title || "Nguồn tham khảo Internet",
+            uri: c.web.uri,
+          }));
+
+        return {
+          text,
+          searchQueries,
+          sources,
+          usedWebSearch: true,
+        };
+      }
+    } catch (err: any) {
+      console.warn(`Gemini WebSearch (${model}) failed:`, err?.message || err);
+    }
+  }
+
+  // Fallback to standard Gemini call if google_search tool is restricted on key tier
+  const fallbackText = await callGeminiText({
+    prompt,
+    systemInstruction,
+    temperature,
+    maxTokens,
+  });
+
+  if (fallbackText) {
+    return {
+      text: fallbackText,
+      searchQueries: [],
+      sources: [],
+      usedWebSearch: false,
+    };
   }
 
   return null;

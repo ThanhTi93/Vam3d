@@ -80,9 +80,9 @@ export function getDb() {
       prepare: false,
       fetch_types: false,
       ssl: isHyperdrive ? false : (useSsl ? { rejectUnauthorized: false } : false),
-      max: 5, // At most 5 concurrent connections across the entire Node process
-      idle_timeout: 20, // Reclaim idle connections after 20s
-      connect_timeout: 10,
+      max: 10, // Optimized connection pool to handle parallel SSR queries
+      idle_timeout: 15, // Reclaim idle connections after 15s
+      connect_timeout: 30, // Increased to 30s to prevent CONNECT_TIMEOUT on international latency / server load
       onnotice: () => {},
       onclose: () => {
         globalThis.__postgresClient__ = undefined;

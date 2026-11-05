@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Camera, X, ChevronLeft, ChevronRight, Award } from "lucide-react";
+import { Camera, X, ChevronLeft, ChevronRight, Award, Crown, Zap, Check, Sparkles } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import { getBunnyImageUrl, slugify } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -797,6 +797,7 @@ export function GalleryDetailModal({ gallery, onClose }: GalleryDetailModalProps
       )}
 
       {/* Access Restriction Warning Dialog */}
+      {/* Access Restriction Modal for Gallery */}
       {restrictedError && (
         <Dialog open={!!restrictedError} onOpenChange={(open) => {
           if (!open) {
@@ -804,39 +805,89 @@ export function GalleryDetailModal({ gallery, onClose }: GalleryDetailModalProps
             onClose();
           }
         }}>
-          <DialogContent className="bg-[#131520] border border-white/10 rounded-2xl max-w-md p-6 text-gray-100 shadow-2xl backdrop-blur-xl">
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center border border-orange-500/20 text-orange-500">
-                <Award className="w-6 h-6 animate-pulse" />
+          <DialogContent className="bg-[#11131c] border border-amber-500/30 rounded-2xl max-w-md p-6 text-gray-100 shadow-[0_0_50px_rgba(245,158,11,0.2)] backdrop-blur-2xl relative overflow-hidden">
+            {/* Ambient gold glow */}
+            <div className="absolute -top-24 -left-24 w-48 h-48 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-orange-500/15 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="flex flex-col items-center text-center space-y-4 relative z-10">
+              {/* Crown Badge */}
+              <div className="relative">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/40 animate-pulse">
+                  <Crown className="w-7 h-7 text-white fill-white" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-[#11131c] flex items-center justify-center">
+                  <Zap className="w-2.5 h-2.5 text-white fill-white" />
+                </div>
               </div>
-              <h3 className="text-lg font-bold text-white uppercase tracking-wide">Yêu Cầu Nâng Cấp VIP</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                {restrictedError}
-              </p>
-              <div className="flex gap-3 w-full pt-4 border-t border-white/5">
+
+              <div>
+                <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/25 mb-1.5">
+                  Đặc Quyền VAM PREMIUM
+                </span>
+                <h3 className="text-xl font-extrabold text-white tracking-wide">
+                  Mở Khóa Album Ảnh 4K Độc Quyền
+                </h3>
+                <p className="text-xs text-gray-300 mt-1 max-w-xs mx-auto leading-relaxed">
+                  {restrictedError}
+                </p>
+              </div>
+
+              {/* Value Proposition Box */}
+              <div className="w-full bg-white/[0.04] border border-white/10 rounded-xl p-3.5 text-left space-y-2.5">
+                <div className="flex items-center gap-2.5 text-xs text-gray-200">
+                  <div className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
+                  <span>Xem trọn bộ ảnh <strong>chất lượng gốc 4K</strong> siêu sắc nét</span>
+                </div>
+                <div className="flex items-center gap-2.5 text-xs text-gray-200">
+                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
+                  <span><strong>Tải ảnh gốc tốc độ cao</strong> không che, không watermark</span>
+                </div>
+                <div className="flex items-center gap-2.5 text-xs text-gray-200">
+                  <div className="w-5 h-5 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
+                  <span>Mở khóa toàn bộ <strong>kho phim VIP 3D</strong> đỉnh cao</span>
+                </div>
+              </div>
+
+              {/* Price Anchor */}
+              <div className="text-center">
+                <span className="text-[11px] text-gray-400">
+                  Ưu đãi kích hoạt chỉ từ <strong className="text-amber-400 font-bold">~29.000đ/tháng</strong> (chưa tới 1k/ngày)
+                </span>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2.5 w-full pt-2">
                 <Button
                   onClick={() => {
                     setRestrictedError(null);
                     onClose();
                   }}
                   variant="outline"
-                  className="flex-1 border-white/10 text-gray-400 hover:text-white hover:bg-white/5 h-10 text-xs"
+                  className="w-1/3 border-white/10 text-gray-400 hover:text-white hover:bg-white/5 h-11 text-xs rounded-xl"
                 >
-                  Bỏ qua
+                  Để sau
                 </Button>
                 <Button
                   onClick={() => {
                     setRestrictedError(null);
                     onClose();
                     if (!user) {
-                      router.push("/login");
+                      router.push(`/login?callbackUrl=${encodeURIComponent("/upgrade")}`);
                     } else {
                       router.push("/upgrade");
                     }
                   }}
-                  className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-0 h-10 text-xs shadow-lg shadow-orange-500/20"
+                  className="w-2/3 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-bold border-0 h-11 text-xs rounded-xl shadow-lg shadow-orange-500/30 flex items-center justify-center gap-1.5"
                 >
-                  {!user ? "Đăng Nhập Ngay" : "Nâng Cấp Ngay"}
+                  <Sparkles className="w-4 h-4 fill-white" />
+                  {!user ? "Đăng Nhập & Mua Gói" : "Nâng Cấp Gói VIP Ngay"}
                 </Button>
               </div>
             </div>
