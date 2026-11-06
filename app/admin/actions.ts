@@ -3292,7 +3292,7 @@ export async function getAdMonetizationSettingsAction(): Promise<{
       getCachedSystemSetting("ad_mobile_sticky_enabled", "false"),
       getCachedSystemSetting("ad_social_bar_enabled", "true"),
       getCachedSystemSetting("ad_banner_300x250_enabled", "true"),
-      getCachedSystemSetting("ad_native_banner_enabled", "true"),
+      getCachedSystemSetting("ad_native_banner_enabled", "false"),
     ]);
     return {
       success: true,
@@ -3303,7 +3303,7 @@ export async function getAdMonetizationSettingsAction(): Promise<{
         mobileStickyEnabled: mobileStickyEnabled === "true",
         socialBarEnabled: socialBarEnabled !== "false",
         banner300Enabled: banner300Enabled !== "false",
-        nativeBannerEnabled: nativeBannerEnabled !== "false",
+        nativeBannerEnabled: nativeBannerEnabled === "true",
       },
     };
   } catch (err: any) {
@@ -3316,7 +3316,7 @@ export async function getAdMonetizationSettingsAction(): Promise<{
         mobileStickyEnabled: false,
         socialBarEnabled: true,
         banner300Enabled: true,
-        nativeBannerEnabled: true,
+        nativeBannerEnabled: false,
       },
     };
   }
