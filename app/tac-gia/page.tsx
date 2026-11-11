@@ -2,13 +2,12 @@ import React from "react";
 import type { Metadata } from "next";
 import { getAllAuthors } from "@/lib/db/queries";
 import AuthorsPageClient from "./AuthorsPageClient";
+import { getSiteUrl } from "@/lib/utils";
 
 export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost"))
-    ? process.env.NEXT_PUBLIC_SITE_URL
-    : "https://www.vam3dhentai.online";
+  const siteUrl = getSiteUrl();
 
   const title = "Danh Sách Tác Giả & Tác Phẩm Hoạt Hình 3D Nổi Tiếng | Vam3D";
   const description =
@@ -63,9 +62,7 @@ export default async function AuthorsPage() {
     console.error("Error loading authors page:", err);
   }
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost"))
-    ? process.env.NEXT_PUBLIC_SITE_URL
-    : "https://www.vam3dhentai.online";
+  const siteUrl = getSiteUrl();
 
   // ItemList Schema for SEO
   const itemListJsonLd = {

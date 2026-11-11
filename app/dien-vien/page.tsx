@@ -5,6 +5,9 @@ import ActorsPageClient from "./ActorsPageClient";
 export const metadata: Metadata = {
   title: "Danh Sách Diễn Viên, Mỹ Nhân Cosplay Nóng Bỏng Nhất | Vam3D",
   description: "Trang tổng hợp danh sách các diễn viên, người mẫu, hot girl cosplay nóng bỏng, gợi cảm nhất tại Vam3D.",
+  alternates: {
+    canonical: "/dien-vien",
+  },
 };
 
 export const revalidate = 3600;

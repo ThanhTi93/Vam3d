@@ -5,6 +5,9 @@ import CharactersPageClient from "./CharactersPageClient";
 export const metadata: Metadata = {
   title: "Danh Sách Nhân Vật Anime, Cosplay Hot Nhất | Vam3D",
   description: "Bộ sưu tập danh sách nhân vật Anime, Cosplay, Waifu xinh đẹp nóng bỏng nhất tại Vam3D.",
+  alternates: {
+    canonical: "/nhan-vat",
+  },
 };
 
 export const revalidate = 3600;

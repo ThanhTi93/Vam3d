@@ -5,32 +5,54 @@ import { getMovieById, getAllMovies } from "@/lib/db/queries";
 import MoviePageClient from "./MoviePageClient";
 import RankingsSidebar from "@/components/RankingsSidebar";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { slugify } from "@/lib/utils";
+import { slugify, getSiteUrl, resolveMovieEpisodeIndex, buildAggregateRating } from "@/lib/utils";
 
 interface MoviePageProps {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 // Generate dynamic metadata for SEO crawling
-export async function generateMetadata({ params }: MoviePageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: MoviePageProps): Promise<Metadata> {
   const { id } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const epParam = typeof resolvedSearchParams?.ep === "string" ? resolvedSearchParams.ep.trim() : "";
+
   const movie = await getMovieById(id);
   
   if (!movie) {
     return {
       title: "Không Tìm Thấy Phim | Vam3D",
       description: "Xin lỗi, bộ phim bạn yêu cầu không tồn tại hoặc đã bị gỡ bỏ khỏi hệ thống.",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
   const movieData = movie as any;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
+  const siteUrl = getSiteUrl();
   const movieSlug = movieData.slug || slugify(movieData.name) || movieData.id;
-  const movieUrl = `${siteUrl}/movie/${movieSlug}`;
-  const posterUrl = movieData.imgUrl || `${siteUrl}/og-image.jpg`;
+  const baseMovieUrl = `${siteUrl}/movie/${movieSlug}`;
 
-  const title = `${movieData.name} (${movieData.originalTitle || ""}) [${movieData.year || 2026}] – Vietsub Thuyết Minh Full HD | Vam3D`;
-  const description = (movieData.description || `Xem phim ${movieData.name} chất lượng cao Full HD Vietsub, Thuyết minh cập nhật nhanh nhất tại Vam3D.`).substring(0, 160);
+  const matchedEpIdx = epParam ? resolveMovieEpisodeIndex(movieData.episodes, epParam) : -1;
+  const matchedEp = matchedEpIdx >= 0 ? movieData.episodes[matchedEpIdx] : null;
+  const epSlug = matchedEp
+    ? matchedEp.slug || (matchedEp.name ? slugify(matchedEp.name) : matchedEp.id?.toString())
+    : "";
+
+  const movieUrl = epSlug ? `${baseMovieUrl}?ep=${epSlug}` : baseMovieUrl;
+  const posterUrl = matchedEp?.banner || movieData.imgUrl || `${siteUrl}/og-image.jpg`;
+
+  const origPart = movieData.originalTitle ? ` (${movieData.originalTitle})` : "";
+  const epPart = matchedEp?.name ? ` - ${matchedEp.name}` : "";
+  const title = `${movieData.name}${epPart}${origPart} [${movieData.year || 2026}] – Vietsub Thuyết Minh Full HD | Vam3D`;
+  const description = (
+    matchedEp?.name
+      ? `Xem ${movieData.name} - ${matchedEp.name} chất lượng cao Full HD Vietsub, Thuyết minh cập nhật nhanh nhất tại Vam3D. ${movieData.description || ""}`
+      : movieData.description || `Xem phim ${movieData.name} chất lượng cao Full HD Vietsub, Thuyết minh cập nhật nhanh nhất tại Vam3D.`
+  ).substring(0, 160);
 
   return {
     title,
@@ -76,27 +98,13 @@ export async function generateMetadata({ params }: MoviePageProps): Promise<Meta
 
 // Render dynamic JSON-LD structured schema on server-side for search engines
 function MovieSchemaScript({ movie }: { movie: any }) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
+  const siteUrl = getSiteUrl();
   const movieSlug = movie.slug || slugify(movie.title || movie.name) || movie.id;
   const movieUrl = `${siteUrl}/movie/${movieSlug}`;
   const posterUrl = movie.thumbnail || movie.banner || `${siteUrl}/og-image.jpg`;
 
   const isSeries = movie.category === "phim-bo" || movie.category === "hoat-hinh" || (movie.episodes && movie.episodes.length > 1);
-
-  // Safe rating within [1, 10] range with explicit bestRating and worstRating
-  const rawRating = typeof movie.rating === "number" && movie.rating > 0 
-    ? movie.rating 
-    : parseFloat(movie.rating) || 9.8;
-  const ratingValue = Number(Math.min(10, Math.max(1, rawRating)).toFixed(1));
-  const ratingCount = Math.max(1, Number(movie.votes) || 120);
-
-  const aggregateRating = {
-    "@type": "AggregateRating",
-    ratingValue,
-    bestRating: 10,
-    worstRating: 1,
-    ratingCount,
-  };
+  const aggregateRating = buildAggregateRating(movie.rating, movie.votes);
 
   const mainSchema = isSeries
     ? {
@@ -135,37 +143,7 @@ function MovieSchemaScript({ movie }: { movie: any }) {
     description: movie.description || `Xem phim ${movie.title || movie.name} Vietsub HD`,
     thumbnailUrl: [posterUrl],
     uploadDate: movie.createdAt ? new Date(movie.createdAt).toISOString() : "2026-01-01T00:00:00.000Z",
-    contentUrl: movie.videoUrl || movieUrl,
     embedUrl: movieUrl,
-  };
-
-  const categoryLabel = movie.category === "phim-bo" ? "Phim Bộ" : movie.category === "hoat-hinh" ? "Hoạt Hình 3D" : movie.category === "chieu-rap" ? "Chiếu Rạp" : "Phim Lẻ";
-
-  const breadcrumbItems = [
-    {
-      "@type": "ListItem",
-      position: 1,
-      name: "Trang chủ",
-      item: siteUrl,
-    },
-    {
-      "@type": "ListItem",
-      position: 2,
-      name: categoryLabel,
-      item: `${siteUrl}/${movie.category || "hoat-hinh"}`,
-    },
-    {
-      "@type": "ListItem",
-      position: 3,
-      name: movie.title || movie.name,
-      item: movieUrl,
-    },
-  ];
-
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: breadcrumbItems,
   };
 
   return (
@@ -180,12 +158,6 @@ function MovieSchemaScript({ movie }: { movie: any }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(videoSchema).replace(/</g, "\\u003c"),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbSchema).replace(/</g, "\\u003c"),
         }}
       />
     </>

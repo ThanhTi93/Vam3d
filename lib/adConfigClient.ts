@@ -4,6 +4,7 @@ export interface ClientAdConfig {
   socialBarEnabled: boolean;
   banner300Enabled: boolean;
   nativeBannerEnabled: boolean;
+  mobileStickyEnabled: boolean;
   popunderUrl: string;
   popunderEnabled: boolean;
   popunderIntervalHours: number;
@@ -13,6 +14,7 @@ const DEFAULT_AD_CONFIG: ClientAdConfig = {
   socialBarEnabled: true,
   banner300Enabled: true,
   nativeBannerEnabled: true,
+  mobileStickyEnabled: true,
   popunderUrl: "",
   popunderEnabled: false,
   popunderIntervalHours: 12,
@@ -41,6 +43,7 @@ export async function getClientAdConfig(): Promise<ClientAdConfig> {
         socialBarEnabled: data.socialBarEnabled !== false,
         banner300Enabled: data.banner300Enabled !== false,
         nativeBannerEnabled: data.nativeBannerEnabled !== false,
+        mobileStickyEnabled: data.mobileStickyEnabled !== false,
         popunderUrl: typeof data.popunderUrl === "string" ? data.popunderUrl : "",
         popunderEnabled: Boolean(data.popunderEnabled),
         popunderIntervalHours: typeof data.popunderIntervalHours === "number" ? data.popunderIntervalHours : 12,

@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { getSiteUrl } from "@/lib/utils";
 
 interface SendOtpParams {
   to: string;
@@ -207,7 +208,7 @@ export async function sendNewPasswordEmail({
   const transporter = getTransporter();
   const from = getFromAddress();
   const user = (process.env.SMTP_USER || process.env.GMAIL_USER || "").trim();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const siteUrl = getSiteUrl();
 
   const plainText = [
     `Kính chào đạo hữu ${username},`,

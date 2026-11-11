@@ -17,6 +17,9 @@ export const metadata: Metadata = {
     "cosplay ai 3d",
     "vam3d",
   ],
+  alternates: {
+    canonical: "/gallery",
+  },
 };
 
 export const revalidate = 3600;

@@ -10,6 +10,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import TrafficTracker from "@/components/TrafficTracker";
 import AdsterraSocialBar from "@/components/AdsterraSocialBar";
+import MobileStickyBanner from "@/components/MobileStickyBanner";
+import { getSiteUrl } from "@/lib/utils";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -23,13 +25,13 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
+const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: "Vam3D – Xem Phim Online Thuyết Minh Vietsub HD",
-    template: "%s | Vam3D",
+    template: "%s",
   },
   description:
     "Mạng xã hội xem phim trực tuyến miễn phí lớn nhất Việt Nam. Phim lẻ, phim bộ, chiếu rạp, hoạt hình HD – Vietsub, Thuyết Minh, Lồng Tiếng cập nhật nhanh nhất.",
@@ -76,7 +78,6 @@ export const metadata: Metadata = {
       "Xem hàng ngàn bộ phim chất lượng cao miễn phí. Cập nhật liên tục mỗi ngày.",
     images: [`${siteUrl}/og-image.jpg`],
   },
-  alternates: { canonical: siteUrl },
   icons: {
     icon: [
       { url: "/logo.png", type: "image/png" },
@@ -117,10 +118,6 @@ const organizationJsonLd = {
   name: "Vam3D",
   url: siteUrl,
   logo: `${siteUrl}/logo.png`,
-  sameAs: [
-    "https://facebook.com/vam3d",
-    "https://youtube.com/@vam3d",
-  ],
 };
 
 export default function RootLayout({
@@ -149,6 +146,7 @@ export default function RootLayout({
             <Footer />
             <Suspense fallback={null}>
               <AdsterraSocialBar />
+              <MobileStickyBanner />
             </Suspense>
           </WatchlistProvider>
         </AuthProvider>

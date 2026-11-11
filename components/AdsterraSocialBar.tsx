@@ -7,7 +7,7 @@ import { getClientAdConfig } from "@/lib/adConfigClient";
 import { isAdFreeUser, isBotUserAgent } from "@/lib/adEligibility";
 
 const ADSTERRA_SOCIAL_BAR_SRC =
-  "https://pl31617679.profitableratecpmnetwork.com/f5/22/5b/f5225b580cef96483ffa330d0aa0a444.js";
+  "https://biomanos.org/14/f5225b580cef96483ffa330d0aa0a444";
 const SCRIPT_ATTR = "data-vam-social-bar";
 
 /**

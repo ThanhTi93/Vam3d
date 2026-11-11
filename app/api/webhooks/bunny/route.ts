@@ -42,30 +42,32 @@ export async function POST(req: Request) {
       .returning({ id: episodes.id, idMovie: episodes.idMovie });
 
     console.log(`Updated episodes status for videoId ${videoId}:`, result);
-    
-    revalidatePath("/", "layout");
-    revalidatePath("/");
-    revalidatePath("/tap-phim");
-    revalidatePath("/admin");
-    revalidatePath("/movie/[id]", "page");
-    revalidateTag("episodes:latest", "default");
-    revalidateTag("episodes:most-viewed", "default");
-    revalidateTag("movies:all", "default");
-    revalidateTag("movies:hot", "default");
-    
-    for (const row of result) {
-      if (row.idMovie) {
-        revalidateTag(`movie:detail-${row.idMovie}`, "default");
-        revalidatePath(`/movie/${row.idMovie}`, "page");
-        try {
-          const m = await db.query.movies.findFirst({
-            where: (movieTable, { eq }) => eq(movieTable.id, row.idMovie!),
-            columns: { slug: true }
-          });
-          if (m?.slug) {
-            revalidatePath(`/movie/${m.slug}`, "page");
-          }
-        } catch {}
+
+    if (result.length > 0) {
+      revalidatePath("/", "layout");
+      revalidatePath("/");
+      revalidatePath("/tap-phim");
+      revalidatePath("/admin");
+      revalidatePath("/movie/[id]", "page");
+      revalidateTag("episodes:latest", "default");
+      revalidateTag("episodes:most-viewed", "default");
+      revalidateTag("movies:all", "default");
+      revalidateTag("movies:hot", "default");
+
+      for (const row of result) {
+        if (row.idMovie) {
+          revalidateTag(`movie:detail-${row.idMovie}`, "default");
+          revalidatePath(`/movie/${row.idMovie}`, "page");
+          try {
+            const m = await db.query.movies.findFirst({
+              where: (movieTable, { eq }) => eq(movieTable.id, row.idMovie!),
+              columns: { slug: true },
+            });
+            if (m?.slug) {
+              revalidatePath(`/movie/${m.slug}`, "page");
+            }
+          } catch {}
+        }
       }
     }
 

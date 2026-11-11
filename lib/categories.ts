@@ -413,3 +413,36 @@ export function getCategoryDetails(slugOrName: string, dbCategory?: any): Catego
     faqs,
   };
 }
+
+/** Match a dynamic [categoryName] param against DB categories or DEFAULT_CATEGORIES. */
+export function findMatchingCategory(
+  rawParam: string,
+  dbCategories: any[] = [],
+  slugFn: (text: string) => string = (s) => s.trim().toLowerCase()
+) {
+  let decoded = rawParam;
+  try {
+    decoded = decodeURIComponent(rawParam).trim();
+  } catch {
+    return { decoded: rawParam, inputSlug: "", dbCategory: null, defaultCategory: null };
+  }
+
+  const lowerDecoded = decoded.toLowerCase();
+  const inputSlug = slugFn(decoded).toLowerCase();
+
+  const dbCategory =
+    (dbCategories || []).find((c: any) => {
+      const catName = (c?.name || "").trim().toLowerCase();
+      const catSlug = (c?.slug || slugFn(c?.name || "")).trim().toLowerCase();
+      return catSlug === inputSlug || catName === lowerDecoded || catSlug === lowerDecoded;
+    }) || null;
+
+  const defaultCategory =
+    DEFAULT_CATEGORIES.find((c) => {
+      const catName = c.name.trim().toLowerCase();
+      const catSlug = c.slug.trim().toLowerCase();
+      return catSlug === inputSlug || catName === lowerDecoded || catSlug === lowerDecoded;
+    }) || null;
+
+  return { decoded, inputSlug, dbCategory, defaultCategory };
+}

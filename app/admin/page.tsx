@@ -13,7 +13,13 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   await cookies(); // Force dynamic rendering compatibly with cacheComponents
-  // Admin check bypassed by user request
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login?redirect=/admin");
+  }
+  if (user.role !== "admin") {
+    redirect("/unauthorized");
+  }
 
   // Pre-fetch only overview data on the server in parallel with safe error boundary
   let movies: any[] = [];

@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { getBunnyImageUrl, formatDuration, slugify } from "@/lib/utils";
 import { fetchEpisodesAction } from "./actions";
 import { useAuth } from "@/app/context/AuthContext";
+import AdGalleryNativeBanner from "@/components/AdGalleryNativeBanner";
 
 const PAGE_SIZE = 12;
 
@@ -232,6 +233,7 @@ export default function TapPhimClient({
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Left column: Episode Cards Grid */}
         <div className="lg:col-span-3 space-y-8">
+          <AdGalleryNativeBanner refreshKey={`tap-phim-${sortBy}-${selectedMovie}-p${page}`} />
           {loading ? (
             <div className="flex justify-center items-center py-32">
               <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />

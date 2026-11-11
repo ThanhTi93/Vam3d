@@ -13,6 +13,7 @@ import { getBunnyImageUrl, formatRelativeTime, formatDuration, formatNumber, slu
 import { Movie } from "@/types";
 import { incrementGalleryViews } from "@/app/admin/actions";
 import { useAuth } from "@/app/context/AuthContext";
+import AdGalleryNativeBanner from "@/components/AdGalleryNativeBanner";
 
 interface HomeCatalogProps {
   movies: Movie[];
@@ -154,6 +155,9 @@ function HomeCatalogContent({
                   viewAllHref="/tap-phim?sort=views"
                 />
               )}
+
+              {/* Native Banner Adsterra (Lazy-load ở giữa trang, chặn Googlebot & VIP 100%) */}
+              <AdGalleryNativeBanner refreshKey="home-mid" />
 
               {/* AI Galleries Section */}
               {galleries.length > 0 && (

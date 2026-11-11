@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getAllMovies, getMostViewedEpisodes, getLatestEpisodes, getLatestGalleries } from "@/lib/db/queries";
 import HomeCatalog from "@/components/HomeCatalog";
+import { getSiteUrl, buildAggregateRating } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Vam3D – Xem Phim Hoạt Hình 3D & Anime Vietsub Thuyết Minh HD",
@@ -124,7 +125,7 @@ export default async function Home() {
     })) || [],
   }));
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
+  const siteUrl = getSiteUrl();
 
   const homeItemListJsonLd = {
     "@context": "https://schema.org",
@@ -132,9 +133,7 @@ export default async function Home() {
     name: "Phim Hoạt Hình 3D & Anime Đề Cử Hot Nhất",
     description: "Danh sách phim hoạt hình 3D, anime vietsub và bộ sưu tập AI hot nhất tại Vam3D",
     itemListElement: formattedHotMovies.map((m: any, index: number) => {
-      const rawRating = typeof m.rating === "number" && m.rating > 0 ? m.rating : parseFloat(m.rating) || 9.8;
-      const ratingValue = Number(Math.min(10, Math.max(1, rawRating)).toFixed(1));
-      const ratingCount = Math.max(1, Number(m.votes) || 120);
+      const aggregateRating = buildAggregateRating(m.rating, m.votes);
 
       return {
         "@type": "ListItem",
@@ -146,13 +145,7 @@ export default async function Home() {
           image: m.thumbnail || `${siteUrl}/og-image.jpg`,
           url: `${siteUrl}/movie/${m.slug || m.id}`,
           description: m.description || undefined,
-          aggregateRating: {
-            "@type": "AggregateRating",
-            ratingValue,
-            bestRating: 10,
-            worstRating: 1,
-            ratingCount,
-          },
+          ...(aggregateRating ? { aggregateRating } : {}),
         },
       };
     }),

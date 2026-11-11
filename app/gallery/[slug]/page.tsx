@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getGalleryBySlug, getAllGalleriesForStaticParams } from "@/lib/db/queries";
 import GalleryDetailClient from "./GalleryDetailClient";
-import { getBunnyImageUrl } from "@/lib/utils";
+import { getBunnyImageUrl, getSiteUrl } from "@/lib/utils";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -67,11 +67,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return {
       title: "Không Tìm Thấy Bộ Sưu Tập | Vam3D",
       description: "Bộ sưu tập ảnh AI bạn tìm kiếm không tồn tại hoặc đã được cập nhật lại.",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
   const gallery = data.gallery as any;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
+  const siteUrl = getSiteUrl();
   const galleryUrl = `${siteUrl}/gallery/${gallery.slug || gallery.id}`;
   const firstImage = gallery.images?.[0]?.imgUrl;
   const posterUrl = firstImage ? getBunnyImageUrl(firstImage, "display") : `${siteUrl}/og-image.jpg`;
@@ -155,7 +159,7 @@ export default async function GalleryDetailPage({ params }: PageProps) {
 
   const gallery = data.gallery as any;
   const relatedGalleries = data.relatedGalleries || [];
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
+  const siteUrl = getSiteUrl();
   const galleryUrl = `${siteUrl}/gallery/${gallery.slug || gallery.id}`;
 
   const firstImage = gallery.images?.[0]?.imgUrl;

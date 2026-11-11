@@ -5,6 +5,13 @@ import WatchlistPageClient from "./WatchlistPageClient";
 export const metadata: Metadata = {
   title: "Tủ Phim Yêu Thích Của Bạn | Vam3D",
   description: "Xem lại danh sách các bộ phim chiếu rạp, phim bộ, phim lẻ và anime yêu thích đã được lưu trữ trong tủ phim cá nhân của bạn tại Vam3D.",
+  alternates: {
+    canonical: "/watchlist",
+  },
+  robots: {
+    index: false,
+    follow: true,
+  },
 };
 
 export const revalidate = 3600;

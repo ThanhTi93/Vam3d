@@ -45,8 +45,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Thiếu movieId, galleryId hoặc characterId" }, { status: 400 });
     }
 
-    if (!content || !content.trim()) {
+    const trimmedContent = typeof content === "string" ? content.trim() : "";
+    if (!trimmedContent) {
       return NextResponse.json({ error: "Vui lòng nhập nội dung bình luận" }, { status: 400 });
+    }
+    if (trimmedContent.length > 2000) {
+      return NextResponse.json({ error: "Bình luận tối đa 2000 ký tự" }, { status: 400 });
     }
 
     // Check user session
@@ -63,6 +67,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const safeGuestName =
+      typeof authorName === "string" && authorName.trim()
+        ? authorName.trim().slice(0, 50)
+        : "Đạo Hữu Vô Danh";
+
     const comment = await createComment({
       movieId: movieId ? Number(movieId) : null,
       episodeId: episodeId ? Number(episodeId) : null,
@@ -70,8 +79,8 @@ export async function POST(req: NextRequest) {
       characterId: characterId ? Number(characterId) : null,
       accountId,
       parentId: parentId ? Number(parentId) : null,
-      authorName: authorName || (accountId ? null : "Đạo Hữu Vô Danh"),
-      content,
+      authorName: accountId ? null : safeGuestName,
+      content: trimmedContent,
     });
 
     return NextResponse.json({ comment });
@@ -91,6 +100,9 @@ export async function DELETE(req: NextRequest) {
     }
 
     const commentId = parseInt(commentIdParam, 10);
+    if (!Number.isInteger(commentId) || commentId <= 0) {
+      return NextResponse.json({ error: "comment id không hợp lệ" }, { status: 400 });
+    }
     const token = req.cookies.get("session")?.value;
     let accountId: number | null = null;
     let isAdmin = false;

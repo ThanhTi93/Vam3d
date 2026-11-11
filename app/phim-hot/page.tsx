@@ -5,6 +5,9 @@ import CategoryCatalog from "@/components/CategoryCatalog";
 export const metadata: Metadata = {
   title: "Phim Hot Mới Nhất - Phim Hay Đề Cử | Vam3D",
   description: "Danh sách phim hot, phim bộ phim lẻ hay được đề cử xem nhiều nhất tại Vam3D.",
+  alternates: {
+    canonical: "/phim-hot",
+  },
 };
 
 export const revalidate = 3600;

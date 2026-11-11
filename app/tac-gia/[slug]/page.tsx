@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAuthorDetails } from "@/lib/db/queries";
 import AuthorDetailPageClient from "./AuthorDetailPageClient";
+import { getSiteUrl } from "@/lib/utils";
 
 export const revalidate = 3600;
 
@@ -18,13 +19,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return {
       title: "Không tìm thấy tác giả | Vam3D",
       description: "Tác giả bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
   const { author, movies } = data;
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost"))
-    ? process.env.NEXT_PUBLIC_SITE_URL
-    : "https://www.vam3dhentai.online";
+  const siteUrl = getSiteUrl();
 
   const movieNames = (movies || []).map((m: any) => m.name).slice(0, 3).join(", ");
   const title = `Tác Giả ${author.name} – Danh Sách Tác Phẩm Phim 3D Hay Nhất | Vam3D`;
@@ -81,9 +84,7 @@ export default async function AuthorDetailPage({ params }: PageProps) {
   }
 
   const { author, movies, otherAuthors } = data;
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost"))
-    ? process.env.NEXT_PUBLIC_SITE_URL
-    : "https://www.vam3dhentai.online";
+  const siteUrl = getSiteUrl();
 
   // Person Schema + BreadcrumbList Schema for SEO
   const schemaJsonLd = {

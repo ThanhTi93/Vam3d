@@ -7,7 +7,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Play, Heart, Star, Tv, MessageSquare, Clock, Info, Award, Camera, Eye, RotateCcw, Moon, Sun, Sparkles, Server, Crown, Zap, Check } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useWatchlist } from "@/app/context/watchlistContext";
-import { getBunnyImageUrl, formatRelativeTime, formatDuration, formatNumber, slugify } from "@/lib/utils";
+import { getBunnyImageUrl, formatRelativeTime, formatDuration, formatNumber, slugify, resolveMovieEpisodeIndex } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,6 @@ import { incrementEpisodeViews, incrementGalleryViews, incrementAccountViews } f
 import { HomeGalleryCard } from "@/components/GalleryComponents";
 import VideoPlayer from "@/components/VideoPlayer";
 import MovieComments from "@/components/movie/MovieComments";
-import CultivationLoginNotice from "@/components/ranking/CultivationLoginNotice";
 import AdBanner300x250 from "@/components/AdBanner300x250";
 
 interface MoviePageClientProps {
@@ -42,32 +41,8 @@ export default function MoviePageClient({
   const activeEpFromParam = searchParams?.get("ep") ?? initialEp;
 
   const resolveEpisodeIndex = (paramVal?: string | null) => {
-    if (!paramVal || !movie.episodes || movie.episodes.length === 0) return 0;
-    const decoded = decodeURIComponent(paramVal).trim();
-    const slugParam = slugify(decoded);
-
-    // 1. Try matching by episode slug or slugified name
-    const bySlug = movie.episodes.findIndex((e: any) => {
-      const eSlug = e.slug || (e.name ? slugify(e.name) : "");
-      return (
-        e.slug === decoded ||
-        eSlug === decoded ||
-        eSlug === slugParam ||
-        slugify(e.name) === slugParam
-      );
-    });
-    if (bySlug !== -1) return bySlug;
-
-    // 2. Try matching by episode ID
-    const byId = movie.episodes.findIndex((e: any) => e.id?.toString() === paramVal);
-    if (byId !== -1) return byId;
-
-    // 3. Try matching by 1-based index
-    if (/^\d+$/.test(paramVal)) {
-      const byIdx = parseInt(paramVal, 10) - 1;
-      if (byIdx >= 0 && byIdx < movie.episodes.length) return byIdx;
-    }
-    return 0;
+    const idx = resolveMovieEpisodeIndex(movie.episodes, paramVal);
+    return idx >= 0 ? idx : 0;
   };
 
   const initialEpIndex = resolveEpisodeIndex(activeEpFromParam);
@@ -262,11 +237,15 @@ export default function MoviePageClient({
     }
   };
 
+  const adBannerElement = (
+    <AdBanner300x250
+      className="my-3"
+      adKey={showPlayer ? `movie-${movie.id}-top-ep-${activeEpisode}` : `movie-${movie.id}-detail`}
+    />
+  );
+
   return (
     <div className="space-y-6 mt-6">
-      {/* ── CULTIVATION LOGIN NOTICE (TOP PROMINENT BANNER BEFORE WATCHING) ── */}
-      <CultivationLoginNotice />
-
       {/* ── CINEMA MODE BACKDROP (TẮT ĐÈN) ── */}
       {isCinemaMode && (
         <div
@@ -371,7 +350,7 @@ export default function MoviePageClient({
             </div>
 
             {/* Banner 300x250 Adsterra - Vị trí trực diện trước danh sách tập (Đảm bảo 100% viewability trên mobile) */}
-            <AdBanner300x250 className="my-3" adKey={`movie-${movie.id}-top-ep-${activeEpisode}`} />
+            {adBannerElement}
 
             {/* ── RELATED EPISODES ── */}
             {(() => {
@@ -620,6 +599,11 @@ export default function MoviePageClient({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Banner 300x250 Adsterra - Hiển thị ở Detail View trước danh sách tập */}
+          <div className="px-6 py-1 border-t border-white/5 bg-[#131520]">
+            {adBannerElement}
           </div>
 
           {/* Chọn tập phim */}

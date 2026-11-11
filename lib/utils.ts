@@ -158,5 +158,66 @@ export function formatFullNumber(num: number | null | undefined): string {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
+/** Chuẩn hóa domain chính (non-www) cho canonical, sitemap và JSON-LD. */
+export function getSiteUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (envUrl && !envUrl.includes("localhost")) {
+    return envUrl.replace(/\/$/, "");
+  }
+  return "https://vam3dhentai.online";
+}
+
+/** Tìm vị trí tập phim theo tham số `?ep=`; trả về -1 nếu không khớp. */
+export function resolveMovieEpisodeIndex(
+  episodes: any[] | null | undefined,
+  paramVal?: string | null
+): number {
+  if (!paramVal || !episodes || episodes.length === 0) return -1;
+  let decoded = paramVal.trim();
+  try {
+    decoded = decodeURIComponent(paramVal).trim();
+  } catch {
+    // Giữ nguyên chuỗi gốc nếu query chứa % không hợp lệ
+  }
+  const slugParam = slugify(decoded);
+
+  const bySlug = episodes.findIndex((e: any) => {
+    const eSlug = e.slug || (e.name ? slugify(e.name) : "");
+    return (
+      e.slug === decoded ||
+      eSlug === decoded ||
+      (slugParam !== "" && (eSlug === slugParam || slugify(e.name) === slugParam))
+    );
+  });
+  if (bySlug !== -1) return bySlug;
+
+  const byId = episodes.findIndex((e: any) => e.id?.toString() === paramVal);
+  if (byId !== -1) return byId;
+
+  if (/^\d+$/.test(paramVal)) {
+    const byIdx = parseInt(paramVal, 10) - 1;
+    if (byIdx >= 0 && byIdx < episodes.length) return byIdx;
+  }
+  return -1;
+}
+
+/** Chỉ tạo JSON-LD AggregateRating khi phim thực sự có điểm và lượt đánh giá. */
+export function buildAggregateRating(rawRating: unknown, rawVotes: unknown) {
+  const parsedRating = typeof rawRating === "number" ? rawRating : parseFloat(String(rawRating ?? ""));
+  const parsedVotes = Number(rawVotes);
+  if (!Number.isFinite(parsedRating) || parsedRating <= 0 || !Number.isFinite(parsedVotes) || parsedVotes <= 0) {
+    return undefined;
+  }
+
+  return {
+    "@type": "AggregateRating",
+    ratingValue: Number(Math.min(10, Math.max(1, parsedRating)).toFixed(1)),
+    bestRating: 10,
+    worstRating: 1,
+    ratingCount: Math.floor(parsedVotes),
+  };
+}
+
+
 
 

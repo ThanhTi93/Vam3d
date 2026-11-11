@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   title: "Điều Khoản Sử Dụng | Vam3D – Trách Nhiệm & Quyền Lợi",
   description: "Bản quy định chi tiết các điều khoản sử dụng dịch vụ xem phim trực tuyến tại Vam3D. Vui lòng đọc kỹ trước khi đăng ký tài khoản hoặc sử dụng dịch vụ.",
   keywords: ["điều khoản sử dụng", "quy định vam3d", "chính sách vam3d"],
+  alternates: {
+    canonical: "/dieu-khoan-su-dung",
+  },
 };
 
 export default function TermsOfUsePage() {
@@ -28,25 +31,25 @@ export default function TermsOfUsePage() {
       id: "tai-khoan",
       icon: <UserCheck className="w-5 h-5 text-amber-500" />,
       title: "2. Tài khoản & Bảo mật",
-      content: "Khi tạo tài khoản trên RoPhim, bạn có trách nhiệm tự bảo mật thông tin đăng nhập cá nhân (email, mật khẩu). Mọi hoạt động diễn ra dưới tài khoản của bạn sẽ thuộc trách nhiệm pháp lý của riêng bạn. RoPhim có quyền đình chỉ hoặc chấm dứt vĩnh viễn các tài khoản có hành vi gian lận, spam hoặc vi phạm chuẩn mực cộng đồng."
+      content: "Khi tạo tài khoản trên Vam3D, bạn có trách nhiệm tự bảo mật thông tin đăng nhập cá nhân (email, mật khẩu). Mọi hoạt động diễn ra dưới tài khoản của bạn sẽ thuộc trách nhiệm pháp lý của riêng bạn. Vam3D có quyền đình chỉ hoặc chấm dứt vĩnh viễn các tài khoản có hành vi gian lận, spam hoặc vi phạm chuẩn mực cộng đồng."
     },
     {
       id: "so-huu-tri-tue",
       icon: <ShieldAlert className="w-5 h-5 text-red-500" />,
       title: "3. Sở hữu trí tuệ & Bản quyền",
-      content: "Mọi nội dung phim, hình ảnh, văn bản, giao diện và mã nguồn tại RoPhim đều được cung cấp trên cơ sở chia sẻ cộng đồng hoặc mô phỏng kỹ thuật. Bạn cam kết không sao chép, tải về để bán lại, phân phối thương mại trái phép các sản phẩm từ hệ thống khi chưa được sự cho phép bằng văn bản từ chủ sở hữu hợp pháp."
+      content: "Mọi nội dung phim, hình ảnh, văn bản, giao diện và mã nguồn tại Vam3D đều được cung cấp trên cơ sở chia sẻ cộng đồng hoặc mô phỏng kỹ thuật. Bạn cam kết không sao chép, tải về để bán lại, phân phối thương mại trái phép các sản phẩm từ hệ thống khi chưa được sự cho phép bằng văn bản từ chủ sở hữu hợp pháp."
     },
     {
       id: "hanh-vi-nguoi-dung",
       icon: <AlertTriangle className="w-5 h-5 text-yellow-500" />,
       title: "4. Quy định hành vi người dùng",
-      content: "Bạn đồng ý không sử dụng dịch vụ của RoPhim để thực hiện các hành vi: phát tán thông tin kích động bạo lực, khiêu dâm, đồi trụy; spam các bình luận hoặc đánh giá phim; tấn công từ chối dịch vụ (DDoS) hoặc can thiệp trái phép vào cơ sở dữ liệu hệ thống."
+      content: "Bạn đồng ý không sử dụng dịch vụ của Vam3D để thực hiện các hành vi: phát tán thông tin kích động bạo lực, nội dung vi phạm pháp luật (nghiêm cấm tuyệt đối mọi nội dung liên quan đến trẻ vị thành niên hoặc không có sự đồng thuận); spam bình luận; tấn công từ chối dịch vụ (DDoS) hoặc can thiệp trái phép vào hệ thống."
     },
     {
       id: "gioi-han",
       icon: <HelpCircle className="w-5 h-5 text-blue-500" />,
       title: "5. Giới hạn trách nhiệm pháp lý",
-      content: "RoPhim vận hành như một nền tảng xã hội tổng hợp thông tin và mô phỏng trải nghiệm. Chúng tôi không đảm bảo tính chính xác tuyệt đối của mọi nội dung và không chịu trách nhiệm cho bất kỳ tổn thất trực tiếp hay gián tiếp nào phát sinh từ việc sử dụng hoặc không thể sử dụng hệ thống."
+      content: "Vam3D vận hành như một nền tảng giải trí tổng hợp thông tin, video và bộ sưu tập hình ảnh 3D/AI. Chúng tôi không chịu trách nhiệm đối với các liên kết bên ngoài hoặc những gián đoạn kỹ thuật ngoài ý muốn phát sinh trong quá trình truy cập."
     }
   ];
 
@@ -76,9 +79,9 @@ export default function TermsOfUsePage() {
             <FileWarning className="w-6 h-6 text-yellow-500" />
           </div>
           <div className="space-y-1">
-            <h4 className="text-sm font-bold text-white">Lưu ý quan trọng cho người dùng (Disclaimer)</h4>
+            <h4 className="text-sm font-bold text-white">Lưu ý độ tuổi &amp; tuân thủ quy định (18+)</h4>
             <p className="text-xs text-gray-400 leading-relaxed">
-              RoPhim là nền tảng mô phỏng phục vụ mục đích kiểm thử và phát triển kỹ thuật. Toàn bộ thông tin phim, dữ liệu thành viên VIP và các dịch vụ đi kèm được thiết kế nhằm mục đích trình diễn tính năng của sản phẩm.
+              Vam3D là nền tảng giải trí dành riêng cho người dùng từ đủ 18 tuổi trở lên (RTA). Nếu bạn chưa đủ tuổi theo quy định pháp luật tại nơi cư trú, vui lòng rời khỏi website ngay lập tức.
             </p>
           </div>
         </div>

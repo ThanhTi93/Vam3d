@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCharacterDetails, getAllCharacters } from "@/lib/db/queries";
 import CharacterDetailPageClient from "./CharacterDetailPageClient";
-import { getBunnyImageUrl, slugify } from "@/lib/utils";
+import { getBunnyImageUrl, slugify, getSiteUrl } from "@/lib/utils";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -57,13 +57,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return {
       title: "Không Tìm Thấy Nhân Vật | Vam3D",
       description: "Nhân vật bạn tìm kiếm không tồn tại hoặc đã được cập nhật lại.",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
   const { character } = data;
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost"))
-    ? process.env.NEXT_PUBLIC_SITE_URL
-    : "https://www.vam3dhentai.online";
+  const siteUrl = getSiteUrl();
 
   // Canonical is ALWAYS the primary URL (Google SEO best practice to avoid duplicate content)
   const canonicalSlug = character.slug || slugify(character.name) || character.id.toString();
@@ -134,9 +136,7 @@ export default async function CharacterDetailPage({ params }: PageProps) {
   }
 
   const { character } = data;
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost"))
-    ? process.env.NEXT_PUBLIC_SITE_URL
-    : "https://www.vam3dhentai.online";
+  const siteUrl = getSiteUrl();
 
   const canonicalSlug = character.slug || slugify(character.name) || character.id.toString();
   const charUrl = `${siteUrl}/nhan-vat/${encodeURIComponent(canonicalSlug)}`;

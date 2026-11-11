@@ -2,7 +2,10 @@
 import { getCurrentUser } from "@/lib/auth/actions";
 
 async function verifyAdmin() {
-  // Admin check bypassed by user request
+  const user = await getCurrentUser();
+  if (!user || user.role !== "admin") {
+    throw new Error("Không có quyền quản trị.");
+  }
 }
 
 
@@ -230,6 +233,7 @@ const getCached_getAdminCategories = async () => {
 };
 
 export async function getAdminCategories() {
+  await verifyAdmin();
   return getCached_getAdminCategories();
 }
 
@@ -1677,17 +1681,18 @@ export async function getSubscriptionPlans() {
 }
 
 export async function getUserPaymentHistory(userId?: number) {
-  let targetUserId = userId;
-  if (!targetUserId) {
-    const user = await getCurrentUser();
-    if (!user) return [];
-    targetUserId = user.id;
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return [];
+
+  const targetUserId = userId ?? currentUser.id;
+  if (targetUserId !== currentUser.id && currentUser.role !== "admin") {
+    return [];
   }
   if (!db) return [];
   
   return (async () => {
       return db!.query.payments.findMany({
-        where: eq(schema.payments.idAccount, targetUserId!),
+        where: eq(schema.payments.idAccount, targetUserId),
         orderBy: (p, { desc }) => [desc(p.createdAt)],
         with: {
           package: {
@@ -1701,17 +1706,18 @@ export async function getUserPaymentHistory(userId?: number) {
 }
 
 export async function getUserSubscriptions(userId?: number) {
-  let targetUserId = userId;
-  if (!targetUserId) {
-    const user = await getCurrentUser();
-    if (!user) return [];
-    targetUserId = user.id;
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return [];
+
+  const targetUserId = userId ?? currentUser.id;
+  if (targetUserId !== currentUser.id && currentUser.role !== "admin") {
+    return [];
   }
   if (!db) return [];
   
   return (async () => {
       return db!.query.userSubscriptions.findMany({
-        where: eq(schema.userSubscriptions.idAccount, targetUserId!),
+        where: eq(schema.userSubscriptions.idAccount, targetUserId),
         orderBy: (s, { desc }) => [desc(s.updatedAt)],
         with: {
           plan: true,
@@ -3755,10 +3761,10 @@ function buildDiagnosticsFromPlacements(
     {
       component: "MobileStickyBanner",
       file: "components/MobileStickyBanner.tsx",
-      status: "disabled_safely",
-      badge: "Đã Ngắt Bảo Vệ CPM",
-      configSummary: "Đã gỡ khỏi RootLayout (Ngăn lỗi nhét mã 300x250 vào khung 320x50)",
-      whyItMatters: "Trước đó dùng chung key 300x250 trong khung cao 50px làm mất nút CTA, gây ra hàng ngàn impression 0% CTR làm sập CPM.",
+      status: "optimal",
+      badge: "320x50 Riêng Biệt (Mobile Only)",
+      configSummary: "Key riêng 320x50 (651bb3282573ec62f4c54586864916b7) • Anti-Adblock biomanos.org • Nút Đóng & chặn Desktop",
+      whyItMatters: "Chạy đúng chuẩn 320x50 độc lập chỉ trên màn hình điện thoại (<768px), xếp hàng tuần tự để không xung đột window.atOptions với 300x250.",
     },
     {
       component: "SmartPopunder",

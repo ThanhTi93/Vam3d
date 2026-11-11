@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   title: "Khiếu Nại Bản Quyền (DMCA) | Vam3D – Tôn Trọng Bản Quyền",
   description: "Quy định và hướng dẫn chi tiết về việc khiếu nại bản quyền sở hữu trí tuệ tại Vam3D. Quy trình báo cáo vi phạm nội dung (DMCA Compliance).",
   keywords: ["khiếu nại bản quyền", "dmca vam3d", "bản quyền vam3d", "báo cáo vi phạm"],
+  alternates: {
+    canonical: "/khieu-nai-ban-quyen",
+  },
 };
 
 export default function CopyrightPage() {
@@ -89,7 +92,7 @@ Trân trọng,
             <AlertCircle className="w-5 h-5 text-orange-500" /> Tuyên bố bản quyền thương hiệu
           </h2>
           <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
-            Vam3D hoạt động như một nền tảng mạng xã hội chia sẻ trải nghiệm điện ảnh và mô phỏng các tính năng kỹ thuật. Chúng tôi không chủ động lưu trữ hoặc tải lên các tệp tin đa phương tiện lên hệ thống máy chủ của mình. Dữ liệu phim được tham chiếu, liên kết hoặc nhúng từ các nguồn mở trên Internet. 
+            Vam3D hoạt động như một nền tảng chia sẻ nội dung trực tuyến và tôn trọng quyền sở hữu trí tuệ của các tác giả, studio và nhà phát hành. Chúng tôi thực thi nghiêm túc quy trình tiếp nhận và xử lý yêu cầu gỡ bỏ theo chuẩn DMCA.
           </p>
           <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
             Tuy nhiên, nếu bạn phát hiện bất kỳ liên kết nội dung nào hiển thị trên website xâm phạm quyền tác giả hợp pháp của bạn, vui lòng liên hệ với chúng tôi theo quy trình bên dưới. Chúng tôi cam kết hợp tác và xử lý gỡ bỏ ngay lập tức sau khi nhận được khiếu nại hợp lệ.

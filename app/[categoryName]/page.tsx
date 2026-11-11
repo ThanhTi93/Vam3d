@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { getMoviesByCategory, getAllMovies, getAllCategories } from "@/lib/db/queries";
 import CategoryCatalog from "@/components/CategoryCatalog";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { slugify } from "@/lib/utils";
-import { getCategoryDetails } from "@/lib/categories";
+import { slugify, getSiteUrl } from "@/lib/utils";
+import { getCategoryDetails, findMatchingCategory } from "@/lib/categories";
 
 interface PageProps {
   params: Promise<{ categoryName: string }>;
@@ -12,24 +13,30 @@ interface PageProps {
 // Generate dynamic metadata for search engine indexing
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { categoryName } = await params;
-  const decoded = decodeURIComponent(categoryName).trim();
-  const inputSlug = slugify(decoded).toLowerCase();
-  
+
   let categories: any[] = [];
   try {
     categories = (await getAllCategories()) || [];
   } catch {}
 
-  const cat = categories.find((c: any) => {
-    const catName = (c.name || "").trim().toLowerCase();
-    const catSlug = (c.slug || slugify(c.name)).trim().toLowerCase();
-    return catSlug === inputSlug || catName === decoded.toLowerCase() || catSlug === decoded.toLowerCase();
-  });
+  const { decoded, dbCategory: cat, defaultCategory } = findMatchingCategory(categoryName, categories, slugify);
+
+  if (!cat && !defaultCategory) {
+    return {
+      title: "Không Tìm Thấy Danh Mục | Vam3D",
+      description: "Danh mục bạn tìm kiếm không tồn tại hoặc đã bị gỡ bỏ.",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
 
   const categoryDetails = getCategoryDetails(decoded, cat);
   const titleName = categoryDetails.name;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
-  const categoryUrl = `${siteUrl}/${encodeURIComponent(categoryName)}`;
+  const siteUrl = getSiteUrl();
+  const canonicalSlug = cat?.slug || defaultCategory?.slug || encodeURIComponent(categoryName);
+  const categoryUrl = `${siteUrl}/${canonicalSlug}`;
   
   const isImageCategory = titleName.toLowerCase().startsWith("ảnh") || titleName.toLowerCase().includes("bộ sưu tập");
   const title = isImageCategory
@@ -110,28 +117,28 @@ export async function generateStaticParams() {
 
 export default async function DynamicCategoryPage({ params }: PageProps) {
   const { categoryName } = await params;
-  const decodedCategory = decodeURIComponent(categoryName).trim();
-  const inputSlug = slugify(decodedCategory).toLowerCase();
 
   let allDbCategories: any[] = [];
   try {
     allDbCategories = (await getAllCategories()) || [];
   } catch {}
 
-  const targetCategory = allDbCategories.find((c: any) => {
-    const catName = (c.name || "").trim().toLowerCase();
-    const catSlug = (c.slug || slugify(c.name)).trim().toLowerCase();
-    return (
-      catSlug === inputSlug ||
-      catName === decodedCategory.toLowerCase() ||
-      catSlug === decodedCategory.toLowerCase()
-    );
-  });
+  const {
+    decoded: decodedCategory,
+    inputSlug,
+    dbCategory: targetCategory,
+    defaultCategory,
+  } = findMatchingCategory(categoryName, allDbCategories, slugify);
+
+  if (!targetCategory && !defaultCategory) {
+    notFound();
+  }
 
   const categoryDetails = getCategoryDetails(decodedCategory, targetCategory);
   const titleName = categoryDetails.name;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
-  const categoryUrl = `${siteUrl}/${encodeURIComponent(categoryName)}`;
+  const siteUrl = getSiteUrl();
+  const canonicalSlug = targetCategory?.slug || defaultCategory?.slug || encodeURIComponent(categoryName);
+  const categoryUrl = `${siteUrl}/${canonicalSlug}`;
 
   let movies: any[] = [];
   let allMovies: any[] = [];

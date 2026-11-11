@@ -8,6 +8,13 @@ import ProfileSkeleton from "./ProfileSkeleton";
 export const metadata: Metadata = {
   title: "Thông Tin Tài Khoản & Lịch Sử VIP | Vam3D",
   description: "Quản lý thông tin tài khoản thành viên, kiểm tra thời hạn gói VIP và lịch sử thanh toán đăng ký gói dịch vụ.",
+  alternates: {
+    canonical: "/profile",
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const dynamic = "force-dynamic";

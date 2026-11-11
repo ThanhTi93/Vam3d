@@ -273,9 +273,14 @@ export async function updateUserAvatar(url: string) {
     const payload = await decryptSession(token);
     if (!payload || !payload.userId) throw new Error("Phiên đăng nhập không hợp lệ");
 
+    const cleanUrl = typeof url === "string" ? url.trim() : "";
+    if (!cleanUrl || !/^(https?:\/\/|\/)/i.test(cleanUrl)) {
+      throw new Error("Đường dẫn ảnh đại diện không hợp lệ");
+    }
+
     await db
       .update(accounts)
-      .set({ imgUrl: url })
+      .set({ imgUrl: cleanUrl })
       .where(eq(accounts.id, Number(payload.userId)));
 
     return { success: true };
@@ -316,8 +321,8 @@ export async function requestPasswordResetOtp(email: string) {
     throw new Error("Tài khoản này hiện đang bị khóa. Vui lòng liên hệ ban quản trị.");
   }
 
-  // Generate 6-digit numeric OTP
-  const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
+  // Generate cryptographically secure 6-digit numeric OTP
+  const randomOtp = crypto.randomInt(100000, 1000000).toString();
 
   // Invalidate previous un-used OTPs for this email
   await db
@@ -341,6 +346,15 @@ export async function requestPasswordResetOtp(email: string) {
     otp: randomOtp,
   });
 
+  const isProd = process.env.NODE_ENV === "production";
+  if (!emailResult.sent && isProd) {
+    await db
+      .update(passwordResets)
+      .set({ used: true })
+      .where(and(eq(passwordResets.email, cleanEmail), eq(passwordResets.otp, randomOtp)));
+    throw new Error("Hệ thống gửi email đang gặp sự cố. Vui lòng thử lại sau.");
+  }
+
   return {
     success: true,
     email: user.email,
@@ -348,7 +362,7 @@ export async function requestPasswordResetOtp(email: string) {
     message: emailResult.sent
       ? `Mã xác thực OTP 6 số đã được gửi tới Gmail ${user.email}. Vui lòng kiểm tra hộp thư đến (hoặc thư mục Spam).`
       : `Mã OTP đã được tạo thành công.`,
-    devOtp: emailResult.sent ? undefined : randomOtp,
+    devOtp: !isProd && !emailResult.sent ? randomOtp : undefined,
   };
 }
 
@@ -415,8 +429,9 @@ export async function resetPasswordWithToken({
   if (!db) throw new Error("Cơ sở dữ liệu chưa sẵn sàng");
 
   const cleanEmail = email ? email.trim().toLowerCase() : "";
+  const cleanResetToken = typeof resetToken === "string" ? resetToken.trim() : "";
   if (!cleanEmail) throw new Error("Thiếu thông tin email");
-  if (!resetToken) throw new Error("Thiếu mã token xác thực");
+  if (cleanResetToken.length < 32) throw new Error("Mã token xác thực không hợp lệ");
 
   if (!newPassword || newPassword.length < 6) {
     throw new Error("Mật khẩu mới phải có ít nhất 6 ký tự");
@@ -429,7 +444,7 @@ export async function resetPasswordWithToken({
     .where(
       and(
         eq(passwordResets.email, cleanEmail),
-        eq(passwordResets.resetToken, resetToken),
+        eq(passwordResets.resetToken, cleanResetToken),
         eq(passwordResets.used, false),
         gt(passwordResets.expiresAt, new Date())
       )

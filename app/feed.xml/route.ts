@@ -1,8 +1,11 @@
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { connection } from "next/server";
+import { getSiteUrl } from "@/lib/utils";
 
 export async function GET() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
+  await connection();
+  const siteUrl = getSiteUrl();
 
   let movies: any[] = [];
   try {

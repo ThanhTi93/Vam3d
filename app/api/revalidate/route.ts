@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 
-const REVALIDATE_SECRET = process.env.REVALIDATE_SECRET || "vam3d-secret";
-
 export async function POST(request: Request) {
   try {
+    const revalidateSecret = process.env.REVALIDATE_SECRET?.trim();
+    if (!revalidateSecret) {
+      return NextResponse.json({ error: "REVALIDATE_SECRET is not configured" }, { status: 500 });
+    }
+
     const { secret, tag } = await request.json();
 
-    if (secret !== REVALIDATE_SECRET) {
+    if (secret !== revalidateSecret) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

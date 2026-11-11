@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { getClientAdConfig } from "@/lib/adConfigClient";
 import { isAdFreeUser, isBotUserAgent } from "@/lib/adEligibility";
+import { enqueueAdsterraBanner } from "@/lib/adsterraBannerLoader";
 
 interface AdBanner300x250Props {
   className?: string;
@@ -11,7 +12,7 @@ interface AdBanner300x250Props {
 }
 
 const BANNER_KEY = "a1c807f9e14c4acd0b1f92582a15c657";
-const INVOKE_SRC = `https://www.highrevenueformat.com/${BANNER_KEY}/invoke.js`;
+const INVOKE_SRC = `https://biomanos.org/22/${BANNER_KEY}`;
 
 export default function AdBanner300x250({ className = "", adKey }: AdBanner300x250Props) {
   const { user, loading } = useAuth();
@@ -49,33 +50,31 @@ export default function AdBanner300x250({ className = "", adKey }: AdBanner300x2
           observer.disconnect();
         }
       },
-      { rootMargin: "200px" }
+      { rootMargin: "500px" }
     );
     observer.observe(el);
     return () => observer.disconnect();
   }, [canShow]);
 
-  // 3. Nhúng script trực tiếp vào trang (đúng mã Adsterra cung cấp) để Adsterra
-  //    nhận đúng domain/URL trang. Đổi adKey (đổi tập) thì nạp lại quảng cáo mới.
+  // 3. Nhúng script Anti-Adblock theo hàng đợi tuần tự để không xung đột window.atOptions
+  //    với MobileStickyBanner (320x50). Đổi adKey (đổi tập) thì nạp lại quảng cáo mới.
   useEffect(() => {
     if (!canShow || !isVisible) return;
     const slot = slotRef.current;
     if (!slot) return;
 
-    slot.innerHTML = "";
-    (window as unknown as { atOptions: unknown }).atOptions = {
+    let cancelled = false;
+    enqueueAdsterraBanner({
       key: BANNER_KEY,
-      format: "iframe",
-      height: 250,
       width: 300,
-      params: {},
-    };
-    const script = document.createElement("script");
-    script.src = INVOKE_SRC;
-    script.async = true;
-    slot.appendChild(script);
+      height: 250,
+      scriptSrc: INVOKE_SRC,
+      container: slot,
+      isCancelled: () => cancelled,
+    });
 
     return () => {
+      cancelled = true;
       slot.innerHTML = "";
     };
   }, [canShow, isVisible, adKey]);

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Search, User2, ChevronRight } from "lucide-react";
 import { getBunnyImageUrl } from "@/lib/utils";
+import AdGalleryNativeBanner from "@/components/AdGalleryNativeBanner";
 
 interface Character {
   id: number;
@@ -58,6 +59,8 @@ export default function CharactersPageClient({ characters }: CharactersPageClien
           <Search className="absolute right-3.5 top-2.5 w-4 h-4 text-gray-500" />
         </div>
       </div>
+
+      <AdGalleryNativeBanner className="mb-8" refreshKey="nhan-vat-index" />
 
       {/* Grid List */}
       {filteredCharacters.length > 0 ? (

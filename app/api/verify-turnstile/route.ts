@@ -18,7 +18,14 @@ export async function POST(request: NextRequest) {
                (request as any).ip || 
                "127.0.0.1";
 
-    const secretKey = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY || "1x0000000000000000000000000000000AA";
+    const envSecret = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY?.trim();
+    if (!envSecret && process.env.NODE_ENV === "production") {
+      return NextResponse.json(
+        { success: false, error: "Turnstile verification is not configured" },
+        { status: 500 }
+      );
+    }
+    const secretKey = envSecret || "1x0000000000000000000000000000000AA";
 
     // Verify token with Cloudflare Turnstile
     const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {

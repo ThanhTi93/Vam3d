@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getCurrentUser } from "@/lib/auth/actions";
 
 const isR2Configured =
   !!process.env.R2_ACCOUNT_ID &&
@@ -9,7 +10,10 @@ const isR2Configured =
 
 export async function POST(request: Request) {
   try {
-    const user = { role: "admin" }; // Admin check bypassed by user request
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "Vui lòng đăng nhập để tải tệp lên." }, { status: 401 });
+    }
 
     const formData = await request.formData().catch(() => null);
     if (!formData) {
@@ -19,6 +23,10 @@ export async function POST(request: Request) {
     const file = (formData.get("file") || formData.get("original") || formData.get("display") || formData.get("thumb")) as File | null;
     const customPath = formData.get("customPath") as string | null;
     const folder = (formData.get("folder") as string | null) || "general";
+
+    if (folder.includes("..") || customPath?.includes("..")) {
+      return NextResponse.json({ error: "Đường dẫn không hợp lệ." }, { status: 400 });
+    }
 
     // Security check: Only admin can upload to arbitrary folders or specify custom paths (which can overwrite files). Regular users can only upload avatars.
     if (user.role !== "admin") {

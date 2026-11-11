@@ -19,6 +19,9 @@ export async function GET(request: Request) {
     }
 
     const orderCode = Number(orderCodeStr);
+    if (!Number.isInteger(orderCode) || orderCode <= 0) {
+      return NextResponse.json({ error: "orderCode không hợp lệ" }, { status: 400 });
+    }
 
     // 1. Check in our DB first
     const paymentRecord = await db.query.payments.findFirst({

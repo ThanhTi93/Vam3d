@@ -5,7 +5,7 @@ export interface AdUserLike {
 }
 
 const BOT_UA_RE =
-  /bot|googlebot|crawler|spider|robot|crawling|lighthouse|google-inspectiontool/i;
+  /bot|googlebot|googleother|crawler|spider|robot|crawling|lighthouse|google-inspectiontool|headlesschrome|bingpreview|slurp/i;
 
 export function isBotUserAgent(): boolean {
   if (typeof navigator === "undefined") return true;

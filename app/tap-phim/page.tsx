@@ -2,6 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { getEpisodesPaginated, getAllMovies } from "@/lib/db/queries";
 import TapPhimClient from "./TapPhimClient";
+import { getSiteUrl } from "@/lib/utils";
 
 export const revalidate = 3600;
 
@@ -15,9 +16,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   const movieParam = typeof resolvedParams.movie === "string" ? resolvedParams.movie : "all";
   const searchParam = typeof resolvedParams.q === "string" ? resolvedParams.q : "";
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost"))
-    ? process.env.NEXT_PUBLIC_SITE_URL
-    : "https://www.vam3dhentai.online";
+  const siteUrl = getSiteUrl();
 
   let title = "Danh Sách Tập Phim Hoạt Hình 3D Mới Nhất & Xem Nhiều Nhất | Vam3D";
   let description = "Tổng hợp toàn bộ các tập phim hoạt hình 3D, anime vietsub mới nhất và được xem nhiều nhất chất lượng cao Full HD tại Vam3D.";
@@ -98,9 +97,7 @@ export default async function TapPhimPage({ searchParams }: PageProps) {
     console.error("Error loading TapPhimPage:", err);
   }
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost"))
-    ? process.env.NEXT_PUBLIC_SITE_URL
-    : "https://www.vam3dhentai.online";
+  const siteUrl = getSiteUrl();
 
   // ItemList Schema for SEO
   const itemListJsonLd = {

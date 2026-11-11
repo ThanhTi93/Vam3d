@@ -1,15 +1,16 @@
 import { db } from "@/lib/db";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
-import { slugify } from "@/lib/utils";
+import { slugify, getSiteUrl } from "@/lib/utils";
+import { getCurrentUser } from "@/lib/auth/actions";
 
 export async function POST() {
-  let siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
-  
-  // If siteUrl is localhost or empty, fallback to production domain for IndexNow validation
-  if (siteUrl.includes("localhost") || siteUrl.includes("127.0.0.1")) {
-    siteUrl = "https://vam3dhentai.online";
+  const user = await getCurrentUser();
+  if (!user || user.role !== "admin") {
+    return NextResponse.json({ error: "Không có quyền thực hiện." }, { status: 403 });
   }
+
+  const siteUrl = getSiteUrl();
 
   const host = siteUrl.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
   const indexNowKey = "e5b6a789c0d1e2f3a4b5c6d7e8f9a0b1";
@@ -20,7 +21,7 @@ export async function POST() {
     revalidatePath("/", "layout");
     revalidatePath("/sitemap.xml");
     revalidatePath("/feed.xml");
-    revalidatePath("/lich-chieu");
+    revalidatePath("/tac-gia");
     revalidateTag("movies:all", "default");
     revalidateTag("movies:hot", "default");
   } catch (cacheErr) {
@@ -31,7 +32,7 @@ export async function POST() {
   const urlList: string[] = [
     siteUrl,
     `${siteUrl}/phim-hot`,
-    `${siteUrl}/lich-chieu`,
+    `${siteUrl}/tac-gia`,
     `${siteUrl}/dien-vien`,
     `${siteUrl}/nhan-vat`,
     `${siteUrl}/gallery`,
@@ -54,11 +55,16 @@ export async function POST() {
         urlList.push(`${siteUrl}/${cat.slug || encodeURIComponent(cat.name)}`);
       });
 
-      // Fetch dynamic movie & episode URLs
+      // Fetch dynamic movie & published episode URLs
       const dbMovies = await db.query.movies.findMany({
         columns: { id: true, slug: true, name: true },
         where: (movies, { eq }) => eq(movies.status, 1),
-        with: { episodes: { columns: { id: true, name: true, slug: true } } },
+        with: {
+          episodes: {
+            columns: { id: true, name: true, slug: true },
+            where: (eps, { eq }) => eq(eps.status, 1),
+          },
+        },
       });
 
       dbMovies?.forEach((movie) => {

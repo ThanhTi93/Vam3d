@@ -16,7 +16,7 @@ export default function Footer() {
   }
 
   return (
-    <footer className="bg-[#090a0f] border-t border-white/5 py-12 px-4 sm:px-8 mt-16 text-gray-400">
+    <footer className="bg-[#090a0f] border-t border-white/5 pt-12 pb-24 md:pb-12 px-4 sm:px-8 mt-16 text-gray-400">
       <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-5 gap-8">
         <div className="space-y-4">
           <div className="flex items-center gap-2">
@@ -94,8 +94,8 @@ export default function Footer() {
       </div>
 
       <div className="max-w-[1600px] mx-auto border-t border-white/5 mt-8 pt-6 flex flex-col md:flex-row items-center justify-between text-xs text-gray-600 gap-4">
-        <p>© 2026 Vam3D. Built with Next.js · Neon PostgreSQL · Drizzle ORM · React Three Fiber</p>
-        <p>Disclaimer: Nội dung phim mô phỏng phục vụ mục đích kiểm thử.</p>
+        <p>© 2026 Vam3D. All rights reserved.</p>
+        <p>Lưu ý: Nội dung trên website chỉ dành cho người dùng từ 18 tuổi trở lên (RTA).</p>
       </div>
     </footer>
   );

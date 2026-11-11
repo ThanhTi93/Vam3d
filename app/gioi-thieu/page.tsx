@@ -17,14 +17,17 @@ export const metadata: Metadata = {
   title: "Giới Thiệu Về Vam3D – Nền Tảng Xem Phim Trực Tuyến Miễn Phí",
   description: "Khám phá sứ mệnh, tầm nhìn và các tính năng nổi bật của Vam3D. Nền tảng mạng xã hội xem phim trực tuyến miễn phí lớn nhất Việt Nam với chất lượng HD/4K siêu mượt.",
   keywords: ["giới thiệu vam3d", "về vam3d", "xem phim miễn phí", "phim chất lượng cao", "vam3d hd"],
+  alternates: {
+    canonical: "/gioi-thieu",
+  },
 };
 
 export default function AboutPage() {
   const stats = [
-    { value: "10,000+", label: "Phim Tuyển Chọn", description: "Từ bom tấn chiếu rạp đến hoạt hình hấp dẫn" },
-    { value: "2M+", label: "Lượt Xem Hằng Tháng", description: "Cộng đồng mọt phim hoạt động sôi nổi" },
-    { value: "100%", label: "Cập Nhật Liên Tục", description: "Phim mới và tập mới mỗi ngày" },
-    { value: "0đ", label: "Hoàn Toàn Miễn Phí", description: "Trải nghiệm không giới hạn mọi nội dung" }
+    { value: "4K / HD", label: "Chất Lượng Sắc Nét", description: "Hỗ trợ đa độ phân giải, tối ưu băng thông" },
+    { value: "Vietsub", label: "Phụ Đề Chuẩn Xác", description: "Cập nhật phụ đề tiếng Việt nhanh chóng" },
+    { value: "Hằng Ngày", label: "Cập Nhật Liên Tục", description: "Phim bộ, tập mới và bộ sưu tập AI mới" },
+    { value: "Đa Thiết Bị", label: "Trải Nghiệm Mượt Mà", description: "Tối ưu cho cả điện thoại và máy tính" }
   ];
 
   const features = [
@@ -70,7 +73,7 @@ export default function AboutPage() {
             </span>
           </h1>
           <p className="max-w-2xl mx-auto text-sm sm:text-base text-gray-400 leading-relaxed">
-            Chào mừng bạn đến với <strong className="text-white">Vam3D</strong> – nền tảng mô phỏng xem phim và mạng xã hội chia sẻ trải nghiệm điện ảnh hiện đại bậc nhất. Chúng tôi mang đến cho bạn không gian giải trí đỉnh cao hoàn toàn miễn phí.
+            Chào mừng bạn đến với <strong className="text-white">Vam3D</strong> – nền tảng giải trí xem phim hoạt hình 3D trực tuyến và thư viện ảnh AI 4K sắc nét. Chúng tôi mang đến không gian giải trí mượt mà với phụ đề Vietsub cập nhật liên tục.
           </p>
         </div>
 

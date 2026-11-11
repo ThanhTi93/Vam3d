@@ -1,19 +1,17 @@
 import { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 import { connection } from "next/server";
-import { slugify } from "@/lib/utils";
+import { slugify, getSiteUrl } from "@/lib/utils";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost"))
-    ? process.env.NEXT_PUBLIC_SITE_URL
-    : "https://vam3dhentai.online";
+  await connection();
+  const siteUrl = getSiteUrl();
   
   // Basic static pages
   const staticPaths: MetadataRoute.Sitemap = [
     { url: siteUrl, lastModified: new Date(), changeFrequency: "daily", priority: 1.0 },
     { url: `${siteUrl}/tap-phim`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
     { url: `${siteUrl}/phim-hot`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
-    { url: `${siteUrl}/lich-chieu`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
     { url: `${siteUrl}/tac-gia`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
     { url: `${siteUrl}/dien-vien`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
     { url: `${siteUrl}/nhan-vat`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
@@ -26,11 +24,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let moviePaths: MetadataRoute.Sitemap = [];
   let categoryPaths: MetadataRoute.Sitemap = [];
-  let actorPaths: MetadataRoute.Sitemap = [];
   let characterPaths: MetadataRoute.Sitemap = [];
   let authorPaths: MetadataRoute.Sitemap = [];
   let galleryPaths: MetadataRoute.Sitemap = [];
-  let collectionPaths: MetadataRoute.Sitemap = [];
   let episodePaths: MetadataRoute.Sitemap = [];
   
   try {
@@ -71,27 +67,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         });
       }
 
-      // 3. Actors (Diễn viên)
-      const dbActors = await db.query.actors.findMany({
-        columns: { id: true, name: true, slug: true },
-        where: (actors, { eq }) => eq(actors.status, 1),
-      });
-
-      if (dbActors && dbActors.length > 0) {
-        actorPaths = dbActors.map((actor) => {
-          const slug = actor.slug || slugify(actor.name) || actor.id.toString();
-          return {
-            url: `${siteUrl}/dien-vien/${slug}`,
-            lastModified: new Date(),
-            changeFrequency: "weekly",
-            priority: 0.7,
-          };
-        });
-      }
-
-      // 4. Characters (Nhân vật) - Tạo sitemap theo 3 loại tên: Tên chính, Tên tiếng Anh/Pinyin, Tên tiếng Trung
+      // 3. Characters (Nhân vật) - Chỉ đưa URL canonical chính vào sitemap để tránh trùng lặp
       const dbCharacters = await db.query.characters.findMany({
-        columns: { id: true, name: true, slug: true, nameEn: true, nameZh: true },
+        columns: { id: true, name: true, slug: true },
         where: (chars, { eq }) => eq(chars.status, 1),
       });
 
@@ -100,7 +78,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         characterPaths = [];
 
         for (const char of dbCharacters) {
-          // 1. URL tên chính (Slug chuẩn / tiếng Việt)
           const mainSlug = char.slug || slugify(char.name) || char.id.toString();
           const mainUrl = `${siteUrl}/nhan-vat/${encodeURIComponent(mainSlug)}`;
           if (!seenUrls.has(mainUrl)) {
@@ -111,38 +88,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
               changeFrequency: "weekly",
               priority: 0.7,
             });
-          }
-
-          // 2. URL tên tiếng Anh / Pinyin quốc tế
-          if (char.nameEn) {
-            const enSlug = slugify(char.nameEn);
-            if (enSlug) {
-              const enUrl = `${siteUrl}/nhan-vat/${encodeURIComponent(enSlug)}`;
-              if (!seenUrls.has(enUrl)) {
-                seenUrls.add(enUrl);
-                characterPaths.push({
-                  url: enUrl,
-                  lastModified: new Date(),
-                  changeFrequency: "weekly",
-                  priority: 0.6,
-                });
-              }
-            }
-          }
-
-          // 3. URL tên tiếng Trung nguyên bản
-          if (char.nameZh && char.nameZh.trim()) {
-            const zhSlug = char.nameZh.trim();
-            const zhUrl = `${siteUrl}/nhan-vat/${encodeURIComponent(zhSlug)}`;
-            if (!seenUrls.has(zhUrl)) {
-              seenUrls.add(zhUrl);
-              characterPaths.push({
-                url: zhUrl,
-                lastModified: new Date(),
-                changeFrequency: "weekly",
-                priority: 0.6,
-              });
-            }
           }
         }
       }
@@ -183,43 +128,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         });
       }
 
-      // 7. Collections (Bộ sưu tập ảnh)
-      const dbCollections = await db.query.collections.findMany({
-        columns: { id: true, name: true, slug: true, createdAt: true },
-      });
-
-      if (dbCollections && dbCollections.length > 0) {
-        collectionPaths = dbCollections.map((col) => {
-          const slug = col.slug || slugify(col.name) || col.id.toString();
-          return {
-            url: `${siteUrl}/collections/${slug}`,
-            lastModified: col.createdAt ? new Date(col.createdAt) : new Date(),
-            changeFrequency: "weekly",
-            priority: 0.6,
-          };
-        });
-      }
-
-      // 8. Episodes (Tập phim)
+      // 6. Episodes (Tập phim) - Chỉ xuất tập thuộc phim đang hiển thị (status = 1)
       const dbEpisodes = await db.query.episodes.findMany({
         columns: { id: true, name: true, slug: true, createdAt: true },
         where: (eps, { eq }) => eq(eps.status, 1),
         with: {
-          movie: { columns: { id: true, name: true, slug: true } }
-        }
+          movie: { columns: { id: true, name: true, slug: true, status: true } },
+        },
       });
 
       if (dbEpisodes && dbEpisodes.length > 0) {
-        episodePaths = dbEpisodes.map((ep) => {
-          const movieSlug = ep.movie?.slug || (ep.movie?.name ? slugify(ep.movie.name) : ep.movie?.id.toString());
-          const epSlug = ep.slug || (ep.name ? slugify(ep.name) : ep.id.toString());
-          return {
-            url: movieSlug ? `${siteUrl}/movie/${movieSlug}?ep=${epSlug}` : `${siteUrl}/movie/${ep.movie?.id || ep.id}?ep=${epSlug}`,
-            lastModified: ep.createdAt ? new Date(ep.createdAt) : new Date(),
-            changeFrequency: "weekly",
-            priority: 0.7,
-          };
-        });
+        episodePaths = dbEpisodes
+          .filter((ep) => ep.movie && ep.movie.status === 1)
+          .map((ep) => {
+            const movie = ep.movie!;
+            const movieSlug = movie.slug || (movie.name ? slugify(movie.name) : "") || movie.id.toString();
+            const epSlug = ep.slug || (ep.name ? slugify(ep.name) : "") || ep.id.toString();
+            return {
+              url: `${siteUrl}/movie/${movieSlug}?ep=${epSlug}`,
+              lastModified: ep.createdAt ? new Date(ep.createdAt) : new Date(),
+              changeFrequency: "weekly",
+              priority: 0.7,
+            };
+          });
       }
 
     }
@@ -232,11 +163,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...categoryPaths,
     ...moviePaths,
     ...episodePaths,
-    ...actorPaths,
     ...characterPaths,
     ...authorPaths,
     ...galleryPaths,
-    ...collectionPaths,
   ];
 }
 

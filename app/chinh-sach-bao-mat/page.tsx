@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   title: "Chính Sách Bảo Mật | Vam3D – Bảo Vệ Quyền Riêng Tư",
   description: "Chính sách bảo mật chi tiết tại Vam3D. Tìm hiểu cách chúng tôi thu thập, sử dụng, lưu trữ và bảo vệ thông tin cá nhân của người dùng.",
   keywords: ["chính sách bảo mật", "bảo mật vam3d", "quyền riêng tư"],
+  alternates: {
+    canonical: "/chinh-sach-bao-mat",
+  },
 };
 
 export default function PrivacyPolicyPage() {
@@ -32,7 +35,7 @@ export default function PrivacyPolicyPage() {
     {
       icon: <Lock className="w-5 h-5 text-green-500" />,
       title: "3. Bảo mật dữ liệu cá nhân",
-      description: "RoPhim áp dụng các công nghệ mã hóa tiên tiến và các chuẩn bảo mật cơ sở dữ liệu hiện đại để ngăn chặn truy cập trái phép, sửa đổi, tiết lộ hoặc phá hủy dữ liệu cá nhân. Mật khẩu tài khoản của bạn được băm (hash) bằng thuật toán bcrypt an toàn trước khi lưu vào PostgreSQL."
+      description: "Vam3D áp dụng các công nghệ mã hóa tiên tiến và các chuẩn bảo mật cơ sở dữ liệu hiện đại để ngăn chặn truy cập trái phép, sửa đổi, tiết lộ hoặc phá hủy dữ liệu cá nhân. Mật khẩu tài khoản của bạn được băm (hash) bằng thuật toán bcrypt an toàn trước khi lưu vào PostgreSQL."
     },
     {
       icon: <Cookie className="w-5 h-5 text-yellow-500" />,
@@ -42,7 +45,7 @@ export default function PrivacyPolicyPage() {
     {
       icon: <RefreshCw className="w-5 h-5 text-blue-500" />,
       title: "5. Tích hợp bên thứ ba & Thanh toán",
-      description: "Hệ thống tích hợp cổng thanh toán an toàn PayOS phục vụ các gói nâng cấp VIP. Khi bạn tiến hành thanh toán, thông tin giao dịch được xử lý trực tiếp bởi cổng thanh toán của đối tác, RoPhim không lưu trữ thông tin thẻ hay tài khoản ngân hàng của bạn."
+      description: "Hệ thống tích hợp cổng thanh toán an toàn PayOS phục vụ các gói nâng cấp VIP. Khi bạn tiến hành thanh toán, thông tin giao dịch được xử lý trực tiếp bởi cổng thanh toán của đối tác, Vam3D không lưu trữ thông tin thẻ hay tài khoản ngân hàng của bạn."
     }
   ];
 
@@ -72,9 +75,9 @@ export default function PrivacyPolicyPage() {
             <Lock className="w-7 h-7" />
           </div>
           <div className="space-y-2 text-center md:text-left">
-            <h3 className="text-base font-bold text-white">Cam kết quyền riêng tư từ RoPhim</h3>
+            <h3 className="text-base font-bold text-white">Cam kết quyền riêng tư từ Vam3D</h3>
             <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
-              Chúng tôi hiểu rằng dữ liệu cá nhân là vô giá. RoPhim cam kết không mua bán, trao đổi hoặc chia sẻ bất kỳ thông tin cá nhân nào của bạn cho bên thứ ba vì mục đích quảng cáo thương mại mà không có sự đồng ý rõ ràng từ phía bạn.
+              Chúng tôi hiểu rằng dữ liệu cá nhân là vô giá. Vam3D cam kết không mua bán, trao đổi hoặc chia sẻ bất kỳ thông tin cá nhân nào của bạn cho bên thứ ba vì mục đích quảng cáo thương mại mà không có sự đồng ý rõ ràng từ phía bạn.
             </p>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { ChevronRight, Home } from "lucide-react";
+import { getSiteUrl } from "@/lib/utils";
 
 export interface BreadcrumbItem {
   label: string;
@@ -12,7 +13,7 @@ interface BreadcrumbsProps {
 }
 
 export default function Breadcrumbs({ items }: BreadcrumbsProps) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
+  const siteUrl = getSiteUrl();
 
   // Filter out any redundant 'Trang chủ' item passed in props
   const cleanItems = (items || []).filter(

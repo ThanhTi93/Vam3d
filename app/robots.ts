@@ -1,13 +1,23 @@
 import { MetadataRoute } from "next";
+import { getSiteUrl } from "@/lib/utils";
 
 export default function robots(): MetadataRoute.Robots {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vam3dhentai.online";
+  const siteUrl = getSiteUrl();
   
   return {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/api/", "/admin/", "/profile/", "/_next/", "/static/"],
+      disallow: [
+        "/api/",
+        "/admin/",
+        "/profile/",
+        "/login",
+        "/register",
+        "/challenge",
+        "/unauthorized",
+        "/watchlist",
+      ],
     },
     sitemap: [`${siteUrl}/sitemap.xml`, `${siteUrl}/feed.xml`],
   };

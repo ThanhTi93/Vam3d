@@ -1,7 +1,13 @@
 import { SignJWT, jwtVerify } from "jose";
 
-const JWT_SECRET = process.env.JWT_SECRET || "default_super_secret_key_that_is_at_least_32_characters_long_for_safety";
-const encodedKey = new TextEncoder().encode(JWT_SECRET);
+export function getJwtKey(): Uint8Array {
+  const envSecret = process.env.JWT_SECRET?.trim();
+  if (!envSecret && process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET is required in production");
+  }
+  const secret = envSecret || "default_super_secret_key_that_is_at_least_32_characters_long_for_safety";
+  return new TextEncoder().encode(secret);
+}
 
 /**
  * Encrypts a payload into a JWT session token.
@@ -12,7 +18,7 @@ export async function encryptSession(payload: any, expiresIn = "365d"): Promise<
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(expiresIn)
-    .sign(encodedKey);
+    .sign(getJwtKey());
 }
 
 /**
@@ -22,7 +28,7 @@ export async function encryptSession(payload: any, expiresIn = "365d"): Promise<
 export async function decryptSession(token: string): Promise<any | null> {
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, encodedKey, {
+    const { payload } = await jwtVerify(token, getJwtKey(), {
       algorithms: ["HS256"],
     });
     return payload;

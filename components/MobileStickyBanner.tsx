@@ -1,60 +1,116 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/app/context/AuthContext";
 import { X } from "lucide-react";
+import { useAuth } from "@/app/context/AuthContext";
+import { getClientAdConfig } from "@/lib/adConfigClient";
+import { isAdFreeUser, isBotUserAgent } from "@/lib/adEligibility";
+import { enqueueAdsterraBanner } from "@/lib/adsterraBannerLoader";
 
 interface MobileStickyBannerProps {
   className?: string;
   adKey?: string;
 }
 
-// Lưu ý: Chỉ truyền adKey của đơn vị 320x50 thật sự. Không dùng chung key 300x250 để tránh bị cắt khung làm sập CTR & CPM.
-const DEFAULT_BANNER_KEY = "";
+const DEFAULT_BANNER_KEY = "651bb3282573ec62f4c54586864916b7";
 const SESSION_CLOSED_KEY = "__vam_sticky_banner_closed";
+const BLOCKED_PREFIXES = ["/admin", "/login", "/register", "/upgrade"];
 
-export default function MobileStickyBanner({ className = "", adKey = DEFAULT_BANNER_KEY }: MobileStickyBannerProps) {
+/**
+ * Sticky Banner 320x50 dành riêng cho Mobile (< 768px):
+ * - Dùng unit & key 320x50 độc lập qua domain Anti-Adblock biomanos.org.
+ * - Chỉ chạy trên màn hình Mobile thật để tránh impression ẩn trên Desktop.
+ * - Chặn Trang Chủ '/', trang quản trị, đăng nhập/nâng cấp, Googlebot và VIP.
+ */
+export default function MobileStickyBanner({
+  className = "",
+  adKey = DEFAULT_BANNER_KEY,
+}: MobileStickyBannerProps) {
   const pathname = usePathname();
-  const { user } = useAuth();
-  const [canShow, setCanShow] = useState(false);
-  const [isClosed, setIsClosed] = useState(true);
+  const { user, loading } = useAuth();
+  const [enabled, setEnabled] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [readyToShow, setReadyToShow] = useState(false);
+  const [isClosed, setIsClosed] = useState(false);
+  const slotRef = useRef<HTMLDivElement | null>(null);
 
+  const isBlockedRoute =
+    !pathname ||
+    pathname === "/" ||
+    BLOCKED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+
+  const canShow =
+    Boolean(adKey) &&
+    enabled &&
+    isMobile &&
+    !loading &&
+    !isBlockedRoute &&
+    !isAdFreeUser(user) &&
+    !isClosed &&
+    readyToShow;
+
+  // 1. Kiểm tra công tắc hệ thống + kích thước màn hình mobile (< 768px)
   useEffect(() => {
-    if (typeof window === "undefined" || !adKey) return;
+    if (typeof window === "undefined" || isBotUserAgent()) return;
 
-    // 1. Chặn bot Google / Web crawlers / Lighthouse để bảo vệ SEO 100%
-    const isBot =
-      /bot|googlebot|crawler|spider|robot|crawling|lighthouse|google-inspectiontool/i.test(
-        navigator.userAgent || ""
-      );
-    if (isBot) return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    const updateMobile = () => setIsMobile(mq.matches);
+    updateMobile();
+    mq.addEventListener("change", updateMobile);
 
-    // 2. Ẩn hoàn toàn với tài khoản VIP hoặc Admin
-    const isVipOrAdmin = !!user && ((user.level && user.level > 0) || user.role === "admin");
-    if (isVipOrAdmin) return;
-
-    // 3. Không hiện ở trang Admin
-    if (!pathname || pathname.startsWith("/admin")) {
-      return;
-    }
-
-    // 4. Kiểm tra xem người dùng đã bấm tắt trong phiên hiện tại chưa
     try {
-      const closed = sessionStorage.getItem(SESSION_CLOSED_KEY);
-      if (closed === "true") {
-        return;
+      if (sessionStorage.getItem(SESSION_CLOSED_KEY) === "true") {
+        setIsClosed(true);
       }
     } catch {}
 
-    // Đợi 3 giây sau khi tải trang để không cản trở tương tác ban đầu
+    let cancelled = false;
+    getClientAdConfig().then((cfg) => {
+      if (!cancelled) setEnabled(cfg.mobileStickyEnabled);
+    });
+
+    return () => {
+      cancelled = true;
+      mq.removeEventListener("change", updateMobile);
+    };
+  }, []);
+
+  // 2. Đợi 3 giây sau khi mở trang hợp lệ mới hiện thanh dính đáy
+  useEffect(() => {
+    if (!enabled || !isMobile || loading || isBlockedRoute || isAdFreeUser(user) || isClosed) {
+      setReadyToShow(false);
+      return;
+    }
+
     const timer = setTimeout(() => {
-      setCanShow(true);
-      setIsClosed(false);
+      setReadyToShow(true);
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [pathname, user]);
+  }, [enabled, isMobile, loading, isBlockedRoute, user, isClosed]);
+
+  // 3. Nạp script 320x50 Anti-Adblock qua hàng đợi tuần tự (làm mới khi chuyển trang SPA)
+  useEffect(() => {
+    if (!canShow) return;
+    const slot = slotRef.current;
+    if (!slot) return;
+
+    let cancelled = false;
+    enqueueAdsterraBanner({
+      key: adKey,
+      width: 320,
+      height: 50,
+      scriptSrc: `https://biomanos.org/22/${adKey}`,
+      container: slot,
+      isCancelled: () => cancelled,
+    });
+
+    return () => {
+      cancelled = true;
+      slot.innerHTML = "";
+    };
+  }, [canShow, adKey, pathname]);
 
   const handleClose = () => {
     setIsClosed(true);
@@ -63,46 +119,15 @@ export default function MobileStickyBanner({ className = "", adKey = DEFAULT_BAN
     } catch {}
   };
 
-  if (!canShow || isClosed) return null;
-
-  const srcDoc = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      background: transparent; 
-      display: flex; 
-      justify-content: center; 
-      align-items: center; 
-      width: 320px; 
-      height: 50px; 
-      overflow: hidden; 
-    }
-  </style>
-</head>
-<body>
-  <script type="text/javascript">
-    atOptions = {
-      'key' : '${adKey}',
-      'format' : 'iframe',
-      'height' : 50,
-      'width' : 320,
-      'params' : {}
-    };
-  </script>
-  <script type="text/javascript" src="https://www.highrevenueformat.com/${adKey}/invoke.js"></script>
-</body>
-</html>`;
+  if (!canShow) return null;
 
   return (
     <div
       className={`fixed bottom-0 left-0 right-0 z-40 flex flex-col items-center justify-center md:hidden pointer-events-auto bg-[#090a0f]/95 backdrop-blur-md border-t border-white/10 py-1 shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom ${className}`}
     >
       <div className="relative w-[320px] h-[50px] flex items-center justify-center">
-        {/* Nút đóng banner nhẹ nhàng */}
         <button
+          type="button"
           onClick={handleClose}
           aria-label="Đóng quảng cáo"
           className="absolute -top-3 -right-2 bg-neutral-900/90 text-gray-400 hover:text-white border border-white/20 rounded-full p-1 shadow-md text-[10px] flex items-center gap-0.5 px-1.5 cursor-pointer z-50 transition-colors"
@@ -111,14 +136,9 @@ export default function MobileStickyBanner({ className = "", adKey = DEFAULT_BAN
           <span>Đóng</span>
         </button>
 
-        {/* Khung iframe banner 320x50 */}
-        <iframe
-          title="Mobile Sponsor Banner"
-          srcDoc={srcDoc}
-          width={320}
-          height={50}
-          scrolling="no"
-          style={{ border: 0, width: "320px", height: "50px", overflow: "hidden" }}
+        <div
+          ref={slotRef}
+          className="w-[320px] h-[50px] overflow-hidden flex items-center justify-center"
         />
       </div>
     </div>
