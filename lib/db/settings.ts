@@ -69,3 +69,32 @@ export async function setTurnstileMode(enabled: boolean): Promise<void> {
   await setSystemSetting("turnstile_enabled", enabled ? "true" : "false");
   turnstileMemoryCache = { value: enabled, timestamp: Date.now() };
 }
+
+// ─── SEO EXCLUDED / NOINDEX URLS MANAGEMENT ─────────────────────────────────
+export interface SeoExcludedUrlItem {
+  id: string;
+  url: string;
+  reason: string;
+  createdAt: string;
+  status: "noindex" | "410";
+}
+
+export async function getSeoExcludedUrls(): Promise<SeoExcludedUrlItem[]> {
+  try {
+    const raw = await getCachedSystemSetting("seo_excluded_urls", "[]");
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error("Error reading seo_excluded_urls:", e);
+    return [];
+  }
+}
+
+export async function setSeoExcludedUrls(items: SeoExcludedUrlItem[]): Promise<void> {
+  await setSystemSetting("seo_excluded_urls", JSON.stringify(items));
+  try {
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/feed.xml");
+  } catch {}
+}
+

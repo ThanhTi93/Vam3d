@@ -47,6 +47,17 @@ const nextConfig: NextConfig = {
         return patterns;
       })(),
     },
+    async redirects() {
+      return [
+        // Chuyển hướng 301 chuẩn hóa non-www sang www để giải quyết triệt để 502 URL chưa lập chỉ mục trên GSC
+        {
+          source: "/:path*",
+          has: [{ type: "host", value: "vam3dhentai.online" }],
+          destination: "https://www.vam3dhentai.online/:path*",
+          permanent: true,
+        },
+      ];
+    },
   };
 
   export default nextConfig;

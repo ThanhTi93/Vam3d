@@ -254,8 +254,10 @@ export default function CategoryCatalog({
             </div>
           </div>
 
-          {/* Native Banner Adsterra (Chặn Googlebot 100%, Lazy-load chuẩn SEO) */}
-          <AdGalleryNativeBanner refreshKey={`cat-${currentSlugClean}-p${safeCurrentPage}`} />
+          {/* Native Banner Adsterra (Chặn Googlebot 100%, Lazy-load chuẩn SEO; không hiển thị ở sex-ai, anh-sex-ai) */}
+          {currentSlugClean !== "sex-ai" && currentSlugClean !== "anh-sex-ai" && (
+            <AdGalleryNativeBanner refreshKey={`cat-${currentSlugClean}-p${safeCurrentPage}`} />
+          )}
 
           {/* Movies List */}
           {filteredMovies.length > 0 ? (

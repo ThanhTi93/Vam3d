@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { getClientAdConfig } from "@/lib/adConfigClient";
-import { isAdFreeUser, isBotUserAgent } from "@/lib/adEligibility";
+import { isAdFreeUser, isBotUserAgent, isAdBlockedRoute } from "@/lib/adEligibility";
 
 interface AdGalleryNativeBannerProps {
   className?: string;
@@ -18,17 +19,20 @@ export default function AdGalleryNativeBanner({
   className = "",
   refreshKey = "gallery",
 }: AdGalleryNativeBannerProps) {
+  const pathname = usePathname();
   const { user, loading } = useAuth();
   const [enabled, setEnabled] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // Ẩn với bot, Admin, VIP còn hạn; đợi xác thực xong mới nạp
-  const canShow = enabled && !loading && !isAdFreeUser(user);
+  // Ẩn với bot, Admin, VIP còn hạn, Trang Chủ '/', '/sex-ai', '/anh-sex-ai'; đợi xác thực xong mới nạp
+  const isBlocked = isAdBlockedRoute(pathname);
+  const canShow = enabled && !loading && !isAdFreeUser(user) && !isBlocked;
 
   useEffect(() => {
-    // Chặn bot tìm kiếm (googlebot, bingbot) để tối ưu SEO và Core Web Vitals
+    // Chặn trên route bị chặn, hoặc bot tìm kiếm (googlebot, bingbot) để tối ưu SEO và Core Web Vitals
+    if (isBlocked) return;
     const isBot =
       typeof navigator !== "undefined" &&
       (/googlebot|bingbot|crawler/i.test(navigator.userAgent || "") || isBotUserAgent());

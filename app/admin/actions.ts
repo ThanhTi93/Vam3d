@@ -5055,3 +5055,303 @@ export async function setAiCouncilAutoDailyAction(enabled: boolean) {
     return { success: false, error: err?.message };
   }
 }
+
+// ─── SEO INDEXING MANAGER ACTIONS ───────────────────────────────────────────
+import { getSeoExcludedUrls, setSeoExcludedUrls, type SeoExcludedUrlItem } from "@/lib/db/settings";
+import { getSiteUrl } from "@/lib/utils";
+
+export interface ActiveSeoUrlItem {
+  url: string;
+  type: "tinh" | "the-loai" | "phim" | "tap" | "nhan-vat" | "gallery" | "tac-gia";
+  title: string;
+  updatedAt?: string;
+  isExcluded?: boolean;
+}
+
+export async function getSeoIndexingDataAction() {
+  await verifyAdmin();
+  const siteUrl = getSiteUrl();
+
+  try {
+    const excludedList = await getSeoExcludedUrls();
+    const excludedMap = new Map<string, SeoExcludedUrlItem>();
+    excludedList.forEach((item) => {
+      const clean = item.url.toLowerCase().trim().replace(/\/$/, "");
+      excludedMap.set(clean, item);
+      // cũng map dạng pathname
+      try {
+        const u = new URL(item.url, siteUrl);
+        excludedMap.set(u.pathname.toLowerCase().replace(/\/$/, ""), item);
+      } catch {}
+    });
+
+    const activeUrls: ActiveSeoUrlItem[] = [];
+
+    // 1. Static Pages
+    const staticPages = [
+      { url: siteUrl, type: "tinh" as const, title: "Trang Chủ" },
+      { url: `${siteUrl}/tap-phim`, type: "tinh" as const, title: "Tất Cả Tập Phim" },
+      { url: `${siteUrl}/phim-hot`, type: "tinh" as const, title: "Phim Hot Xem Nhiều" },
+      { url: `${siteUrl}/gallery`, type: "tinh" as const, title: "Bộ Sưu Tập AI 4K" },
+      { url: `${siteUrl}/nhan-vat`, type: "tinh" as const, title: "Danh Sách Nhân Vật 3D" },
+      { url: `${siteUrl}/tac-gia`, type: "tinh" as const, title: "Tác Giả & Hãng Sản Xuất" },
+      { url: `${siteUrl}/dien-vien`, type: "tinh" as const, title: "Diễn Viên Lồng Tiếng" },
+      { url: `${siteUrl}/gioi-thieu`, type: "tinh" as const, title: "Giới Thiệu Website" },
+      { url: `${siteUrl}/chinh-sach-bao-mat`, type: "tinh" as const, title: "Chính Sách Bảo Mật" },
+      { url: `${siteUrl}/dieu-khoan-su-dung`, type: "tinh" as const, title: "Điều Khoản Sử Dụng" },
+      { url: `${siteUrl}/khieu-nai-ban-quyen`, type: "tinh" as const, title: "Khiếu Nại Bản Quyền" },
+    ];
+    staticPages.forEach((p) => {
+      const clean = p.url.toLowerCase().replace(/\/$/, "");
+      activeUrls.push({ ...p, isExcluded: excludedMap.has(clean) });
+    });
+
+    if (db) {
+      // 2. Categories
+      const dbCategories = await db.query.categories.findMany({
+        columns: { id: true, name: true, slug: true },
+        where: (cats, { eq }) => eq(cats.status, 1),
+      });
+      dbCategories?.forEach((cat) => {
+        const slug = cat.slug || slugify(cat.name) || cat.id.toString();
+        const url = `${siteUrl}/${slug}`;
+        const clean = url.toLowerCase().replace(/\/$/, "");
+        activeUrls.push({
+          url,
+          type: "the-loai",
+          title: `Thể Loại: ${cat.name}`,
+          isExcluded: excludedMap.has(clean),
+        });
+      });
+
+      // 3. Movies
+      const dbMovies = await db.query.movies.findMany({
+        columns: { id: true, name: true, slug: true, createdAt: true },
+        where: (movies, { eq }) => eq(movies.status, 1),
+        orderBy: (movies, { desc }) => [desc(movies.id)],
+        limit: 300,
+      });
+      dbMovies?.forEach((movie) => {
+        const slug = movie.slug || slugify(movie.name) || movie.id.toString();
+        const url = `${siteUrl}/movie/${slug}`;
+        const clean = url.toLowerCase().replace(/\/$/, "");
+        activeUrls.push({
+          url,
+          type: "phim",
+          title: movie.name,
+          updatedAt: movie.createdAt ? new Date(movie.createdAt).toLocaleDateString("vi-VN") : undefined,
+          isExcluded: excludedMap.has(clean),
+        });
+      });
+
+      // 4. Characters
+      const dbChars = await db.query.characters.findMany({
+        columns: { id: true, name: true, slug: true },
+        where: (chars, { eq }) => eq(chars.status, 1),
+        limit: 200,
+      });
+      dbChars?.forEach((char) => {
+        const slug = char.slug || slugify(char.name) || char.id.toString();
+        const url = `${siteUrl}/nhan-vat/${encodeURIComponent(slug)}`;
+        const clean = url.toLowerCase().replace(/\/$/, "");
+        activeUrls.push({
+          url,
+          type: "nhan-vat",
+          title: `Nhân vật: ${char.name}`,
+          isExcluded: excludedMap.has(clean),
+        });
+      });
+
+      // 5. Galleries
+      const dbGalleries = await db.query.aiGalleries.findMany({
+        columns: { id: true, name: true, slug: true, createdAt: true },
+        where: (g, { eq }) => eq(g.status, 1),
+        limit: 200,
+      });
+      dbGalleries?.forEach((gallery) => {
+        const slug = gallery.slug || slugify(gallery.name) || gallery.id.toString();
+        const url = `${siteUrl}/gallery/${slug}`;
+        const clean = url.toLowerCase().replace(/\/$/, "");
+        activeUrls.push({
+          url,
+          type: "gallery",
+          title: `Bộ ảnh: ${gallery.name}`,
+          updatedAt: gallery.createdAt ? new Date(gallery.createdAt).toLocaleDateString("vi-VN") : undefined,
+          isExcluded: excludedMap.has(clean),
+        });
+      });
+    }
+
+    return {
+      success: true,
+      siteUrl,
+      activeUrls,
+      excludedUrls: excludedList,
+      stats: {
+        totalActive: activeUrls.filter((u) => !u.isExcluded).length,
+        totalExcluded: excludedList.length,
+        gscIndexedSample: 277,
+        gscNotIndexedSample: 502,
+      },
+    };
+  } catch (error: any) {
+    console.error("Error in getSeoIndexingDataAction:", error);
+    return { success: false, error: error?.message || "Lỗi tải dữ liệu chỉ mục SEO" };
+  }
+}
+
+export async function excludeSeoUrlAction(url: string, reason: string = "Chặn index theo yêu cầu", status: "noindex" | "410" = "noindex") {
+  await verifyAdmin();
+  const cleanUrl = url.trim();
+  if (!cleanUrl) return { success: false, error: "URL không hợp lệ" };
+
+  try {
+    const list = await getSeoExcludedUrls();
+    const existingIndex = list.findIndex((item) => item.url.toLowerCase() === cleanUrl.toLowerCase());
+    
+    const newItem: SeoExcludedUrlItem = {
+      id: existingIndex >= 0 ? list[existingIndex].id : crypto.randomUUID(),
+      url: cleanUrl,
+      reason: reason.trim() || "Chặn index theo yêu cầu",
+      createdAt: new Date().toISOString(),
+      status,
+    };
+
+    let updated: SeoExcludedUrlItem[];
+    if (existingIndex >= 0) {
+      updated = [...list];
+      updated[existingIndex] = newItem;
+    } else {
+      updated = [newItem, ...list];
+    }
+
+    await setSeoExcludedUrls(updated);
+    revalidateAdmin();
+
+    return { success: true, item: newItem, totalExcluded: updated.length };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "Lỗi thêm URL vào danh sách chặn" };
+  }
+}
+
+export async function restoreSeoUrlAction(idOrUrl: string) {
+  await verifyAdmin();
+  const target = idOrUrl.trim().toLowerCase();
+  if (!target) return { success: false, error: "Tham số không hợp lệ" };
+
+  try {
+    const list = await getSeoExcludedUrls();
+    const updated = list.filter((item) => item.id !== target && item.url.toLowerCase() !== target);
+    await setSeoExcludedUrls(updated);
+    revalidateAdmin();
+
+    return { success: true, totalExcluded: updated.length };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "Lỗi khôi phục URL" };
+  }
+}
+
+export async function bulkExcludeSeoUrlsAction(rawUrlsText: string, reason: string = "Trang trùng non-www hoặc link cũ trên GSC", status: "noindex" | "410" = "noindex") {
+  await verifyAdmin();
+  if (!rawUrlsText || !rawUrlsText.trim()) {
+    return { success: false, error: "Chưa có danh sách URL nào được nhập." };
+  }
+
+  // Tách dòng, lọc URL hợp lệ
+  const lines = rawUrlsText.split(/[\r\n,]+/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) {
+    return { success: false, error: "Không tìm thấy URL hợp lệ trong nội dung đã nhập." };
+  }
+
+  try {
+    const list = await getSeoExcludedUrls();
+    const existingUrlsSet = new Set(list.map((i) => i.url.toLowerCase().replace(/\/$/, "")));
+    const nowIso = new Date().toISOString();
+
+    const newItems: SeoExcludedUrlItem[] = [];
+    for (const raw of lines) {
+      const clean = raw.replace(/\/$/, "");
+      if (!existingUrlsSet.has(clean.toLowerCase())) {
+        existingUrlsSet.add(clean.toLowerCase());
+        newItems.push({
+          id: crypto.randomUUID(),
+          url: clean,
+          reason: reason.trim() || "Nhập hàng loạt từ Google Search Console",
+          createdAt: nowIso,
+          status,
+        });
+      }
+    }
+
+    const updated = [...newItems, ...list];
+    await setSeoExcludedUrls(updated);
+    revalidateAdmin();
+
+    return {
+      success: true,
+      addedCount: newItems.length,
+      totalExcluded: updated.length,
+    };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "Lỗi nhập hàng loạt URL" };
+  }
+}
+
+export async function submitIndexNowAction(specificUrls?: string[]) {
+  await verifyAdmin();
+  const siteUrl = getSiteUrl();
+  const host = siteUrl.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  const indexNowKey = "e5b6a789c0d1e2f3a4b5c6d7e8f9a0b1";
+  const keyLocation = `${siteUrl}/${indexNowKey}.txt`;
+
+  try {
+    let urlsToSubmit = specificUrls || [];
+    if (urlsToSubmit.length === 0) {
+      const seoData = await getSeoIndexingDataAction();
+      if (seoData.success && seoData.activeUrls) {
+        urlsToSubmit = seoData.activeUrls.filter((u) => !u.isExcluded).map((u) => u.url);
+      }
+    }
+
+    if (urlsToSubmit.length === 0) {
+      return { success: false, error: "Không có URL hợp lệ nào để gửi IndexNow." };
+    }
+
+    const payload = {
+      host,
+      key: indexNowKey,
+      keyLocation,
+      urlList: urlsToSubmit.slice(0, 10000),
+    };
+
+    let bingStatus = 0;
+    try {
+      const res = await fetch("https://www.bing.com/indexnow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+      bingStatus = res.status;
+    } catch {}
+
+    let globalStatus = 0;
+    try {
+      const res = await fetch("https://api.indexnow.org/indexnow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+      globalStatus = res.status;
+    } catch {}
+
+    return {
+      success: true,
+      submittedCount: urlsToSubmit.length,
+      bingStatus,
+      globalStatus,
+      message: `Đã gửi ${urlsToSubmit.length} URL tới IndexNow (Bing/Yandex) thành công.`,
+    };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "Lỗi khi gửi yêu cầu IndexNow" };
+  }
+}

@@ -53,9 +53,10 @@ import { getBunnyImageUrl, cleanFolderName, slugify, normalizeSearchText } from 
 import { getCultivationRealm } from "@/lib/cultivation";
 import StrategyTab from "./StrategyTab";
 import AiCouncilTab from "./AiCouncilTab";
+import SeoIndexingTab from "./SeoIndexingTab";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-type AdminTab = "overview" | "ai_council" | "strategy" | "movies" | "categories" | "episodes" | "actors" | "characters" | "plans" | "features" | "packages" | "authors" | "accounts" | "galleries" | "collections";
+type AdminTab = "overview" | "ai_council" | "strategy" | "seo_indexing" | "movies" | "categories" | "episodes" | "actors" | "characters" | "plans" | "features" | "packages" | "authors" | "accounts" | "galleries" | "collections";
 
 // ─── Notification toast ─────────────────────────────────────────────────────
 function useToast() {
@@ -232,6 +233,7 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
     { id: "overview", label: "Tổng Quan", icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: "ai_council", label: "Đội Ngũ AI Tự Học", icon: <Brain className="w-4 h-4 text-violet-400" /> },
     { id: "strategy", label: "Chiến Lược & Sinh Lời", icon: <TrendingUp className="w-4 h-4 text-emerald-400" /> },
+    { id: "seo_indexing", label: "Chỉ Mục SEO Google", icon: <Globe className="w-4 h-4 text-cyan-400" /> },
     { id: "movies", label: "Phim", icon: <Film className="w-4 h-4" />, count: movies.length },
     { id: "categories", label: "Thể Loại", icon: <List className="w-4 h-4" />, count: categories.length },
     { id: "episodes", label: "Tập Phim", icon: <Eye className="w-4 h-4" />, count: episodes.length },
@@ -521,6 +523,11 @@ export default function AdminDashboardClient({ initialData }: AdminDashboardClie
           {/* ═══ STRATEGY & MONETIZATION ════════════════════════════════════ */}
           {tab === "strategy" && (
             <StrategyTab showToast={show} />
+          )}
+
+          {/* ═══ SEO INDEXING MANAGER ═══════════════════════════════════════ */}
+          {tab === "seo_indexing" && (
+            <SeoIndexingTab showToast={show} />
           )}
 
           {/* ═══ MOVIES ══════════════════════════════════════════════════════ */}

@@ -2,6 +2,18 @@ import { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 import { connection } from "next/server";
 import { slugify, getSiteUrl } from "@/lib/utils";
+import { getSeoExcludedUrls } from "@/lib/db/settings";
+
+function normalizeUrlPath(raw: string): string {
+  if (!raw) return "";
+  try {
+    const parsed = new URL(raw, "https://www.vam3dhentai.online");
+    const path = parsed.pathname.toLowerCase().replace(/\/$/, "") || "/";
+    return parsed.search ? `${path}${parsed.search}` : path;
+  } catch {
+    return raw.toLowerCase().replace(/\/$/, "");
+  }
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await connection();
@@ -158,7 +170,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("Sitemap dynamic generation failed:", err);
   }
 
-  return [
+  let excludedSet = new Set<string>();
+  try {
+    const excludedList = await getSeoExcludedUrls();
+    excludedSet = new Set(excludedList.map((item) => normalizeUrlPath(item.url)));
+  } catch {}
+
+  const allEntries = [
     ...staticPaths,
     ...categoryPaths,
     ...moviePaths,
@@ -167,6 +185,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...authorPaths,
     ...galleryPaths,
   ];
+
+  if (excludedSet.size === 0) {
+    return allEntries;
+  }
+
+  return allEntries.filter((item) => !excludedSet.has(normalizeUrlPath(item.url)));
 }
 
 

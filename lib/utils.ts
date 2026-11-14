@@ -158,13 +158,13 @@ export function formatFullNumber(num: number | null | undefined): string {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-/** Chuẩn hóa domain chính (non-www) cho canonical, sitemap và JSON-LD. */
+/** Chuẩn hóa domain chính (mặc định www khớp với 277+ trang đã index trên Google) cho canonical, sitemap và JSON-LD. */
 export function getSiteUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (envUrl && !envUrl.includes("localhost")) {
     return envUrl.replace(/\/$/, "");
   }
-  return "https://vam3dhentai.online";
+  return "https://www.vam3dhentai.online";
 }
 
 /** Tìm vị trí tập phim theo tham số `?ep=`; trả về -1 nếu không khớp. */

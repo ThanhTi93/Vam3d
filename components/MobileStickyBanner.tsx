@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import { getClientAdConfig } from "@/lib/adConfigClient";
-import { isAdFreeUser, isBotUserAgent } from "@/lib/adEligibility";
+import { isAdFreeUser, isBotUserAgent, isAdBlockedRoute } from "@/lib/adEligibility";
 import { enqueueAdsterraBanner } from "@/lib/adsterraBannerLoader";
 
 interface MobileStickyBannerProps {
@@ -15,13 +15,12 @@ interface MobileStickyBannerProps {
 
 const DEFAULT_BANNER_KEY = "651bb3282573ec62f4c54586864916b7";
 const SESSION_CLOSED_KEY = "__vam_sticky_banner_closed";
-const BLOCKED_PREFIXES = ["/admin", "/login", "/register", "/upgrade"];
 
 /**
  * Sticky Banner 320x50 dành riêng cho Mobile (< 768px):
  * - Dùng unit & key 320x50 độc lập qua domain Anti-Adblock biomanos.org.
  * - Chỉ chạy trên màn hình Mobile thật để tránh impression ẩn trên Desktop.
- * - Chặn Trang Chủ '/', trang quản trị, đăng nhập/nâng cấp, Googlebot và VIP.
+ * - Chặn Trang Chủ '/', '/sex-ai', '/anh-sex-ai', trang quản trị, đăng nhập/nâng cấp, Googlebot và VIP.
  */
 export default function MobileStickyBanner({
   className = "",
@@ -35,10 +34,7 @@ export default function MobileStickyBanner({
   const [isClosed, setIsClosed] = useState(false);
   const slotRef = useRef<HTMLDivElement | null>(null);
 
-  const isBlockedRoute =
-    !pathname ||
-    pathname === "/" ||
-    BLOCKED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  const isBlockedRoute = isAdBlockedRoute(pathname);
 
   const canShow =
     Boolean(adKey) &&

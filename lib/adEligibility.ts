@@ -22,3 +22,30 @@ export function isAdFreeUser(user: AdUserLike | null | undefined): boolean {
   const exp = new Date(user.expiredAt).getTime();
   return !isNaN(exp) && exp > Date.now();
 }
+
+/**
+ * Các route cấm hiển thị quảng cáo 100% để bảo vệ SEO, trang chủ và các danh mục nhạy cảm:
+ * - Trang Chủ '/'
+ * - Danh mục Sex AI ('/sex-ai', '/anh-sex-ai')
+ * - Các trang bảo mật, đăng nhập, thanh toán, quản trị
+ */
+export function isAdBlockedRoute(pathname: string | null | undefined): boolean {
+  if (!pathname) return true;
+  const clean = pathname.toLowerCase().trim();
+  if (clean === "/" || clean === "") return true;
+
+  const blockedPrefixes = [
+    "/admin",
+    "/login",
+    "/register",
+    "/upgrade",
+    "/challenge",
+    "/unauthorized",
+    "/sex-ai",
+    "/anh-sex-ai",
+  ];
+
+  return blockedPrefixes.some(
+    (prefix) => clean === prefix || clean.startsWith(prefix + "/") || clean.startsWith(prefix + "?")
+  );
+}
