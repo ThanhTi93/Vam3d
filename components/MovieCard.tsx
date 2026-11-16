@@ -8,7 +8,13 @@ import { useWatchlist } from "@/app/context/watchlistContext";
 import { getBunnyImageUrl } from "@/lib/utils";
 import { Movie } from "@/types";
 
-export default function MovieCard({ movie }: { movie: Movie }) {
+export default function MovieCard({
+  movie,
+  priority = false,
+}: {
+  movie: Movie;
+  priority?: boolean;
+}) {
   const { toggleWatchlist, isInWatchlist } = useWatchlist();
   const [hovered, setHovered] = useState(false);
 
@@ -25,6 +31,7 @@ export default function MovieCard({ movie }: { movie: Movie }) {
           src={getBunnyImageUrl(movie.thumbnail, 'thumb')}
           alt={`Xem phim ${movie.title} Full HD Vietsub Thuyết minh`}
           fill
+          priority={priority}
           className="object-cover group-hover:scale-105 transition-transform duration-500"
           sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
         />

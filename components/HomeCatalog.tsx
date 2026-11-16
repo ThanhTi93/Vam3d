@@ -108,9 +108,9 @@ function HomeCatalogContent({
               </div>
 
               {filteredMovies.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
-                  {filteredMovies.map((movie) => (
-                    <MovieCard key={movie.id} movie={movie} />
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {filteredMovies.map((movie, index) => (
+                    <MovieCard key={movie.id} movie={movie} priority={index < 4} />
                   ))}
                 </div>
               ) : (

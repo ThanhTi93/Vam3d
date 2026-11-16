@@ -262,9 +262,9 @@ export default function CategoryCatalog({
           {/* Movies List */}
           {filteredMovies.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-5 animate-in fade-in duration-300">
-                {paginatedMovies.map((movie) => (
-                  <MovieCard key={movie.id} movie={movie} />
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-5">
+                {paginatedMovies.map((movie, index) => (
+                  <MovieCard key={movie.id} movie={movie} priority={index < 4} />
                 ))}
               </div>
 
