@@ -158,11 +158,15 @@ export function formatFullNumber(num: number | null | undefined): string {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-/** Chuẩn hóa domain chính (mặc định www khớp với 277+ trang đã index trên Google) cho canonical, sitemap và JSON-LD. */
+/** Chuẩn hóa domain chính (luôn ép có www để khớp 100% với 277+ trang đã index trên Google) cho canonical, sitemap và JSON-LD. */
 export function getSiteUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (envUrl && !envUrl.includes("localhost")) {
-    return envUrl.replace(/\/$/, "");
+    const clean = envUrl.replace(/\/$/, "");
+    if (clean.includes("vam3dhentai.online") && !clean.includes("www.vam3dhentai.online")) {
+      return clean.replace(/https?:\/\/vam3dhentai\.online/i, "https://www.vam3dhentai.online");
+    }
+    return clean;
   }
   return "https://www.vam3dhentai.online";
 }
