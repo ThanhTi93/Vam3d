@@ -142,6 +142,7 @@ function HomeCatalogContent({
                   episodes={latestEpisodes}
                   showViews={true}
                   viewAllHref="/tap-phim?sort=newest"
+                  isPrioritySection={true}
                 />
               )}
 
@@ -205,12 +206,14 @@ function LatestEpisodesSection({
   episodes, 
   title, 
   showViews = false,
-  viewAllHref
+  viewAllHref,
+  isPrioritySection = false,
 }: { 
   episodes: any[]; 
   title: React.ReactNode; 
   showViews?: boolean;
   viewAllHref?: string;
+  isPrioritySection?: boolean;
 }) {
   const { freeVipMode } = useAuth();
   return (
@@ -230,8 +233,8 @@ function LatestEpisodesSection({
           </Link>
         )}
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
-        {episodes.map((ep) => {
+      <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 ${isPrioritySection ? "" : "animate-in fade-in duration-300"}`}>
+        {episodes.map((ep, index) => {
           const movieSlug = ep.movie?.slug || ep.idMovie || ep.movie?.id;
           const epSlug = ep.slug || (ep.name ? slugify(ep.name) : ep.id);
           const playUrl = `/movie/${movieSlug}?ep=${epSlug}`;
@@ -251,6 +254,7 @@ function LatestEpisodesSection({
                     src={getBunnyImageUrl(displayImage, 'thumb')}
                     alt={`${ep.movie?.name} - ${ep.name}`}
                     fill
+                    priority={isPrioritySection && index < 4}
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                     sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
                   />

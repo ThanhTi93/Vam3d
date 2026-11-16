@@ -11,7 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 // ─── Sub-component: Home Gallery Card ────────────────────────────────────────
-export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect?: (g: any) => void }) {
+export function HomeGalleryCard({ 
+  g, 
+  onSelect,
+  priority = false 
+}: { 
+  g: any; 
+  onSelect?: (g: any) => void;
+  priority?: boolean;
+}) {
   const router = useRouter();
   const { freeVipMode } = useAuth();
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -64,7 +72,8 @@ export function HomeGalleryCard({ g, onSelect }: { g: any; onSelect?: (g: any) =
             src={getBunnyImageUrl(imageUrl, 'thumb')}
             alt={g.name || "AI Gallery"}
             fill
-            className="object-cover group-hover:scale-105 transition-all duration-500 absolute inset-0 animate-in fade-in"
+            priority={priority}
+            className={`object-cover group-hover:scale-105 transition-all duration-500 absolute inset-0 ${priority ? "" : "animate-in fade-in"}`}
             sizes="(max-width: 768px) 50vw, 25vw"
           />
         ) : (
@@ -391,9 +400,9 @@ export function HomeGalleryGrid({
 
       {/* Grid of Galleries */}
       {displayGalleries.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 animate-in fade-in duration-300">
-          {displayGalleries.map((g) => (
-            <HomeGalleryCard key={g.id} g={g} onSelect={onSelectGallery} />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {displayGalleries.map((g, index) => (
+            <HomeGalleryCard key={g.id} g={g} onSelect={onSelectGallery} priority={index < 4} />
           ))}
         </div>
       ) : (
