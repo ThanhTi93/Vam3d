@@ -9,8 +9,6 @@ import JsonLd from "./components/JsonLd";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import TrafficTracker from "@/components/TrafficTracker";
-import AdsterraSocialBar from "@/components/AdsterraSocialBar";
-import MobileStickyBanner from "@/components/MobileStickyBanner";
 import { getSiteUrl } from "@/lib/utils";
 
 const inter = Inter({
@@ -144,10 +142,6 @@ export default function RootLayout({
               {children}
             </div>
             <Footer />
-            <Suspense fallback={null}>
-              <AdsterraSocialBar />
-              <MobileStickyBanner />
-            </Suspense>
           </WatchlistProvider>
         </AuthProvider>
         <Script

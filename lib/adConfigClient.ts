@@ -11,13 +11,13 @@ export interface ClientAdConfig {
 }
 
 const DEFAULT_AD_CONFIG: ClientAdConfig = {
-  socialBarEnabled: true,
-  banner300Enabled: true,
-  nativeBannerEnabled: true,
-  mobileStickyEnabled: true,
+  socialBarEnabled: false,
+  banner300Enabled: false,
+  nativeBannerEnabled: false,
+  mobileStickyEnabled: false,
   popunderUrl: "",
   popunderEnabled: false,
-  popunderIntervalHours: 12,
+  popunderIntervalHours: 24,
 };
 
 let cachedConfig: ClientAdConfig | null = null;
