@@ -6,7 +6,10 @@ const nextConfig: NextConfig = {
       ignoreBuildErrors: true,
     },
     images: {
-      unoptimized: true,
+      formats: ["image/avif", "image/webp"],
+      minimumCacheTTL: 2592000,
+      deviceSizes: [384, 640, 750, 828, 1080, 1200, 1920],
+      imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
       remotePatterns: (() => {
         const patterns: any[] = [
           {
@@ -29,6 +32,31 @@ const nextConfig: NextConfig = {
             hostname: "*.b-cdn.net",
             pathname: "/**",
           },
+          {
+            protocol: "https",
+            hostname: "*.r2.dev",
+            pathname: "/**",
+          },
+          {
+            protocol: "https",
+            hostname: "pub-990b17b26195410f8d6faba5f800f6bf.r2.dev",
+            pathname: "/**",
+          },
+          {
+            protocol: "https",
+            hostname: "cdn.vam3dhentai.online",
+            pathname: "/**",
+          },
+          {
+            protocol: "https",
+            hostname: "www.vam3dhentai.online",
+            pathname: "/**",
+          },
+          {
+            protocol: "https",
+            hostname: "vam3dhentai.online",
+            pathname: "/**",
+          },
         ];
 
         const bunnyCdnUrl = process.env.NEXT_PUBLIC_BUNNY_CDN_URL || "https://cdn.vam3dhentai.online";
@@ -44,6 +72,22 @@ const nextConfig: NextConfig = {
             console.error("Lỗi parse NEXT_PUBLIC_BUNNY_CDN_URL trong next.config.ts:", e);
           }
         }
+
+        const r2PublicDomain = process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN;
+        if (r2PublicDomain) {
+          try {
+            const clean = r2PublicDomain.startsWith("http") ? r2PublicDomain : `https://${r2PublicDomain}`;
+            const urlObj = new URL(clean);
+            patterns.push({
+              protocol: urlObj.protocol.replace(":", ""),
+              hostname: urlObj.hostname,
+              pathname: "/**",
+            });
+          } catch (e) {
+            console.error("Lỗi parse NEXT_PUBLIC_R2_PUBLIC_DOMAIN trong next.config.ts:", e);
+          }
+        }
+
         return patterns;
       })(),
     },
