@@ -73,6 +73,7 @@ export function HomeGalleryCard({
             alt={g.name || "AI Gallery"}
             fill
             priority={priority}
+            fetchPriority={priority ? "high" : undefined}
             className={`object-cover group-hover:scale-105 transition-all duration-500 absolute inset-0 ${priority ? "" : "animate-in fade-in"}`}
             sizes="(max-width: 768px) 50vw, 25vw"
           />

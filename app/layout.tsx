@@ -1,7 +1,7 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Inter, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { WatchlistProvider } from "./context/watchlistContext";
 import { AuthProvider } from "./context/AuthContext";
@@ -14,12 +14,6 @@ import { getSiteUrl } from "@/lib/utils";
 const inter = Inter({
   variable: "--font-sans",
   subsets: ["vietnamese", "latin"],
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
   display: "swap",
 });
 
@@ -125,7 +119,7 @@ export default function RootLayout({
     <html
       lang="vi"
       suppressHydrationWarning
-      className={`${inter.variable} ${geistMono.variable} dark h-full antialiased bg-[#090a0f] text-gray-100`}
+      className={`${inter.variable} dark h-full antialiased bg-[#090a0f] text-gray-100`}
     >
       <head>
         <JsonLd data={websiteJsonLd} />

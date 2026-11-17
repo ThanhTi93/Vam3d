@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
     staticPageGenerationTimeout: 180,
+    experimental: {
+      optimizePackageImports: ["lucide-react"],
+    },
     typescript: {
       ignoreBuildErrors: true,
     },

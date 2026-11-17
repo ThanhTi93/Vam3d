@@ -255,6 +255,7 @@ function LatestEpisodesSection({
                     alt={`${ep.movie?.name} - ${ep.name}`}
                     fill
                     priority={isPrioritySection && index < 4}
+                    fetchPriority={(isPrioritySection && index < 4) ? "high" : undefined}
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                     sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
                   />
