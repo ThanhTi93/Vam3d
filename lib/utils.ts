@@ -38,42 +38,19 @@ export function getBunnyImageUrl(
     processedUrl = `${cdnUrl}${cleanPath}`;
   }
 
-  // For original high-resolution files / raw source: return untouched
-  if (type === 'original') {
-    if (processedUrl.endsWith('display.webp') || processedUrl.endsWith('thumb.webp') || processedUrl.endsWith('original.png')) {
-      const lastSlashIdx = processedUrl.lastIndexOf('/');
-      if (lastSlashIdx !== -1) {
-        return `${processedUrl.substring(0, lastSlashIdx + 1)}original.png`;
-      }
-    }
-    return processedUrl;
-  }
-
-  // Prevent double wrapping if already processed by wsrv.nl
-  if (processedUrl.includes('wsrv.nl')) {
-    return processedUrl;
-  }
-
-  // If it's an AI gallery that already has dedicated pre-rendered sizes
+  // If it's an image URL that has multiple sizes (ends with display.webp, thumb.webp, or original.png)
   if (processedUrl.endsWith('display.webp') || processedUrl.endsWith('thumb.webp') || processedUrl.endsWith('original.png')) {
     const lastSlashIdx = processedUrl.lastIndexOf('/');
     if (lastSlashIdx !== -1) {
       const basePath = processedUrl.substring(0, lastSlashIdx + 1); // retains the trailing slash
+      if (type === 'original') {
+        return `${basePath}original.png`;
+      }
       if (type === 'thumb') {
         return `${basePath}thumb.webp`;
       }
       return `${basePath}display.webp`;
     }
-  }
-
-  // For movie banners and UI displayed images (which are large ~1620x707):
-  // Use Cloudflare-backed wsrv.nl Edge CDN to resize on the fly without consuming VPS CPU/RAM
-  const cleanTarget = processedUrl.replace(/^https?:\/\//, '');
-  if (type === 'thumb') {
-    return `https://wsrv.nl/?url=${encodeURIComponent(cleanTarget)}&w=500&output=webp&q=80`;
-  }
-  if (type === 'display') {
-    return `https://wsrv.nl/?url=${encodeURIComponent(cleanTarget)}&w=900&output=webp&q=85`;
   }
 
   // Fallback to processed URL
