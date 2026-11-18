@@ -146,7 +146,6 @@ export default function Header() {
               alt="Vam3D Logo"
               width={140}
               height={40}
-              priority
               className="object-contain transition-transform group-hover:scale-105 h-10 w-auto"
               style={{ aspectRatio: "140 / 40" }}
             />

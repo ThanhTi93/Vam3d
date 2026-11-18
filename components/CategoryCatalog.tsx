@@ -107,7 +107,7 @@ export default function CategoryCatalog({
   const currentSlugClean = (categorySlug || slugify(categoryTitle)).toLowerCase();
 
   return (
-    <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6 space-y-8 animate-in fade-in duration-300">
+    <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6 space-y-8">
       {/* ─── SEO HERO HEADER / CATEGORY DESCRIPTION CARD ─── */}
       <header className="relative bg-gradient-to-b from-[#161826] to-[#0f1019] border border-white/10 rounded-2xl sm:rounded-3xl p-5 sm:p-7 md:p-8 overflow-hidden shadow-2xl">
         {/* Background glow effects */}
@@ -253,11 +253,6 @@ export default function CategoryCatalog({
               </span>
             </div>
           </div>
-
-          {/* Native Banner Adsterra (Chặn Googlebot 100%, Lazy-load chuẩn SEO; không hiển thị ở sex-ai, anh-sex-ai) */}
-          {currentSlugClean !== "sex-ai" && currentSlugClean !== "anh-sex-ai" && (
-            <AdGalleryNativeBanner refreshKey={`cat-${currentSlugClean}-p${safeCurrentPage}`} />
-          )}
 
           {/* Movies List */}
           {filteredMovies.length > 0 ? (
