@@ -27,6 +27,11 @@ const nextConfig: NextConfig = {
           },
           {
             protocol: "https",
+            hostname: "wsrv.nl",
+            pathname: "/**",
+          },
+          {
+            protocol: "https",
             hostname: "www.gravatar.com",
             pathname: "/**",
           },
