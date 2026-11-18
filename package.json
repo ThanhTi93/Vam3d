@@ -63,11 +63,11 @@
   },
   "browserslist": [
     "defaults and fully supports es6-module",
-    "chrome >= 90",
-    "edge >= 90",
-    "firefox >= 90",
-    "safari >= 15",
-    "ios_saf >= 15",
+    "chrome >= 95",
+    "edge >= 95",
+    "firefox >= 95",
+    "safari >= 15.4",
+    "ios_saf >= 15.4",
     "not dead"
   ]
 }

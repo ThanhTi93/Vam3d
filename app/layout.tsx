@@ -15,6 +15,9 @@ const inter = Inter({
   variable: "--font-sans",
   subsets: ["vietnamese", "latin"],
   display: "swap",
+  preload: true,
+  fallback: ["system-ui", "-apple-system", "sans-serif"],
+  adjustFontFallback: true,
 });
 
 const siteUrl = getSiteUrl();

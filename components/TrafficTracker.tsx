@@ -18,51 +18,63 @@ export default function TrafficTracker() {
     if (lastTrackedPath.current === currentUrl) return;
     lastTrackedPath.current = currentUrl;
 
-    // Detect initial referrer or stored session referrer
-    let referrer = document.referrer || "";
-    if (typeof window !== "undefined") {
-      const storedRef = sessionStorage.getItem("__vam_initial_referrer");
-      if (!storedRef && document.referrer) {
-        sessionStorage.setItem("__vam_initial_referrer", document.referrer);
-      }
-      if (!referrer && storedRef) {
-        referrer = storedRef;
-      }
-    }
+    const track = () => {
+      // Detect initial referrer or stored session referrer
+      let referrer = document.referrer || "";
+      try {
+        const storedRef = sessionStorage.getItem("__vam_initial_referrer");
+        if (!storedRef && document.referrer) {
+          sessionStorage.setItem("__vam_initial_referrer", document.referrer);
+        }
+        if (!referrer && storedRef) {
+          referrer = storedRef;
+        }
+      } catch {}
 
-    // Detect device type
-    const isMobile =
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      // Detect device type without forced geometric reflow (use matchMedia instead of window.innerWidth)
+      const isMobileAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         typeof navigator !== "undefined" ? navigator.userAgent : ""
-      ) || (typeof window !== "undefined" && window.innerWidth < 768);
+      );
+      const isMobileWidth = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+      const isMobile = isMobileAgent || isMobileWidth;
 
-    const isTablet =
-      /iPad|Tablet/i.test(typeof navigator !== "undefined" ? navigator.userAgent : "") ||
-      (typeof window !== "undefined" && window.innerWidth >= 768 && window.innerWidth < 1024);
+      const isTabletAgent = /iPad|Tablet/i.test(typeof navigator !== "undefined" ? navigator.userAgent : "");
+      const isTabletWidth = typeof window !== "undefined" && window.matchMedia("(min-width: 768px) and (max-width: 1023px)").matches;
+      const isTablet = isTabletAgent || isTabletWidth;
 
-    const device = isMobile ? "mobile" : isTablet ? "tablet" : "desktop";
+      const device = isMobile ? "mobile" : isTablet ? "tablet" : "desktop";
 
-    const payload = {
-      path: currentUrl,
-      title: typeof document !== "undefined" ? document.title : "",
-      referrer,
-      device,
+      const payload = {
+        path: currentUrl,
+        title: typeof document !== "undefined" ? document.title : "",
+        referrer,
+        device,
+      };
+
+      try {
+        if (typeof navigator !== "undefined" && "sendBeacon" in navigator) {
+          const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+          navigator.sendBeacon("/api/analytics/track", blob);
+        } else {
+          fetch("/api/analytics/track", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            keepalive: true,
+          }).catch(() => {});
+        }
+      } catch {
+        // Ignore network errors on background tracking
+      }
     };
 
-    try {
-      if (typeof navigator !== "undefined" && "sendBeacon" in navigator) {
-        const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
-        navigator.sendBeacon("/api/analytics/track", blob);
-      } else {
-        fetch("/api/analytics/track", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          keepalive: true,
-        }).catch(() => {});
-      }
-    } catch {
-      // Ignore network errors on background tracking
+    // Defer tracking to idle time to never block main thread or cause forced reflow during hydration
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      const handle = (window as any).requestIdleCallback(track, { timeout: 2000 });
+      return () => (window as any).cancelIdleCallback(handle);
+    } else {
+      const timer = setTimeout(track, 1000);
+      return () => clearTimeout(timer);
     }
   }, [pathname, searchParams]);
 
