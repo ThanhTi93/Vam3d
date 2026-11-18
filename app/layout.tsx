@@ -1,7 +1,6 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { WatchlistProvider } from "./context/watchlistContext";
 import { AuthProvider } from "./context/AuthContext";
@@ -10,15 +9,6 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import TrafficTracker from "@/components/TrafficTracker";
 import { getSiteUrl } from "@/lib/utils";
-
-const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["vietnamese", "latin"],
-  display: "swap",
-  preload: true,
-  fallback: ["system-ui", "-apple-system", "sans-serif"],
-  adjustFontFallback: true,
-});
 
 const siteUrl = getSiteUrl();
 
@@ -122,7 +112,7 @@ export default function RootLayout({
     <html
       lang="vi"
       suppressHydrationWarning
-      className={`${inter.variable} dark h-full antialiased bg-[#090a0f] text-gray-100`}
+      className="dark h-full antialiased bg-[#090a0f] text-gray-100"
     >
       <head>
         <JsonLd data={websiteJsonLd} />
