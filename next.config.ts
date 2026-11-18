@@ -13,10 +13,7 @@ const nextConfig: NextConfig = {
       ignoreBuildErrors: true,
     },
     images: {
-      formats: ["image/webp"],
-      minimumCacheTTL: 2592000,
-      deviceSizes: [384, 640, 750, 1080, 1200, 1920],
-      imageSizes: [32, 64, 96, 128, 256, 384],
+      unoptimized: true,
       remotePatterns: (() => {
         const patterns: any[] = [
           {
