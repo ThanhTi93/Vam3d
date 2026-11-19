@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getMoviesByCategory, getAllMovies, getAllCategories } from "@/lib/db/queries";
 import CategoryCatalog from "@/components/CategoryCatalog";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { slugify, getSiteUrl } from "@/lib/utils";
+import { slugify, getSiteUrl, getBunnyImageUrl } from "@/lib/utils";
 import { getCategoryDetails, findMatchingCategory } from "@/lib/categories";
 
 interface PageProps {
@@ -40,8 +40,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   
   const isImageCategory = titleName.toLowerCase().startsWith("ảnh") || titleName.toLowerCase().includes("bộ sưu tập");
   const title = isImageCategory
-    ? `${titleName} Sắc Nét 4K Mới Nhất 2026 – Kho Ảnh 3D Tuyệt Đẹp | Vam3D`
-    : `Phim ${titleName} Mới Nhất 2026 – Tuyển Tập Phim ${titleName} Vietsub HD | Vam3D`;
+    ? `${titleName} 4K Sắc Nét Mới Nhất 2026 | Vam3D`
+    : `Phim ${titleName} Vietsub 4K Mới Nhất 2026 | Vam3D`;
 
   const description = (
     categoryDetails.description ||
@@ -112,6 +112,9 @@ export async function generateStaticParams() {
     { categoryName: "phim-bo" },
     { categoryName: "chieu-rap" },
     { categoryName: "hoat-hinh" },
+    { categoryName: "sex-ai" },
+    { categoryName: "sex-3d" },
+    { categoryName: "hentai-3d" },
   ];
 }
 
@@ -154,7 +157,7 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
           slugify(mc?.category?.name || "").includes(inputSlug)
         )
       );
-      movies = matched.length > 0 ? matched : allMovies;
+      movies = matched;
     }
   } catch (err) {
     console.error("Error loading category movies:", err);
@@ -255,7 +258,7 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
         position: index + 1,
         url: `${siteUrl}/movie/${movie.slug || movie.id}`,
         name: movie.title,
-        image: movie.thumbnail || movie.banner,
+        image: getBunnyImageUrl(movie.thumbnail || movie.banner, "display"),
       })),
     },
   };
@@ -294,7 +297,7 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
       )}
 
       <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-4">
-        <Breadcrumbs items={[{ label: titleName }]} />
+        <Breadcrumbs items={[{ label: titleName, href: `/${canonicalSlug}` }]} />
         <CategoryCatalog
           categoryTitle={titleName}
           categorySlug={categoryDetails.slug || inputSlug}

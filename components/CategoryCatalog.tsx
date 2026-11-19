@@ -65,13 +65,21 @@ export default function CategoryCatalog({
       const params = new URLSearchParams(window.location.search);
       const qParam = params.get("q") || "";
       const genreParam = params.get("genre");
+      const pageParam = parseInt(params.get("page") || "1", 10);
       if (qParam) setSearchQuery(qParam);
       if (genreParam) setSelectedGenre(genreParam);
+      if (!isNaN(pageParam) && pageParam > 1) setCurrentPage(pageParam);
     }
   }, []);
 
-  // Reset to page 1 on filter or search change
+  const hasMountedRef = React.useRef(false);
+
+  // Reset to page 1 on filter or search change (skip initial mount so ?page=N is preserved)
   useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
     setCurrentPage(1);
   }, [searchQuery, selectedGenre, categorySlug]);
 
@@ -150,8 +158,8 @@ export default function CategoryCatalog({
             <div className="bg-[#0b0c13]/70 backdrop-blur-md rounded-xl p-4 sm:p-5 border border-white/5 space-y-3">
               <div className="text-gray-300 text-xs sm:text-sm leading-relaxed">
                 <p>{categoryDescription}</p>
-                {categoryLongDescription && isDescExpanded && (
-                  <p className="mt-2.5 text-gray-400 border-t border-white/5 pt-2.5 animate-in fade-in duration-200">
+                {categoryLongDescription && (
+                  <p className={`mt-2.5 text-gray-400 border-t border-white/5 pt-2.5 ${isDescExpanded ? "block" : "hidden"}`}>
                     {categoryLongDescription}
                   </p>
                 )}
@@ -309,21 +317,31 @@ export default function CategoryCatalog({
                             );
                           }
                           const isActive = item === safeCurrentPage;
+                          const pageHref = item === 1
+                            ? `/${encodeURIComponent(currentSlugClean)}`
+                            : `/${encodeURIComponent(currentSlugClean)}?page=${item}`;
                           return (
-                            <button
+                            <Link
                               key={item}
-                              onClick={() => {
+                              href={pageHref}
+                              prefetch={false}
+                              onClick={(e) => {
+                                e.preventDefault();
                                 setCurrentPage(item);
-                                window.scrollTo({ top: 250, behavior: "smooth" });
+                                if (typeof window !== "undefined") {
+                                  window.history.replaceState(null, "", pageHref);
+                                  window.scrollTo({ top: 250, behavior: "smooth" });
+                                }
                               }}
-                              className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              aria-current={isActive ? "page" : undefined}
+                              className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center ${
                                 isActive
                                   ? "bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-md shadow-orange-500/20"
                                   : "bg-[#131520] border border-white/10 text-gray-400 hover:text-white hover:border-white/20"
                               }`}
                             >
                               {item}
-                            </button>
+                            </Link>
                           );
                         })}
                     </div>
@@ -396,11 +414,13 @@ export default function CategoryCatalog({
                         />
                       </button>
 
-                      {isOpen && (
-                        <div className="px-4 sm:px-5 pb-4 sm:pb-5 text-xs sm:text-sm text-gray-400 border-t border-white/5 pt-3 leading-relaxed animate-in fade-in duration-200">
-                          {faq.answer}
-                        </div>
-                      )}
+                      <div
+                        className={`px-4 sm:px-5 pb-4 sm:pb-5 text-xs sm:text-sm text-gray-400 border-t border-white/5 pt-3 leading-relaxed ${
+                          isOpen ? "block" : "hidden"
+                        }`}
+                      >
+                        {faq.answer}
+                      </div>
                     </article>
                   );
                 })}

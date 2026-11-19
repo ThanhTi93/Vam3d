@@ -89,7 +89,7 @@ function HomeCatalogContent({
 
   return (
     <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-8">
-      <h1 className="sr-only">Vam3D – Xem Phim Online Thuyết Minh Vietsub HD</h1>
+      <h1 className="sr-only">Vam3D – Xem Phim Hoạt Hình 3D & Anime Vietsub Thuyết Minh HD</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Left column: Movie Catalog or Sections */}

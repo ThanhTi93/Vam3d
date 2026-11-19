@@ -1,13 +1,38 @@
 import type { Metadata } from "next";
 import { getAllMovies, getMostViewedEpisodes, getLatestEpisodes, getLatestGalleries } from "@/lib/db/queries";
 import HomeCatalog from "@/components/HomeCatalog";
-import { getSiteUrl, buildAggregateRating } from "@/lib/utils";
+import { getSiteUrl, buildAggregateRating, getBunnyImageUrl } from "@/lib/utils";
+
+const homeTitle = "Vam3D – Xem Phim Hoạt Hình 3D & Anime Vietsub Thuyết Minh HD";
+const homeDescription = "Website xem phim hoạt hình 3D, anime vietsub, thuyết minh Full HD miễn phí hàng đầu cùng kho bộ sưu tập ảnh AI 4K độc quyền cập nhật mỗi ngày tại Vam3D.";
 
 export const metadata: Metadata = {
-  title: "Vam3D – Xem Phim Hoạt Hình 3D & Anime Vietsub Thuyết Minh HD",
-  description: "Website xem phim trực tuyến miễn phí hàng đầu. Cập nhật liên tục phim hoạt hình 3D, anime vietsub, thuyết minh Full HD cùng kho bộ sưu tập ảnh AI 4K độc quyền tại Vam3D.",
+  title: homeTitle,
+  description: homeDescription,
   alternates: {
     canonical: "/",
+  },
+  openGraph: {
+    title: homeTitle,
+    description: homeDescription,
+    url: "/",
+    type: "website",
+    locale: "vi_VN",
+    siteName: "Vam3D",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: homeTitle,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: homeTitle,
+    description: homeDescription,
+    images: ["/og-image.jpg"],
   },
 };
 
@@ -142,7 +167,7 @@ export default async function Home() {
           "@type": "Movie",
           name: m.title,
           alternateName: m.originalTitle || undefined,
-          image: m.thumbnail || `${siteUrl}/og-image.jpg`,
+          image: m.thumbnail ? getBunnyImageUrl(m.thumbnail, "display") : `${siteUrl}/og-image.jpg`,
           url: `${siteUrl}/movie/${m.slug || m.id}`,
           description: m.description || undefined,
           ...(aggregateRating ? { aggregateRating } : {}),
@@ -159,7 +184,7 @@ export default async function Home() {
           __html: JSON.stringify(homeItemListJsonLd).replace(/</g, "\\u003c"),
         }}
       />
-      <div className="flex-1 flex flex-col animate-in fade-in duration-300">
+      <div className="flex-1 flex flex-col">
         <HomeCatalog 
           movies={formattedAllMovies} 
           galleries={galleries || []} 

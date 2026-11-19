@@ -117,7 +117,21 @@ export const DEFAULT_CATEGORIES: CategoryItem[] = [
     description: "Kho phim sex AI Vietsub và hoạt cảnh 3D AI công nghệ cao siêu nét tại Vam3D. Tạo hình waifu, nhân vật ảo 18+ nóng bỏng chuẩn 4K không che độc quyền.",
     longDescription: "Trải nghiệm đỉnh cao công nghệ với danh mục Sex AI tại Vam3D. Ứng dụng thuật toán AI tạo hình siêu thực, mang đến những thước phim 18+ với dàn nhân vật nữ ảo quyến rũ, body bốc lửa và đường nét sắc sảo vượt trội.",
     highlights: ["Công nghệ AI tiên tiến", "Đồ họa siêu thực 4K", "Tạo hình 18+ bốc lửa", "Nội dung độc quyền không che"],
-    keywords: ["sex ai", "sex ai vietsub", "phim sex ai", "sex ai 3d", "vam3d sex ai", "sex ai moi nhat"]
+    keywords: ["sex ai", "sex ai vietsub", "phim sex ai", "sex ai 3d", "vam3d sex ai", "sex ai moi nhat"],
+    faqs: [
+      {
+        question: "Phim Sex AI tại Vam3D có điểm gì nổi bật so với hoạt hình 3D thông thường?",
+        answer: "Phim Sex AI tại Vam3D ứng dụng công nghệ trí tuệ nhân tạo tạo hình siêu thực, mang đến đường nét nhân vật sắc sảo, biểu cảm chân thực và độ phân giải chuẩn Full HD / 4K mượt mà."
+      },
+      {
+        question: "Xem phim thể loại Sex AI tại Vam3D có hỗ trợ Vietsub không?",
+        answer: "Có, toàn bộ các tập phim thuộc danh mục Sex AI đều được tuyển chọn kỹ lưỡng, cập nhật phụ đề Vietsub đầy đủ và tương thích tốt trên cả điện thoại lẫn máy tính."
+      },
+      {
+        question: "Danh mục Sex AI được cập nhật tập mới vào lúc nào?",
+        answer: "Vam3D cập nhật liên tục các siêu phẩm Sex AI mới nhất mỗi ngày với máy chủ tốc độ cao, giúp bạn thưởng thức trọn vẹn không giật lag."
+      }
+    ]
   },
   { 
     id: 9, 
