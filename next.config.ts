@@ -95,6 +95,27 @@ const nextConfig: NextConfig = {
         return patterns;
       })(),
     },
+    async headers() {
+      return [
+        {
+          source: "/:path*",
+          headers: [
+            {
+              key: "X-Content-Type-Options",
+              value: "nosniff",
+            },
+            {
+              key: "Referrer-Policy",
+              value: "strict-origin-when-cross-origin",
+            },
+            {
+              key: "X-Frame-Options",
+              value: "SAMEORIGIN",
+            },
+          ],
+        },
+      ];
+    },
     async redirects() {
       return [
         // Chuyển hướng 301 chuẩn hóa non-www sang www để giải quyết triệt để 502 URL chưa lập chỉ mục trên GSC
