@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { getEpisodesPaginated, getAllMovies } from "@/lib/db/queries";
 import TapPhimClient from "./TapPhimClient";
-import { getSiteUrl } from "@/lib/utils";
+import { getSiteUrl, getBunnyImageUrl } from "@/lib/utils";
 
 export const revalidate = 3600;
 
@@ -34,6 +34,14 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   return {
     title,
     description,
+    ...(searchParam
+      ? {
+          robots: {
+            index: false,
+            follow: true,
+          },
+        }
+      : {}),
     keywords: [
       "tap phim 3d",
       "tap phim moi nhat",
@@ -113,7 +121,9 @@ export default async function TapPhimPage({ searchParams }: PageProps) {
         "@type": "VideoObject",
         name: `${ep.movie?.name || "Phim"} - ${ep.name || `Tập ${ep.id}`}`,
         description: `Xem ${ep.name} của ${ep.movie?.name || "phim"} Full HD tại Vam3D.`,
-        thumbnailUrl: ep.banner || ep.movie?.imgUrl || `${siteUrl}/og-image.jpg`,
+        thumbnailUrl: (ep.banner || ep.movie?.imgUrl)
+          ? getBunnyImageUrl(ep.banner || ep.movie?.imgUrl, "display")
+          : `${siteUrl}/og-image.jpg`,
         uploadDate: ep.createdAt ? new Date(ep.createdAt).toISOString() : new Date().toISOString(),
         duration: ep.duration ? `PT${Math.floor(ep.duration / 60)}M${ep.duration % 60}S` : undefined,
         interactionStatistic: {

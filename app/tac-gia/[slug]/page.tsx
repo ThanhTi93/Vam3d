@@ -1,9 +1,9 @@
 import React from "react";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getAuthorDetails } from "@/lib/db/queries";
 import AuthorDetailPageClient from "./AuthorDetailPageClient";
-import { getSiteUrl } from "@/lib/utils";
+import { getSiteUrl, getBunnyImageUrl } from "@/lib/utils";
 
 export const revalidate = 3600;
 
@@ -30,13 +30,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const siteUrl = getSiteUrl();
 
   const movieNames = (movies || []).map((m: any) => m.name).slice(0, 3).join(", ");
-  const title = `Tác Giả ${author.name} – Danh Sách Tác Phẩm Phim 3D Hay Nhất | Vam3D`;
-  const description = author.description
-    ? `${author.name}: ${author.description.slice(0, 160)}... Tuyển tập phim 3D của tác giả ${author.name} tại Vam3D.`
-    : `Khám phá toàn bộ tác phẩm phim hoạt hình 3D của tác giả ${author.name} (${movieNames}) chất lượng Full HD tại Vam3D.`;
+  const title = `Tác Giả ${author.name} – Tác Phẩm Phim 3D Hay Nhất | Vam3D`;
+  const rawDescription = author.description
+    ? `${author.name}: ${author.description}`
+    : `Khám phá toàn bộ tác phẩm phim hoạt hình 3D của tác giả ${author.name}${movieNames ? ` (${movieNames})` : ""} chất lượng Full HD tại Vam3D.`;
+  const description = rawDescription.replace(/\s+/g, " ").trim().slice(0, 160);
 
   const canonicalUrl = `${siteUrl}/tac-gia/${author.slug || author.id}`;
-  const ogImage = movies?.[0]?.imgUrl || `${siteUrl}/og-image.jpg`;
+  const ogImage = movies?.[0]?.imgUrl ? getBunnyImageUrl(movies[0].imgUrl, "display") : `${siteUrl}/og-image.jpg`;
 
   return {
     title,
@@ -84,6 +85,9 @@ export default async function AuthorDetailPage({ params }: PageProps) {
   }
 
   const { author, movies, otherAuthors } = data;
+  if (author.slug && slug !== author.slug) {
+    permanentRedirect(`/tac-gia/${author.slug}`);
+  }
   const siteUrl = getSiteUrl();
 
   // Person Schema + BreadcrumbList Schema for SEO
@@ -131,7 +135,7 @@ export default async function AuthorDetailPage({ params }: PageProps) {
             "@type": "Movie",
             name: m.name,
             url: `${siteUrl}/movie/${m.slug || m.id}`,
-            image: m.imgUrl,
+            image: m.imgUrl ? getBunnyImageUrl(m.imgUrl, "display") : `${siteUrl}/og-image.jpg`,
           },
         })),
       },

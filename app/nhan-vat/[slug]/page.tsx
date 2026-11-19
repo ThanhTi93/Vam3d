@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getCharacterDetails, getAllCharacters } from "@/lib/db/queries";
 import CharacterDetailPageClient from "./CharacterDetailPageClient";
 import { getBunnyImageUrl, slugify, getSiteUrl } from "@/lib/utils";
@@ -23,22 +23,6 @@ export async function generateStaticParams() {
       if (primarySlug && !seenSlugs.has(primarySlug)) {
         seenSlugs.add(primarySlug);
         params.push({ slug: primarySlug });
-      }
-
-      if (c.nameEn) {
-        const enSlug = slugify(c.nameEn);
-        if (enSlug && !seenSlugs.has(enSlug)) {
-          seenSlugs.add(enSlug);
-          params.push({ slug: enSlug });
-        }
-      }
-
-      if (c.nameZh && c.nameZh.trim()) {
-        const zhSlug = c.nameZh.trim();
-        if (zhSlug && !seenSlugs.has(zhSlug)) {
-          seenSlugs.add(zhSlug);
-          params.push({ slug: zhSlug });
-        }
       }
     }
 
@@ -70,9 +54,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Canonical is ALWAYS the primary URL (Google SEO best practice to avoid duplicate content)
   const canonicalSlug = character.slug || slugify(character.name) || character.id.toString();
   const charUrl = `${siteUrl}/nhan-vat/${encodeURIComponent(canonicalSlug)}`;
-  const subNames = [character.nameEn, character.nameZh].filter(Boolean).join(" · ");
-  
-  const title = `Ảnh 3D 18+ ${character.name}${subNames ? ` (${subNames})` : ""} – Phim Hentai & Bộ Sưu Tập Sex Vam 3D | Vam3D`;
+
+  const title = `Ảnh 3D 18+ ${character.name} – Phim & Bộ Sưu Tập 4K | Vam3D`;
   const description = (
     character.description
       ? `${character.description} Tuyển tập ảnh 3D 18+, ảnh sex Vam 3D và các tập phim hentai 3D của ${character.name} sắc nét 4K tại Vam3D.`
@@ -139,6 +122,10 @@ export default async function CharacterDetailPage({ params }: PageProps) {
   const siteUrl = getSiteUrl();
 
   const canonicalSlug = character.slug || slugify(character.name) || character.id.toString();
+  const decodedParamSlug = decodeURIComponent(slug);
+  if (canonicalSlug && decodedParamSlug !== canonicalSlug) {
+    permanentRedirect(`/nhan-vat/${encodeURIComponent(canonicalSlug)}`);
+  }
   const charUrl = `${siteUrl}/nhan-vat/${encodeURIComponent(canonicalSlug)}`;
   const posterUrl = character.imgUrl
     ? getBunnyImageUrl(character.imgUrl, "display")
