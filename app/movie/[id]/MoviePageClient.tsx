@@ -371,7 +371,7 @@ export default function MoviePageClient({
                         ? (movie.slug || movie.id)
                         : (ep.movie?.slug || ep.idMovie);
                       const playUrl = `/movie/${movieIdentifier}?ep=${epSlug}`;
-                      const displayImage = ep.banner || ep.movie?.imgUrl || ep.movie?.bannerUrl || "";
+                      const displayImage = ep.mobileBanner || ep.banner || ep.movie?.mobileImgUrl || ep.movie?.imgUrl || ep.movie?.bannerUrl || "";
 
                       return (
                         <Link
@@ -507,7 +507,7 @@ export default function MoviePageClient({
 
             <div className="absolute bottom-5 left-5 right-5 flex gap-4 items-end">
               <div className="relative w-28 h-16 sm:w-36 sm:h-20 rounded-xl overflow-hidden border-2 border-white/10 flex-shrink-0 shadow-xl bg-[#090a0f]">
-                <Image src={getBunnyImageUrl(movie.thumbnail, 'thumb')} alt={movie.title} fill className="object-cover" sizes="144px" />
+                <Image src={getBunnyImageUrl(movie.mobileThumbnail || movie.thumbnail, 'thumb')} alt={movie.title} fill className="object-cover" sizes="144px" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1.5">
@@ -610,7 +610,7 @@ export default function MoviePageClient({
                 {movie.episodes.slice(0, 12).map((ep: any, idx: number) => {
                   const epSlug = ep.slug || (ep.name ? slugify(ep.name) : (idx + 1).toString());
                   const playUrl = `/movie/${movie.slug || movie.id}?ep=${epSlug}`;
-                  const displayImage = ep.banner || movie.thumbnail || movie.banner || "";
+                  const displayImage = ep.mobileBanner || ep.banner || movie.mobileThumbnail || movie.thumbnail || movie.banner || "";
 
                   return (
                     <Link

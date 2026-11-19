@@ -32,6 +32,7 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { slugify } from "@/lib/utils";
+import { generateAndUploadMobileImage } from "@/lib/r2";
 import { getCachedSystemSetting, setSystemSetting } from "@/lib/db/settings";
 import { callGeminiText } from "@/lib/gemini";
 import {
@@ -74,6 +75,7 @@ const getCached_getAdminMovies = async () => {
             idMovie: true,
             idPlan: true,
             banner: true,
+            mobileBanner: true,
             bunnyVideoId: true,
             bunnyStatus: true,
           },
@@ -122,6 +124,20 @@ export async function createMovie(data: {
   if (!inserted) throw new Error("Failed to create movie");
 
   const movieId = inserted.id;
+  const movieSlug = slugify(movieData.name) || movieId.toString();
+
+  if (movieData.imgUrl) {
+    const mobileUrl = await generateAndUploadMobileImage(
+      movieData.imgUrl,
+      `movies/mobile/movie_${movieId}_${movieSlug}.webp`
+    );
+    if (mobileUrl) {
+      await db
+        .update(schema.movies)
+        .set({ mobileImgUrl: mobileUrl })
+        .where(eq(schema.movies.id, movieId));
+    }
+  }
 
   // Insert category junctions
   if (categoryIds.length > 0) {
@@ -163,11 +179,24 @@ export async function updateMovie(
   }
 
   const { categoryIds, idAuthor, ...movieData } = data;
+  let newMobileImgUrl: string | undefined = undefined;
+
+  if (data.imgUrl && data.imgUrl !== oldImgUrl) {
+    const safeSlug = slugify(data.name || `movie-${id}`) || id.toString();
+    const generated = await generateAndUploadMobileImage(
+      data.imgUrl,
+      `movies/mobile/movie_${id}_${safeSlug}_${Date.now()}.webp`
+    );
+    if (generated) {
+      newMobileImgUrl = generated;
+    }
+  }
 
   await db
     .update(schema.movies)
     .set({
       ...movieData,
+      ...(newMobileImgUrl ? { mobileImgUrl: newMobileImgUrl } : {}),
       ...(idAuthor !== undefined && { idAuthor: idAuthor || null }),
     })
     .where(eq(schema.movies.id, id));
@@ -443,6 +472,20 @@ export async function createEpisode(data: {
   if (!inserted) throw new Error("Failed to create episode");
   const episodeId = inserted.id;
 
+  if (episodeData.banner) {
+    const epSlug = slugify(episodeData.name || "tap") || episodeId.toString();
+    const mobileBannerUrl = await generateAndUploadMobileImage(
+      episodeData.banner,
+      `episodes/mobile/ep_${episodeId}_${epSlug}.webp`
+    );
+    if (mobileBannerUrl) {
+      await db
+        .update(schema.episodes)
+        .set({ mobileBanner: mobileBannerUrl })
+        .where(eq(schema.episodes.id, episodeId));
+    }
+  }
+
   if (actorIds.length > 0) {
     await db.insert(schema.episodesActor).values(
       actorIds.map((aid) => ({ idActor: aid, idEpisodes: episodeId }))
@@ -530,11 +573,24 @@ export async function updateEpisode(
     }
   }
 
+  let newMobileBanner: string | undefined = undefined;
+  if (data.banner && data.banner !== existing.banner) {
+    const epSlug = slugify(data.name || existing.name || `ep-${id}`) || id.toString();
+    const generated = await generateAndUploadMobileImage(
+      data.banner,
+      `episodes/mobile/ep_${id}_${epSlug}_${Date.now()}.webp`
+    );
+    if (generated) {
+      newMobileBanner = generated;
+    }
+  }
+
   // Update episode fields in database
   await db
     .update(schema.episodes)
     .set({
       ...episodeData,
+      ...(newMobileBanner ? { mobileBanner: newMobileBanner } : {}),
       ...(episodeData.name ? { slug: slugify(episodeData.name) } : {}),
       ...(episodeData.idPlan !== undefined ? { idPlan: episodeData.idPlan || null } : {}),
     })

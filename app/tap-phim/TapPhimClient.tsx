@@ -245,7 +245,7 @@ export default function TapPhimClient({
                   const movieSlug = ep.movie?.slug || ep.idMovie || ep.movie?.id;
                   const epSlug = ep.slug || (ep.name ? slugify(ep.name) : ep.id);
                   const playUrl = `/movie/${movieSlug}?ep=${epSlug}`;
-                  const displayImage = ep.banner || ep.movie?.imgUrl || ep.movie?.bannerUrl || "";
+                  const displayImage = ep.mobileBanner || ep.banner || ep.movie?.mobileImgUrl || ep.movie?.imgUrl || ep.movie?.bannerUrl || "";
                   const movieName = ep.movie?.name || "Phim 3D";
                   const epName = ep.name || `Tập ${ep.id}`;
                   const planName = ep.plan?.name;

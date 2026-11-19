@@ -2,6 +2,8 @@ import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Upload } from "@aws-sdk/lib-storage";
 import { Readable } from "stream";
+import sharp from "sharp";
+import { getBunnyImageUrl } from "@/lib/utils";
 
 function getR2Client() {
   const accountId = process.env.R2_ACCOUNT_ID;
@@ -114,4 +116,48 @@ export async function uploadStreamToR2(
     publicUrl,
     key: cleanKey,
   };
+}
+
+/**
+ * Tự động convert ảnh gốc (poster phim / banner tập) sang ảnh WebP 520px siêu nhẹ cho Mobile & Card
+ * và lưu trực tiếp lên Cloudflare R2.
+ */
+export async function generateAndUploadMobileImage(
+  sourceImageUrl: string | null | undefined,
+  r2Key: string
+): Promise<string | null> {
+  if (!sourceImageUrl) return null;
+  const client = getR2Client();
+  const bucketName = process.env.R2_BUCKET_NAME;
+  if (!client || !bucketName) return null;
+
+  try {
+    const resolvedUrl = getBunnyImageUrl(sourceImageUrl, "original");
+    const res = await fetch(resolvedUrl, {
+      headers: { "User-Agent": "Vam3D-Image-Optimizer/1.0" },
+    });
+    if (!res.ok) return null;
+
+    const origBuffer = Buffer.from(await res.arrayBuffer());
+    const mobileBuffer = await sharp(origBuffer)
+      .resize({ width: 520, withoutEnlargement: true })
+      .webp({ quality: 78, effort: 5 })
+      .toBuffer();
+
+    const cleanKey = r2Key.replace(/^\/+/, "");
+    await client.send(
+      new PutObjectCommand({
+        Bucket: bucketName,
+        Key: cleanKey,
+        Body: mobileBuffer,
+        ContentType: "image/webp",
+        CacheControl: "public, max-age=31536000, immutable",
+      })
+    );
+
+    return getR2PublicUrl(cleanKey);
+  } catch (err) {
+    console.error("Failed to generate mobile WebP thumbnail:", err);
+    return null;
+  }
 }

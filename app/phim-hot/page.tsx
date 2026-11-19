@@ -57,6 +57,7 @@ export default async function PhimHotPage() {
     title: m?.name || "",
     originalTitle: m?.originalTitle || "",
     thumbnail: m?.imgUrl || "",
+    mobileThumbnail: m?.mobileImgUrl || "",
     banner: m?.banner || m?.imgUrl || "",
     category: (m?.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
               m?.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :
@@ -89,6 +90,7 @@ export default async function PhimHotPage() {
     title: m?.name || "",
     originalTitle: m?.originalTitle || "",
     thumbnail: m?.imgUrl || "",
+    mobileThumbnail: m?.mobileImgUrl || "",
     banner: m?.banner || m?.imgUrl || "",
     category: (m?.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
               m?.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :

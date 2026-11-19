@@ -71,7 +71,8 @@ export const movies = pgTable("movies", {
   slug: varchar("slug", { length: 255 }),
   description: text("description"),
   idAuthor: integer("id_author").references(() => authors.id, { onDelete: "set null" }),
-  imgUrl: varchar("img_url", { length: 500 }), // Thumbnail URL
+  imgUrl: varchar("img_url", { length: 500 }), // Thumbnail URL (High-res)
+  mobileImgUrl: varchar("mobile_img_url", { length: 500 }), // Optimized Mobile/Card WebP URL (~520px)
   createdAt: timestamp("created_at").defaultNow(),
   status: integer("status").default(1),
   displayOrder: integer("display_order").default(0),
@@ -207,6 +208,7 @@ export const episodes = pgTable("episodes", {
   name: varchar("name", { length: 255 }),
   slug: varchar("slug", { length: 255 }),
   banner: varchar("banner", { length: 500 }),
+  mobileBanner: varchar("mobile_banner", { length: 500 }),
   idMovie: integer("id_movie").references(() => movies.id, { onDelete: "cascade" }),
   status: integer("status").default(1),
   idPlan: integer("id_plan").references(() => plans.id, { onDelete: "set null" }),

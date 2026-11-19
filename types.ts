@@ -3,6 +3,7 @@ export interface Episode {
   name: string;
   url: string;
   banner?: string;
+  mobileBanner?: string;
   duration?: number;
   bunnyVideoId?: string | null;
   bunnyStatus?: string | null;
@@ -16,7 +17,9 @@ export interface Movie {
   name?: string;
   originalTitle: string;
   thumbnail: string;
+  mobileThumbnail?: string;
   imgUrl?: string;
+  mobileImgUrl?: string;
   banner: string;
   category: "phim-le" | "phim-bo" | "chieu-rap" | "hoat-hinh" | string;
   genres: string[];

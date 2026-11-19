@@ -230,6 +230,7 @@ export default async function MovieDetailPage({ params, searchParams }: MoviePag
       slug: ep.slug || slugify(ep.name) || ep.id?.toString(),
       url: ep.url || "",
       banner: ep.banner || "",
+      mobileBanner: ep.mobileBanner || "",
       duration: ep.duration || 0,
       views: ep.views || 0,
       bunnyVideoId: ep.bunnyVideoId,
@@ -241,6 +242,7 @@ export default async function MovieDetailPage({ params, searchParams }: MoviePag
         name: movieData.name,
         slug: movieData.slug,
         imgUrl: movieData.imgUrl,
+        mobileImgUrl: movieData.mobileImgUrl,
         bannerUrl: movieData.banner,
       },
     }));
@@ -259,6 +261,7 @@ export default async function MovieDetailPage({ params, searchParams }: MoviePag
             name: m.name,
             slug: m.slug,
             imgUrl: m.imgUrl,
+            mobileImgUrl: m.mobileImgUrl,
             bannerUrl: m.banner,
           },
         }));
@@ -278,6 +281,7 @@ export default async function MovieDetailPage({ params, searchParams }: MoviePag
       title: movieData.name,
       originalTitle: movieData.originalTitle || "",
       thumbnail: movieData.imgUrl || "",
+      mobileThumbnail: movieData.mobileImgUrl || "",
       banner: movieData.banner || movieData.imgUrl || "",
       category: (movieData.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
                 movieData.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :
@@ -301,6 +305,7 @@ export default async function MovieDetailPage({ params, searchParams }: MoviePag
         slug: ep.slug || slugify(ep.name) || ep.id?.toString(),
         url: ep.url || "",
         banner: ep.banner || "",
+        mobileBanner: ep.mobileBanner || "",
         duration: ep.duration || 0,
         views: ep.views || 0,
         bunnyVideoId: ep.bunnyVideoId,
@@ -323,6 +328,7 @@ export default async function MovieDetailPage({ params, searchParams }: MoviePag
       title: m.name,
       originalTitle: m.originalTitle || "",
       thumbnail: m.imgUrl || "",
+      mobileThumbnail: m.mobileImgUrl || "",
       banner: m.banner || m.imgUrl || "",
       category: (m.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
                 m.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :

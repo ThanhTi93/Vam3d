@@ -200,7 +200,7 @@ export const getTopMovies = cache(async (limit = 6) => {
         desc(movies.id),
       ],
       limit,
-      columns: { id: true, name: true, slug: true, imgUrl: true, createdAt: true, displayOrder: true },
+      columns: { id: true, name: true, slug: true, imgUrl: true, mobileImgUrl: true, createdAt: true, displayOrder: true },
     });
 
     return result;
@@ -652,7 +652,7 @@ export const getGalleryBySlug = cache(async (slugOrId: string) => {
       },
       with: {
         movie: {
-          columns: { id: true, name: true, slug: true, imgUrl: true },
+          columns: { id: true, name: true, slug: true, imgUrl: true, mobileImgUrl: true },
         },
         plan: {
           columns: { id: true, name: true, level: true },
@@ -856,7 +856,7 @@ export const getAllAuthors = cache(async () => {
       with: {
         movies: {
           where: eq(schema.movies.status, 1),
-          columns: { id: true, name: true, slug: true, imgUrl: true, createdAt: true },
+          columns: { id: true, name: true, slug: true, imgUrl: true, mobileImgUrl: true, createdAt: true },
           with: {
             movieCategories: { with: { category: true } },
             episodes: {
@@ -1013,7 +1013,7 @@ export const getCharacterDetails = cache(async (slugOrId: string) => {
       with: {
         episode: {
           with: {
-            movie: { columns: { id: true, name: true, slug: true, imgUrl: true } },
+            movie: { columns: { id: true, name: true, slug: true, imgUrl: true, mobileImgUrl: true } },
             plan: true,
           },
         },
@@ -1030,7 +1030,7 @@ export const getCharacterDetails = cache(async (slugOrId: string) => {
       const movieEps = await db.query.episodes.findMany({
         where: (ep, { eq, and }) => and(eq(ep.status, 1), eq(ep.idMovie, character.idMovie!)),
         with: {
-          movie: { columns: { id: true, name: true, slug: true, imgUrl: true } },
+          movie: { columns: { id: true, name: true, slug: true, imgUrl: true, mobileImgUrl: true } },
           plan: true,
         },
       });

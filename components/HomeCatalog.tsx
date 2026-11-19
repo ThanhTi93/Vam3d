@@ -267,7 +267,7 @@ function LatestEpisodesSection({
           const epSlug = ep.slug || (ep.name ? slugify(ep.name) : ep.id);
           const playUrl = `/movie/${movieSlug}?ep=${epSlug}`;
           
-          const displayImage = ep.banner || ep.movie?.imgUrl || ep.movie?.bannerUrl || "";
+          const displayImage = ep.mobileBanner || ep.banner || ep.movie?.mobileImgUrl || ep.movie?.imgUrl || ep.movie?.bannerUrl || "";
 
           return (
             <Link

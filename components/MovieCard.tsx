@@ -28,7 +28,7 @@ export default function MovieCard({
     >
       <div className="relative aspect-video w-full bg-[#090a0f] overflow-hidden">
         <Image
-          src={getBunnyImageUrl(movie.thumbnail, 'thumb')}
+          src={getBunnyImageUrl(movie.mobileThumbnail || movie.thumbnail, 'thumb')}
           alt={`${movie.title} - Phim 3D ${movie.sub || "Vietsub"} ${movie.quality || "HD"}`}
           fill
           priority={priority}

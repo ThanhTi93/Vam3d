@@ -122,7 +122,7 @@ export default function RankingsSidebar({ movies, initialAccounts }: RankingsSid
                 const rank = index + 1;
                 const movieSlug = (movie as any).slug || movie.id;
                 const movieTitle = movie.title || (movie as any).name || "Phim";
-                const movieImage = movie.thumbnail || (movie as any).imgUrl || movie.banner || "";
+                const movieImage = movie.mobileThumbnail || (movie as any).mobileImgUrl || movie.thumbnail || (movie as any).imgUrl || movie.banner || "";
 
                 return (
                   <Link

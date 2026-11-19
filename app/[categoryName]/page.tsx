@@ -174,6 +174,7 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
     title: m?.name || "",
     originalTitle: m?.originalTitle || "",
     thumbnail: m?.imgUrl || "",
+    mobileThumbnail: m?.mobileImgUrl || "",
     banner: m?.banner || m?.imgUrl || "",
     category: (m?.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
               m?.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :
@@ -196,6 +197,7 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
       name: ep?.name || `Tập ${ep?.id}`,
       url: ep?.url || "",
       banner: ep?.banner || "",
+      mobileBanner: ep?.mobileBanner || "",
       bunnyVideoId: ep?.bunnyVideoId,
       bunnyStatus: ep?.bunnyStatus,
       duration: ep?.duration || 0,
@@ -208,6 +210,7 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
     title: m?.name || "",
     originalTitle: m?.originalTitle || "",
     thumbnail: m?.imgUrl || "",
+    mobileThumbnail: m?.mobileImgUrl || "",
     banner: m?.banner || m?.imgUrl || "",
     category: (m?.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
               m?.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :
@@ -230,6 +233,7 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
       name: ep?.name || `Tập ${ep?.id}`,
       url: ep?.url || "",
       banner: ep?.banner || "",
+      mobileBanner: ep?.mobileBanner || "",
       bunnyVideoId: ep?.bunnyVideoId,
       bunnyStatus: ep?.bunnyStatus,
       duration: ep?.duration || 0,

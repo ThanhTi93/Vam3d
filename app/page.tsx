@@ -69,6 +69,7 @@ export default async function Home() {
           id: m.id,
           name: m.name,
           imgUrl: m.imgUrl,
+          mobileImgUrl: m.mobileImgUrl,
           bannerUrl: m.banner,
           episodes: m.episodes,
         },
@@ -88,6 +89,7 @@ export default async function Home() {
     title: m?.name || "",
     originalTitle: m?.originalTitle || "",
     thumbnail: m?.imgUrl || "",
+    mobileThumbnail: m?.mobileImgUrl || "",
     banner: m?.banner || m?.imgUrl || "",
     category: (m?.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
               m?.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :
@@ -110,6 +112,7 @@ export default async function Home() {
       name: ep?.name || `Tập ${ep?.id}`,
       url: ep?.url || "",
       banner: ep?.banner || "",
+      mobileBanner: ep?.mobileBanner || "",
       bunnyVideoId: ep?.bunnyVideoId,
       bunnyStatus: ep?.bunnyStatus,
       duration: ep?.duration || 0,
@@ -122,6 +125,7 @@ export default async function Home() {
     title: m?.name || "",
     originalTitle: m?.originalTitle || "",
     thumbnail: m?.imgUrl || "",
+    mobileThumbnail: m?.mobileImgUrl || "",
     banner: m?.banner || m?.imgUrl || "",
     category: (m?.movieCategories?.[0]?.category?.name === "phim-bo" ? "phim-bo" : 
               m?.movieCategories?.[0]?.category?.name === "hoat-hinh" ? "hoat-hinh" :
@@ -144,6 +148,7 @@ export default async function Home() {
       name: ep?.name || `Tập ${ep?.id}`,
       url: ep?.url || "",
       banner: ep?.banner || "",
+      mobileBanner: ep?.mobileBanner || "",
       bunnyVideoId: ep?.bunnyVideoId,
       bunnyStatus: ep?.bunnyStatus,
       duration: ep?.duration || 0,
