@@ -72,7 +72,7 @@ function SearchInput() {
   };
 
   return (
-    <form onSubmit={handleSearchSubmit} className="relative flex-1 md:w-64" suppressHydrationWarning>
+    <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-0 md:w-64" suppressHydrationWarning>
       <input
         type="text"
         id="movie-search"
@@ -80,7 +80,7 @@ function SearchInput() {
         aria-label="Tìm kiếm phim, đạo diễn, diễn viên"
         value={searchQuery}
         onChange={(e) => handleSearchChange(e.target.value)}
-        className="w-full bg-[#161925] border border-white/5 rounded-full py-2 pl-4 pr-10 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors"
+        className="w-full h-[38px] bg-[#161925] border border-white/5 rounded-full py-2 pl-4 pr-10 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors"
         suppressHydrationWarning
       />
       <button
@@ -309,15 +309,15 @@ export default function Header() {
         </div>
 
         {/* Search + Watchlist + Profile */}
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <Suspense fallback={<div className="h-9 w-40 bg-[#161925] animate-pulse rounded-full" />}>
+        <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
+          <Suspense fallback={<div className="h-[38px] flex-1 min-w-0 md:w-64 bg-[#161925] animate-pulse rounded-full" />}>
             <SearchInput />
           </Suspense>
 
           <Link
             href="/watchlist"
             prefetch={false}
-            className={`relative p-2.5 rounded-full bg-[#161925] hover:bg-orange-500/10 border border-white/5 transition-colors group ${pathname === "/watchlist" ? "text-orange-500 border-orange-500/30" : "text-gray-400"
+            className={`relative shrink-0 p-2.5 rounded-full bg-[#161925] hover:bg-orange-500/10 border border-white/5 transition-colors group ${pathname === "/watchlist" ? "text-orange-500 border-orange-500/30" : "text-gray-400"
               }`}
             title="Tủ phim yêu thích"
             aria-label="Tủ phim yêu thích"
@@ -331,23 +331,12 @@ export default function Header() {
           </Link>
 
           {/* User Profile / Login Action Section */}
-          {!mounted ? (
-            <div className="flex items-center gap-2" suppressHydrationWarning>
-              <Link href="/login" prefetch={false} className="text-xs font-bold text-gray-300 hover:text-white px-3.5 py-2 rounded-xl border border-white/5 bg-[#161925] hover:bg-[#1f2334] transition-all">
+          {!mounted || !user ? (
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0" suppressHydrationWarning>
+              <Link href="/login" prefetch={false} className="whitespace-nowrap text-xs font-bold text-gray-300 hover:text-white px-2.5 sm:px-3.5 py-2 rounded-xl border border-white/5 bg-[#161925] hover:bg-[#1f2334] transition-all">
                 Đăng Nhập
               </Link>
-              <Link href="/register" prefetch={false} className="text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-3.5 py-2 rounded-xl shadow-lg shadow-orange-500/15 transition-all">
-                Đăng Ký
-              </Link>
-            </div>
-          ) : authLoading ? (
-            <div className="w-8 h-8 rounded-full bg-white/5 animate-pulse" />
-          ) : !user ? (
-            <div className="flex items-center gap-2">
-              <Link href="/login" prefetch={false} className="text-xs font-bold text-gray-300 hover:text-white px-3.5 py-2 rounded-xl border border-white/5 bg-[#161925] hover:bg-[#1f2334] transition-all">
-                Đăng Nhập
-              </Link>
-              <Link href="/register" prefetch={false} className="text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-3.5 py-2 rounded-xl shadow-lg shadow-orange-500/15 transition-all">
+              <Link href="/register" prefetch={false} className="whitespace-nowrap text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-2.5 sm:px-3.5 py-2 rounded-xl shadow-lg shadow-orange-500/15 transition-all">
                 Đăng Ký
               </Link>
             </div>
