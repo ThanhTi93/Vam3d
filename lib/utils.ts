@@ -53,6 +53,16 @@ export function getBunnyImageUrl(
     }
   }
 
+  // For movie posters (/movies/...) and episode banners (/banners/...) on R2:
+  // When requesting 'thumb' (mobile & card display), serve the pre-generated .thumb.webp (~15-28 KiB, 520px) on Cloudflare R2
+  if (
+    type === 'thumb' &&
+    !processedUrl.endsWith('.thumb.webp') &&
+    /\/(movies|banners)\/[^/?#]+\.(webp|png|jpe?g)$/i.test(processedUrl)
+  ) {
+    return processedUrl.replace(/\.(webp|png|jpe?g)$/i, '.thumb.webp');
+  }
+
   // Fallback to processed URL
   return processedUrl;
 }

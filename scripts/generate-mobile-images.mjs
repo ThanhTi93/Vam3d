@@ -3,9 +3,8 @@ import path from "path";
 import dotenv from "dotenv";
 import postgres from "postgres";
 import sharp from "sharp";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 
-// Load environment variables from .env.local (or .env fallback)
 const envLocalPath = path.join(process.cwd(), ".env.local");
 const envPath = path.join(process.cwd(), ".env");
 if (fs.existsSync(envLocalPath)) {
@@ -63,18 +62,36 @@ function resolveImageUrl(rawUrl) {
   return processed;
 }
 
-function sanitizeSlug(str, fallback) {
-  const base = (str || fallback || "img")
-    .toString()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9-_]/g, "_")
-    .replace(/_+/g, "_")
-    .slice(0, 60);
-  return base || String(fallback || "img");
+function getThumbR2KeyFromUrl(resolvedUrl) {
+  try {
+    const parsed = new URL(resolvedUrl);
+    const key = decodeURIComponent(parsed.pathname).replace(/^\/+/, "");
+    if (!key) return null;
+    if (key.endsWith("display.webp") || key.endsWith("thumb.webp") || key.endsWith("original.png") || key.endsWith(".thumb.webp")) {
+      return null;
+    }
+    if (!/\.(webp|png|jpe?g)$/i.test(key)) {
+      return null;
+    }
+    return key.replace(/\.(webp|png|jpe?g)$/i, ".thumb.webp");
+  } catch {
+    return null;
+  }
 }
 
-async function convertAndUpload(sourceUrl, r2Key) {
+async function existsOnR2(key) {
+  try {
+    await s3.send(new HeadObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function convertAndUpload(sourceUrl, thumbKey, force = false) {
+  if (!force && (await existsOnR2(thumbKey))) {
+    return { skipped: true };
+  }
   const res = await fetch(sourceUrl, {
     headers: { "User-Agent": "Vam3D-Image-Optimizer/1.0" },
   });
@@ -90,7 +107,7 @@ async function convertAndUpload(sourceUrl, r2Key) {
   await s3.send(
     new PutObjectCommand({
       Bucket: R2_BUCKET_NAME,
-      Key: r2Key,
+      Key: thumbKey,
       Body: mobileBuffer,
       ContentType: "image/webp",
       CacheControl: "public, max-age=31536000, immutable",
@@ -98,7 +115,8 @@ async function convertAndUpload(sourceUrl, r2Key) {
   );
 
   return {
-    publicUrl: `https://${R2_PUBLIC_DOMAIN}/${r2Key}`,
+    skipped: false,
+    publicUrl: `https://${R2_PUBLIC_DOMAIN}/${thumbKey}`,
     origBytes: origBuffer.length,
     mobileBytes: mobileBuffer.length,
   };
@@ -116,94 +134,54 @@ async function processBatch(items, concurrency, handler) {
 }
 
 async function main() {
-  console.log("🚀 1. Kiểm tra cột mobile_img_url (movies) và mobile_banner (episodes)...");
-  const cols = await sql`
-    SELECT table_name, column_name
-    FROM information_schema.columns
-    WHERE (table_name = 'movies' AND column_name = 'mobile_img_url')
-       OR (table_name = 'episodes' AND column_name = 'mobile_banner')
-  `;
-  const hasMovieCol = cols.some((c) => c.table_name === "movies" && c.column_name === "mobile_img_url");
-  const hasEpCol = cols.some((c) => c.table_name === "episodes" && c.column_name === "mobile_banner");
-
-  if (!hasMovieCol || !hasEpCol) {
-    try {
-      if (!hasMovieCol) await sql`ALTER TABLE movies ADD COLUMN IF NOT EXISTS mobile_img_url VARCHAR(500)`;
-      if (!hasEpCol) await sql`ALTER TABLE episodes ADD COLUMN IF NOT EXISTS mobile_banner VARCHAR(500)`;
-      console.log("✅ Đã tự động tạo cột DB thành công.");
-    } catch (err) {
-      if (err.code === "42501") {
-        console.error("\n⚠️ User DATABASE_URL không phải owner của bảng movies/episodes.");
-        console.error("👉 Hãy chạy lệnh sau 1 lần duy nhất trên VPS (bằng user postgres) để thêm 2 cột:\n");
-        console.error(
-          `sudo -u postgres psql -d vam3d -c "ALTER TABLE movies ADD COLUMN IF NOT EXISTS mobile_img_url VARCHAR(500); ALTER TABLE episodes ADD COLUMN IF NOT EXISTS mobile_banner VARCHAR(500);"`
-        );
-        console.error("\nSau đó chạy lại: node scripts/generate-mobile-images.mjs");
-        await sql.end();
-        process.exit(1);
-      }
-      throw err;
-    }
-  } else {
-    console.log("✅ Cột mobile_img_url và mobile_banner đã tồn tại sẵn.");
-  }
-
   const forceAll = process.argv.includes("--force");
 
-  const moviesRows = forceAll
-    ? await sql`SELECT id, slug, name, img_url FROM movies WHERE img_url IS NOT NULL AND img_url <> '' ORDER BY id ASC`
-    : await sql`SELECT id, slug, name, img_url FROM movies WHERE img_url IS NOT NULL AND img_url <> '' AND (mobile_img_url IS NULL OR mobile_img_url = '') ORDER BY id ASC`;
+  const moviesRows = await sql`SELECT id, name, img_url FROM movies WHERE img_url IS NOT NULL AND img_url <> '' ORDER BY id ASC`;
+  const episodeRows = await sql`SELECT id, name, banner FROM episodes WHERE banner IS NOT NULL AND banner <> '' ORDER BY id ASC`;
 
-  const episodeRows = forceAll
-    ? await sql`SELECT id, slug, name, banner FROM episodes WHERE banner IS NOT NULL AND banner <> '' ORDER BY id ASC`
-    : await sql`SELECT id, slug, name, banner FROM episodes WHERE banner IS NOT NULL AND banner <> '' AND (mobile_banner IS NULL OR mobile_banner = '') ORDER BY id ASC`;
+  // Deduplicate URLs across movies & episodes
+  const tasksMap = new Map();
+  for (const m of moviesRows) {
+    const srcUrl = resolveImageUrl(m.img_url);
+    const thumbKey = getThumbR2KeyFromUrl(srcUrl);
+    if (thumbKey && !tasksMap.has(thumbKey)) {
+      tasksMap.set(thumbKey, { type: "Movie", id: m.id, srcUrl, thumbKey });
+    }
+  }
+  for (const ep of episodeRows) {
+    const srcUrl = resolveImageUrl(ep.banner);
+    const thumbKey = getThumbR2KeyFromUrl(srcUrl);
+    if (thumbKey && !tasksMap.has(thumbKey)) {
+      tasksMap.set(thumbKey, { type: "Episode", id: ep.id, srcUrl, thumbKey });
+    }
+  }
 
-  console.log(`📦 Cần xử lý: ${moviesRows.length} phim và ${episodeRows.length} tập phim.`);
+  const tasks = Array.from(tasksMap.values());
+  console.log(`📦 Tổng số ảnh độc lập cần tạo bản Mobile (.thumb.webp) trên Cloudflare R2: ${tasks.length}`);
 
   let totalOrigBytes = 0;
   let totalMobileBytes = 0;
-  let movieSuccess = 0;
-  let movieFail = 0;
-  let epSuccess = 0;
-  let epFail = 0;
+  let convertedCount = 0;
+  let skippedCount = 0;
+  let failCount = 0;
 
-  // Process Movies
-  await processBatch(moviesRows, 5, async (row, i) => {
-    const srcUrl = resolveImageUrl(row.img_url);
-    const safeName = sanitizeSlug(row.slug || row.name, row.id);
-    const r2Key = `movies/mobile/movie_${row.id}_${safeName}.webp`;
+  await processBatch(tasks, 6, async (task, i) => {
     try {
-      const { publicUrl, origBytes, mobileBytes } = await convertAndUpload(srcUrl, r2Key);
-      await sql`UPDATE movies SET mobile_img_url = ${publicUrl} WHERE id = ${row.id}`;
-      totalOrigBytes += origBytes;
-      totalMobileBytes += mobileBytes;
-      movieSuccess++;
-      console.log(
-        `  [Movie ${i + 1}/${moviesRows.length}] #${row.id} OK: ${(origBytes / 1024).toFixed(1)} KiB -> ${(mobileBytes / 1024).toFixed(1)} KiB`
-      );
+      const res = await convertAndUpload(task.srcUrl, task.thumbKey, forceAll);
+      if (res.skipped) {
+        skippedCount++;
+        console.log(`  [${i + 1}/${tasks.length}] ⏭️ Đã có sẵn: ${task.thumbKey}`);
+      } else {
+        convertedCount++;
+        totalOrigBytes += res.origBytes;
+        totalMobileBytes += res.mobileBytes;
+        console.log(
+          `  [${i + 1}/${tasks.length}] ✅ ${task.thumbKey}: ${(res.origBytes / 1024).toFixed(1)} KiB -> ${(res.mobileBytes / 1024).toFixed(1)} KiB`
+        );
+      }
     } catch (err) {
-      movieFail++;
-      console.error(`  [Movie #${row.id}] ❌ Lỗi:`, err.message);
-    }
-  });
-
-  // Process Episodes
-  await processBatch(episodeRows, 5, async (row, i) => {
-    const srcUrl = resolveImageUrl(row.banner);
-    const safeName = sanitizeSlug(row.slug || row.name, row.id);
-    const r2Key = `episodes/mobile/ep_${row.id}_${safeName}.webp`;
-    try {
-      const { publicUrl, origBytes, mobileBytes } = await convertAndUpload(srcUrl, r2Key);
-      await sql`UPDATE episodes SET mobile_banner = ${publicUrl} WHERE id = ${row.id}`;
-      totalOrigBytes += origBytes;
-      totalMobileBytes += mobileBytes;
-      epSuccess++;
-      console.log(
-        `  [Episode ${i + 1}/${episodeRows.length}] #${row.id} OK: ${(origBytes / 1024).toFixed(1)} KiB -> ${(mobileBytes / 1024).toFixed(1)} KiB`
-      );
-    } catch (err) {
-      epFail++;
-      console.error(`  [Episode #${row.id}] ❌ Lỗi:`, err.message);
+      failCount++;
+      console.error(`  [${i + 1}/${tasks.length}] ❌ Lỗi (${task.thumbKey}):`, err.message);
     }
   });
 
@@ -211,12 +189,15 @@ async function main() {
     totalOrigBytes > 0 ? (((totalOrigBytes - totalMobileBytes) / totalOrigBytes) * 100).toFixed(1) : "0";
 
   console.log("\n==========================================");
-  console.log(`🎉 HOÀN TẤT CONVERT & UPLOAD LÊN CLOUDFLARE R2!`);
-  console.log(`   - Phim: ${movieSuccess} thành công, ${movieFail} lỗi`);
-  console.log(`   - Tập phim: ${epSuccess} thành công, ${epFail} lỗi`);
-  console.log(
-    `   - Tổng dung lượng: ${(totalOrigBytes / 1024 / 1024).toFixed(2)} MB -> ${(totalMobileBytes / 1024 / 1024).toFixed(2)} MB (Giảm ${savedPct}%)`
-  );
+  console.log(`🎉 HOÀN TẤT TẠO ẢNH MOBILE (.thumb.webp) TRÊN CLOUDFLARE R2!`);
+  console.log(`   - Đã convert mới: ${convertedCount} ảnh`);
+  console.log(`   - Đã có sẵn (bỏ qua): ${skippedCount} ảnh`);
+  console.log(`   - Lỗi: ${failCount} ảnh`);
+  if (convertedCount > 0) {
+    console.log(
+      `   - Dung lượng: ${(totalOrigBytes / 1024 / 1024).toFixed(2)} MB -> ${(totalMobileBytes / 1024 / 1024).toFixed(2)} MB (Giảm ${savedPct}%)`
+    );
+  }
   console.log("==========================================");
 
   await sql.end();

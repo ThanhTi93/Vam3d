@@ -134,7 +134,7 @@ export default function RankingsSidebar({ movies, initialAccounts }: RankingsSid
                     {/* Movie Poster/Banner Image */}
                     {movieImage ? (
                       <Image
-                        src={getBunnyImageUrl(movieImage, "display")}
+                        src={getBunnyImageUrl(movieImage, "thumb")}
                         alt={movieTitle}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-500"

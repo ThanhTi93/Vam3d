@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import sharp from "sharp";
 import { getCurrentUser } from "@/lib/auth/actions";
 
 const isR2Configured =
@@ -98,15 +99,42 @@ export async function POST(request: Request) {
       },
     });
 
+    const rawBuffer = Buffer.from(fileBuffer);
+
     await s3.send(
       new PutObjectCommand({
         Bucket: process.env.R2_BUCKET_NAME,
         Key: uploadPath,
-        Body: Buffer.from(fileBuffer),
+        Body: rawBuffer,
         ContentType: file.type || "image/webp",
         CacheControl: "public, max-age=31536000, immutable",
       })
     );
+
+    // Auto-generate companion .thumb.webp (520px mobile card thumbnail) on Cloudflare R2 for movies & episode banners
+    if (
+      /^(movies|banners)\/[^/]+\.(webp|png|jpe?g)$/i.test(uploadPath) &&
+      !uploadPath.endsWith(".thumb.webp")
+    ) {
+      try {
+        const thumbKey = uploadPath.replace(/\.(webp|png|jpe?g)$/i, ".thumb.webp");
+        const thumbBuffer = await sharp(rawBuffer)
+          .resize({ width: 520, withoutEnlargement: true })
+          .webp({ quality: 78, effort: 5 })
+          .toBuffer();
+        await s3.send(
+          new PutObjectCommand({
+            Bucket: process.env.R2_BUCKET_NAME,
+            Key: thumbKey,
+            Body: thumbBuffer,
+            ContentType: "image/webp",
+            CacheControl: "public, max-age=31536000, immutable",
+          })
+        );
+      } catch (thumbErr) {
+        console.error("Failed to auto-generate .thumb.webp on R2:", thumbErr);
+      }
+    }
 
     const secureUrl = `https://${r2Domain}/${uploadPath}`;
     const pathDir = uploadPath.substring(0, uploadPath.lastIndexOf("/")) || "";
