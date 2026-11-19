@@ -183,7 +183,35 @@ function HomeCatalogContent({
                 />
               )}
 
-
+              {/* Compact SEO Introduction Block */}
+              <section aria-label="Giới thiệu Vam3D" className="bg-[#131520]/70 border border-white/5 rounded-2xl p-5 sm:p-6 space-y-2.5">
+                <h2 className="text-sm sm:text-base font-bold text-gray-200 tracking-wide">
+                  Vam3D – Kho Phim Hoạt Hình 3D, Anime Vietsub &amp; Bộ Sưu Tập AI 4K
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
+                  Chào mừng bạn đến với <strong className="text-gray-200">Vam3D</strong> – nền tảng xem phim hoạt hình 3D, anime Vietsub, thuyết minh Full HD và kho{" "}
+                  <Link href="/gallery" prefetch={false} className="text-orange-400 hover:text-orange-300 transition-colors">
+                    Bộ Sưu Tập Ảnh AI 4K
+                  </Link>{" "}
+                  chất lượng cao. Hệ thống cập nhật liên tục các tập phim mới nhất thuộc nhiều thể loại nổi bật như{" "}
+                  <Link href="/hoat-hinh-3d" prefetch={false} className="text-orange-400 hover:text-orange-300 transition-colors">
+                    Hoạt Hình 3D
+                  </Link>
+                  ,{" "}
+                  <Link href="/hentai-3d" prefetch={false} className="text-orange-400 hover:text-orange-300 transition-colors">
+                    Hentai 3D
+                  </Link>
+                  ,{" "}
+                  <Link href="/sex-ai" prefetch={false} className="text-orange-400 hover:text-orange-300 transition-colors">
+                    Sex AI
+                  </Link>{" "}
+                  và{" "}
+                  <Link href="/hh-trung-quoc" prefetch={false} className="text-orange-400 hover:text-orange-300 transition-colors">
+                    Hoạt Hình Trung Quốc
+                  </Link>{" "}
+                  với tốc độ tải mượt mà trên cả điện thoại lẫn máy tính.
+                </p>
+              </section>
             </>
           )}
         </div>

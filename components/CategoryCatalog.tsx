@@ -13,7 +13,6 @@ import {
   CheckCircle2, 
   Search, 
   HelpCircle, 
-  Tag, 
   Tv, 
   Flame,
   Clapperboard
@@ -427,30 +426,6 @@ export default function CategoryCatalog({
               </div>
             </section>
           )}
-
-          {/* ─── INTERNAL LINKING TAG CLOUD (SEO EXPANSION) ─── */}
-          <section className="bg-[#10121b] border border-white/5 rounded-2xl p-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <Tag className="w-4 h-4 text-orange-500" />
-              <h3 className="text-xs sm:text-sm font-bold text-gray-300 uppercase tracking-wider">
-                Khám Phá Thể Loại Phim Khác
-              </h3>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {availableCategories.slice(0, 16).map((cat) => {
-                const catSlug = cat.slug || slugify(cat.name);
-                return (
-                  <Link
-                    key={catSlug}
-                    href={`/${encodeURIComponent(catSlug)}`}
-                    className="text-xs text-gray-400 hover:text-orange-400 bg-[#171926] hover:bg-[#202334] border border-white/5 px-2.5 py-1 rounded-md transition-colors"
-                  >
-                    #{cat.name}
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
         </section>
 
         {/* Right column: Rankings Sidebar */}

@@ -29,7 +29,7 @@ export default function MovieCard({
       <div className="relative aspect-video w-full bg-[#090a0f] overflow-hidden">
         <Image
           src={getBunnyImageUrl(movie.thumbnail, 'thumb')}
-          alt={`Xem phim ${movie.title} Full HD Vietsub Thuyết minh`}
+          alt={`${movie.title} - Phim 3D ${movie.sub || "Vietsub"} ${movie.quality || "HD"}`}
           fill
           priority={priority}
           fetchPriority={priority ? "high" : undefined}

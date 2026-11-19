@@ -22,7 +22,7 @@ export default function Footer() {
           <div className="flex items-center gap-2">
             <Image
               src="/logo.png"
-              alt="vam3d Logo"
+              alt="Vam3D Logo"
               width={140}
               height={40}
               className="object-contain h-10 w-auto"
@@ -36,7 +36,7 @@ export default function Footer() {
 
         {/* Dynamic Categories Column (Divided into 2-3 columns) */}
         <div className="md:col-span-2">
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Thể Loại Phim</h3>
+          <p className="text-sm font-bold text-white uppercase tracking-wider mb-4">Thể Loại Phim</p>
           <ul className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2.5 text-xs">
             {categories.map((cat) => {
               const href = `/${cat.slug || slugify(cat.name) || encodeURIComponent(cat.name)}`;
@@ -54,7 +54,7 @@ export default function Footer() {
 
         {/* Dynamic Featured Movies Column */}
         <div>
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Phim Nổi Bật</h3>
+          <p className="text-sm font-bold text-white uppercase tracking-wider mb-4">Phim Nổi Bật</p>
           <ul className="space-y-2 text-xs">
             {topMovies.length > 0 ? (
               topMovies.map((m) => {
@@ -80,7 +80,7 @@ export default function Footer() {
 
         {/* Info & Contact Column */}
         <div>
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Thông Tin &amp; Liên Hệ</h3>
+          <p className="text-sm font-bold text-white uppercase tracking-wider mb-4">Thông Tin &amp; Liên Hệ</p>
           <ul className="space-y-2 text-xs mb-4">
             <li><Link href="/tac-gia" prefetch={false} className="hover:text-orange-500 transition-colors font-semibold text-orange-400">✍️ Tác Giả Phim 3D</Link></li>
             <li><Link href="/gioi-thieu" prefetch={false} className="hover:text-orange-500 transition-colors">Giới thiệu</Link></li>

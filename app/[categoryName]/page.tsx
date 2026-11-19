@@ -146,11 +146,15 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
   let movies: any[] = [];
   let allMovies: any[] = [];
   try {
-    movies = (await getMoviesByCategory(targetCategory?.slug || targetCategory?.name || decodedCategory)) || [];
+    const [catMovies, topMovies] = await Promise.all([
+      getMoviesByCategory(targetCategory?.slug || targetCategory?.name || decodedCategory).catch(() => []),
+      getAllMovies(30).catch(() => []),
+    ]);
+    movies = catMovies || [];
+    allMovies = topMovies || [];
 
-    // Fallback: match by title, category string or originalTitle only if no movies found
-    if (movies.length === 0) {
-      allMovies = (await getAllMovies(30)) || [];
+    // Fallback: match by category name/slug if direct category query returned empty
+    if (movies.length === 0 && allMovies.length > 0) {
       const matched = allMovies.filter((m: any) =>
         m?.movieCategories?.some((mc: any) =>
           mc?.category?.name?.toLowerCase().includes(inputSlug) ||
@@ -246,7 +250,7 @@ export default async function DynamicCategoryPage({ params }: PageProps) {
       url: siteUrl,
       logo: {
         "@type": "ImageObject",
-        url: `${siteUrl}/icon.png`,
+        url: `${siteUrl}/logo.png`,
       },
     },
     mainEntity: {

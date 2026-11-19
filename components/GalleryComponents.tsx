@@ -106,7 +106,7 @@ export function HomeGalleryCard({
 
       <div className="absolute bottom-0 left-0 right-0 p-3 bg-black/40 backdrop-blur-[3px] border-t border-white/5 z-10 flex flex-col justify-between min-h-[85px] group-hover:bg-black/60 transition-colors pointer-events-none">
         <div>
-          <h4 className="text-xs font-bold text-gray-100 line-clamp-1 group-hover:text-orange-400 transition-colors">{g.name}</h4>
+          <h3 className="text-xs font-bold text-gray-100 line-clamp-1 group-hover:text-orange-400 transition-colors">{g.name}</h3>
           <div className="flex items-center justify-between gap-1 mt-0.5">
             {g.movie?.name ? (
               <p className="text-[9px] text-orange-400 font-medium line-clamp-1">
