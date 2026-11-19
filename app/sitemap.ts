@@ -28,6 +28,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/dien-vien`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
     { url: `${siteUrl}/nhan-vat`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
     { url: `${siteUrl}/gallery`, lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
+    { url: `${siteUrl}/bang-xep-hang`, lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
+    { url: `${siteUrl}/lich-chieu`, lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
     { url: `${siteUrl}/gioi-thieu`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
     { url: `${siteUrl}/chinh-sach-bao-mat`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
     { url: `${siteUrl}/dieu-khoan-su-dung`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
@@ -157,7 +159,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             const movieSlug = movie.slug || (movie.name ? slugify(movie.name) : "") || movie.id.toString();
             const epSlug = ep.slug || (ep.name ? slugify(ep.name) : "") || ep.id.toString();
             return {
-              url: `${siteUrl}/movie/${movieSlug}?ep=${epSlug}`,
+              url: `${siteUrl}/movie/${encodeURIComponent(movieSlug)}?ep=${encodeURIComponent(epSlug)}`,
               lastModified: ep.createdAt ? new Date(ep.createdAt) : new Date(),
               changeFrequency: "weekly",
               priority: 0.7,

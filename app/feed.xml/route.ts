@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { connection } from "next/server";
-import { getSiteUrl } from "@/lib/utils";
+import { getSiteUrl, getBunnyImageUrl } from "@/lib/utils";
 
 export async function GET() {
   await connection();
@@ -28,10 +28,20 @@ export async function GET() {
       const description = movie.description
         ? movie.description.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
         : `Xem phim ${movie.name} chất lượng cao Full HD Vietsub Thuyết minh tại Vam3D.`;
-      const title = `${movie.name} (${movie.originalTitle || ""}) [${movie.year || 2026}] – Vietsub Thuyết Minh Full HD`
+      const origPart = movie.originalTitle ? ` (${movie.originalTitle})` : "";
+      const title = `${movie.name}${origPart} [${movie.year || 2026}] – Vietsub HD`
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
+
+      const enclosureUrl = movie.imgUrl
+        ? getBunnyImageUrl(movie.imgUrl, "display").replace(/&/g, "&amp;")
+        : "";
+      const enclosureType = enclosureUrl.toLowerCase().endsWith(".webp")
+        ? "image/webp"
+        : enclosureUrl.toLowerCase().endsWith(".png")
+        ? "image/png"
+        : "image/jpeg";
 
       return `
     <item>
@@ -40,7 +50,7 @@ export async function GET() {
       <guid isPermaLink="true">${movieUrl}</guid>
       <pubDate>${pubDate}</pubDate>
       <description>${description}</description>
-      ${movie.imgUrl ? `<enclosure url="${movie.imgUrl}" type="image/jpeg" />` : ""}
+      ${enclosureUrl ? `<enclosure url="${enclosureUrl}" length="0" type="${enclosureType}" />` : ""}
     </item>`;
     })
     .join("");

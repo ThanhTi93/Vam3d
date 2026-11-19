@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getGalleryBySlug, getAllGalleriesForStaticParams } from "@/lib/db/queries";
 import GalleryDetailClient from "./GalleryDetailClient";
 import { getBunnyImageUrl, getSiteUrl } from "@/lib/utils";
@@ -22,11 +22,6 @@ export async function generateStaticParams() {
       if (primarySlug && !seenSlugs.has(primarySlug)) {
         seenSlugs.add(primarySlug);
         params.push({ slug: primarySlug });
-      }
-      const idSlug = g.id.toString();
-      if (idSlug && !seenSlugs.has(idSlug)) {
-        seenSlugs.add(idSlug);
-        params.push({ slug: idSlug });
       }
     }
 
@@ -88,9 +83,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const charListStr = charNames.length > 0 ? `nhân vật ${charNames.join(", ")}` : "";
   const movieStr = gallery.movie?.name ? `trong phim ${gallery.movie.name}` : "";
 
-  const description = gallery.description
-    ? `${gallery.description} Trọn bộ ảnh sex Vam 3D, ảnh 3D 18+ ${charListStr} ${movieStr} sắc nét 4K không che độc quyền tại Vam 3D.`
-    : `Xem trọn bộ ảnh sex Vam 3D, ảnh 3D 18+ ${charNames[0] || gallery.name} ${movieStr} gồm ${gallery.imageCount || gallery.images?.length || 0} ảnh sắc nét full HD 4K không che độc quyền tại Vam 3D Hentai.`;
+  const rawDescription = gallery.description
+    ? `${gallery.description} Trọn bộ ảnh 3D 18+ ${charListStr} ${movieStr} sắc nét 4K tại Vam3D.`
+    : `Xem trọn bộ ảnh 3D 18+ ${charNames[0] || gallery.name} ${movieStr} gồm ${gallery.imageCount || gallery.images?.length || 0} ảnh sắc nét 4K không che độc quyền tại Vam3D.`;
+  const description = rawDescription.replace(/\s+/g, " ").trim().slice(0, 160);
 
   return {
     title,
@@ -158,6 +154,9 @@ export default async function GalleryDetailPage({ params }: PageProps) {
   }
 
   const gallery = data.gallery as any;
+  if (gallery.slug && slug !== gallery.slug) {
+    permanentRedirect(`/gallery/${gallery.slug}`);
+  }
   const relatedGalleries = data.relatedGalleries || [];
   const siteUrl = getSiteUrl();
   const galleryUrl = `${siteUrl}/gallery/${gallery.slug || gallery.id}`;

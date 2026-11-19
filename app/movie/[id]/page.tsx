@@ -1,11 +1,11 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getMovieById, getAllMovies } from "@/lib/db/queries";
 import MoviePageClient from "./MoviePageClient";
 import RankingsSidebar from "@/components/RankingsSidebar";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { slugify, getSiteUrl, resolveMovieEpisodeIndex, buildAggregateRating } from "@/lib/utils";
+import { slugify, getSiteUrl, resolveMovieEpisodeIndex, buildAggregateRating, getBunnyImageUrl } from "@/lib/utils";
 
 interface MoviePageProps {
   params: Promise<{ id: string }>;
@@ -42,12 +42,12 @@ export async function generateMetadata({ params, searchParams }: MoviePageProps)
     ? matchedEp.slug || (matchedEp.name ? slugify(matchedEp.name) : matchedEp.id?.toString())
     : "";
 
-  const movieUrl = epSlug ? `${baseMovieUrl}?ep=${epSlug}` : baseMovieUrl;
-  const posterUrl = matchedEp?.banner || movieData.imgUrl || `${siteUrl}/og-image.jpg`;
+  const movieUrl = epSlug ? `${baseMovieUrl}?ep=${encodeURIComponent(epSlug)}` : baseMovieUrl;
+  const rawPoster = matchedEp?.banner || movieData.imgUrl;
+  const posterUrl = rawPoster ? getBunnyImageUrl(rawPoster, "display") : `${siteUrl}/og-image.jpg`;
 
-  const origPart = movieData.originalTitle ? ` (${movieData.originalTitle})` : "";
-  const epPart = matchedEp?.name ? ` - ${matchedEp.name}` : "";
-  const title = `${movieData.name}${epPart}${origPart} [${movieData.year || 2026}] – Vietsub Thuyết Minh Full HD | Vam3D`;
+  const epPart = matchedEp?.name ? ` – ${matchedEp.name}` : "";
+  const title = `${movieData.name}${epPart} Vietsub HD | Vam3D`;
   const description = (
     matchedEp?.name
       ? `Xem ${movieData.name} - ${matchedEp.name} chất lượng cao Full HD Vietsub, Thuyết minh cập nhật nhanh nhất tại Vam3D. ${movieData.description || ""}`
@@ -97,11 +97,15 @@ export async function generateMetadata({ params, searchParams }: MoviePageProps)
 }
 
 // Render dynamic JSON-LD structured schema on server-side for search engines
-function MovieSchemaScript({ movie }: { movie: any }) {
+function MovieSchemaScript({ movie, epSlug, matchedEp }: { movie: any; epSlug?: string; matchedEp?: any }) {
   const siteUrl = getSiteUrl();
   const movieSlug = movie.slug || slugify(movie.title || movie.name) || movie.id;
-  const movieUrl = `${siteUrl}/movie/${movieSlug}`;
-  const posterUrl = movie.thumbnail || movie.banner || `${siteUrl}/og-image.jpg`;
+  const baseMovieUrl = `${siteUrl}/movie/${movieSlug}`;
+  const movieUrl = epSlug ? `${baseMovieUrl}?ep=${encodeURIComponent(epSlug)}` : baseMovieUrl;
+  const rawPoster = matchedEp?.banner || movie.thumbnail || movie.banner;
+  const posterUrl = rawPoster ? getBunnyImageUrl(rawPoster, "display") : `${siteUrl}/og-image.jpg`;
+  const movieName = movie.title || movie.name;
+  const schemaDescription = movie.description || `Xem phim ${movieName} chất lượng cao Full HD Vietsub tại Vam3D.`;
 
   const isSeries = movie.category === "phim-bo" || movie.category === "hoat-hinh" || (movie.episodes && movie.episodes.length > 1);
   const aggregateRating = buildAggregateRating(movie.rating, movie.votes);
@@ -110,11 +114,11 @@ function MovieSchemaScript({ movie }: { movie: any }) {
     ? {
         "@context": "https://schema.org",
         "@type": "TVSeries",
-        name: movie.title || movie.name,
+        name: movieName,
         alternateName: movie.originalTitle || undefined,
-        description: movie.description,
+        description: schemaDescription,
         image: posterUrl,
-        url: movieUrl,
+        url: baseMovieUrl,
         numberOfEpisodes: Math.max(1, movie.episodes?.length || 1),
         genre: movie.genres && movie.genres.length > 0 ? movie.genres : ["Hoạt Hình 3D"],
         dateCreated: movie.year?.toString() || "2026",
@@ -125,22 +129,23 @@ function MovieSchemaScript({ movie }: { movie: any }) {
     : {
         "@context": "https://schema.org",
         "@type": "Movie",
-        name: movie.title || movie.name,
+        name: movieName,
         alternateName: movie.originalTitle || undefined,
-        description: movie.description,
+        description: schemaDescription,
         image: posterUrl,
-        url: movieUrl,
+        url: baseMovieUrl,
         dateCreated: movie.year?.toString() || "2026",
         director: movie.director && movie.director !== "—" ? { "@type": "Person", name: movie.director } : undefined,
         actor: movie.cast && movie.cast.length > 0 ? movie.cast.map((name: string) => ({ "@type": "Person", name })) : undefined,
         aggregateRating,
       };
 
+  const videoTitle = matchedEp?.name ? `${movieName} – ${matchedEp.name}` : movieName;
   const videoSchema = {
     "@context": "https://schema.org",
     "@type": "VideoObject",
-    name: movie.title || movie.name,
-    description: movie.description || `Xem phim ${movie.title || movie.name} Vietsub HD`,
+    name: videoTitle,
+    description: schemaDescription,
     thumbnailUrl: [posterUrl],
     uploadDate: movie.createdAt ? new Date(movie.createdAt).toISOString() : "2026-01-01T00:00:00.000Z",
     embedUrl: movieUrl,
@@ -171,9 +176,9 @@ export async function generateStaticParams() {
     const movies = await getAllMovies(100);
     const paramsList: { id: string }[] = [];
     (movies || []).forEach((m: any) => {
-      paramsList.push({ id: m.id.toString() });
-      if (m.slug) {
-        paramsList.push({ id: m.slug });
+      const canonicalId = m.slug || m.id.toString();
+      if (canonicalId) {
+        paramsList.push({ id: canonicalId });
       }
     });
     return paramsList;
@@ -182,8 +187,11 @@ export async function generateStaticParams() {
   }
 }
 
-export default async function MovieDetailPage({ params }: MoviePageProps) {
+export default async function MovieDetailPage({ params, searchParams }: MoviePageProps) {
   const { id } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const epParam = typeof resolvedSearchParams?.ep === "string" ? resolvedSearchParams.ep.trim() : "";
+
   let movie: any = null;
 
   try {
@@ -195,6 +203,20 @@ export default async function MovieDetailPage({ params }: MoviePageProps) {
   if (!movie) {
     notFound();
   }
+
+  // 308 Permanent Redirect from numeric ID to canonical slug to prevent duplicate URLs
+  if (movie.slug && id !== movie.slug) {
+    const redirectTarget = epParam
+      ? `/movie/${movie.slug}?ep=${encodeURIComponent(epParam)}`
+      : `/movie/${movie.slug}`;
+    permanentRedirect(redirectTarget);
+  }
+
+  const matchedEpIdx = epParam ? resolveMovieEpisodeIndex((movie as any).episodes, epParam) : -1;
+  const matchedEp = matchedEpIdx >= 0 ? (movie as any).episodes[matchedEpIdx] : null;
+  const activeEpSlug = matchedEp
+    ? matchedEp.slug || (matchedEp.name ? slugify(matchedEp.name) : matchedEp.id?.toString())
+    : undefined;
 
   try {
     const allMovies = await getAllMovies(6);
@@ -337,7 +359,7 @@ export default async function MovieDetailPage({ params }: MoviePageProps) {
 
     return (
       <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6">
-        <MovieSchemaScript movie={formattedMovie} />
+        <MovieSchemaScript movie={formattedMovie} epSlug={activeEpSlug} matchedEp={matchedEp} />
 
         <Breadcrumbs items={breadcrumbItems} />
 
