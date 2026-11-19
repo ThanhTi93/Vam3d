@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { getGalleriesPublicPaginated, getGalleryFilterOptions } from "@/lib/db/queries";
 import GalleryPageClient from "./GalleryPageClient";
 
+const galleryPageTitle = "Kho Ảnh 3D 18+, Ảnh Sex Vam 3D Hentai Cực Nét 4K | Vam3D";
+const galleryPageDescription = "Tổng hợp các bộ sưu tập ảnh 3D 18+, ảnh sex Vam 3D, cosplay AI Hentai 3D Trung Quốc sắc nét 4K không che độc quyền cập nhật mỗi ngày tại Vam3D.";
+
 export const metadata: Metadata = {
-  title: "Kho Ảnh 3D 18+, Ảnh Sex Vam 3D Hentai Cực Nét 4K | Vam3D",
-  description: "Tổng hợp các bộ sưu tập ảnh 3D 18+, ảnh sex Vam 3D, cosplay AI Hentai 3D Trung Quốc các mỹ nhân hoạt hình sắc nét 4K không che độc quyền tại Vam3D Hentai.",
+  title: galleryPageTitle,
+  description: galleryPageDescription,
   keywords: [
     "anh sex vam 3d",
     "anh 18+ 3d",
@@ -19,6 +22,21 @@ export const metadata: Metadata = {
   ],
   alternates: {
     canonical: "/gallery",
+  },
+  openGraph: {
+    title: galleryPageTitle,
+    description: galleryPageDescription,
+    url: "/gallery",
+    type: "website",
+    locale: "vi_VN",
+    siteName: "Vam3D",
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: galleryPageTitle }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: galleryPageTitle,
+    description: galleryPageDescription,
+    images: ["/og-image.jpg"],
   },
 };
 

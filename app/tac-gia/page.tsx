@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const title = "Danh Sách Tác Giả & Tác Phẩm Hoạt Hình 3D Nổi Tiếng | Vam3D";
   const description =
-    "Tổng hợp danh sách các tác giả tiểu thuyết tiên hiệp, huyền huyễn và nhà sáng tạo nội dung hoạt hình 3D nổi tiếng như Đường Gia Tam Thiếu, Thiên Tàm Thổ Đậu, Vong Ngữ... tại Vam3D.";
+    "Tổng hợp danh sách tác giả tiểu thuyết tiên hiệp, huyền huyễn và hoạt hình 3D nổi tiếng như Đường Gia Tam Thiếu, Thiên Tàm Thổ Đậu, Vong Ngữ tại Vam3D.";
 
   const canonicalUrl = `${siteUrl}/tac-gia`;
 
